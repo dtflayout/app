@@ -7,6 +7,7 @@ import { OutsetaProvider } from "./contexts/OutsetaContext";
 import Landing from "./pages/Landing";
 import AuthPage from "./pages/AuthPage";
 import AppPage from "./pages/AppPage";
+import { SheetLogs } from "./pages/SheetLogs";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +28,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AppPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/logs"
+              element={
+                <ProtectedRoute>
+                  <SheetLogs />
                 </ProtectedRoute>
               }
             />
