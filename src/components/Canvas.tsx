@@ -8,6 +8,13 @@ import { Canvas as FabricCanvas, Image as FabricImage } from "fabric";
 import { toast } from "sonner";
 import { PositionedImage } from "@/utils/layoutAlgorithm";
 
+// Debug flag - set to true to enable debug logging
+const DEBUG = false;
+
+const debugLog = (...args: any[]) => {
+  if (DEBUG) console.log(...args);
+};
+
 interface CanvasProps {
   images: ImageObject[];
   layout: PositionedImage[];
@@ -16,7 +23,9 @@ interface CanvasProps {
 }
 
 // Constants for canvas sizing
-const DPI = 72; // Default screen DPI
+const DPI = 72; // Screen DPI for preview
+const DPI_PRINT = 150; // Target DPI for print-quality exports (optimized for DTF printing)
+const EXPORT_MULTIPLIER = DPI_PRINT / DPI; // ~2.08x for 150 DPI output
 const PADDING_INCHES = 0.3; // Match the padding between images
 const MIN_CANVAS_HEIGHT_PX = 800;
 
@@ -34,8 +43,14 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
   
   // Map images by ID for quick lookup
   const imageMap = React.useMemo(() => {
+    debugLog('🗺️ Canvas: Creating imageMap');
+    debugLog('  - images.length:', images.length);
+    debugLog('  - images:', images.map(img => ({ id: img.id, name: img.file?.name, hasUrl: !!img.url, urlValid: img.url?.startsWith('blob:') })));
+
     const map = new Map<string, ImageObject>();
     images.forEach(img => map.set(img.id, img));
+
+    debugLog('  - imageMap size:', map.size);
     return map;
   }, [images]);
 
@@ -71,18 +86,24 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
   useEffect(() => {
     const applyLayout = async () => {
       if (!fabricCanvasRef.current || !layout || layout.length === 0) return;
-      
+
+      debugLog('🎨 Canvas: applyLayout called');
+      debugLog('  - layout.length:', layout.length);
+      debugLog('  - imageMap.size:', imageMap.size);
+      debugLog('  - Layout IDs:', layout.map(l => l.id));
+
       setIsLoading(true);
       setLayoutApplied(false);
-      
+
       try {
         // Clear existing canvas
         fabricCanvasRef.current.clear();
         fabricCanvasRef.current.backgroundColor = "transparent";
-        
+
         // Load each image according to its position in the layout
         for (const item of layout) {
           const img = imageMap.get(item.id);
+          debugLog(`  - Loading image ${item.id}:`, img ? { name: img.file?.name, hasUrl: !!img.url, url: img.url?.substring(0, 50) } : 'NOT FOUND IN MAP');
           if (!img) continue;
           
           await new Promise<void>((resolve) => {
@@ -186,33 +207,22 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
         // Optimize for export
         fabricCanvasRef.current.discardActiveObject();
         fabricCanvasRef.current.renderAll();
-        
-        // Calculate appropriate multiplier based on image count and canvas size
-        // to prevent memory issues while maintaining quality
+
+        // Use fixed multiplier for consistent 150 DPI print-quality output
         const imageCount = layout.length;
-        const canvasArea = (canvasWidthPx * (canvasHeightInches * DPI)) / 1000000; // in megapixels
-        
-        let multiplier = 2; // Default 144 DPI (72 × 2)
-        let quality = 1.0;
-        
-        // Adjust based on total canvas complexity
-        if (imageCount > 20 || canvasArea > 15) {
-          multiplier = 1.5; // 108 DPI
-          quality = 0.95;
-        } else if (imageCount > 15 || canvasArea > 10) {
-          multiplier = 1.75; // 126 DPI
-          quality = 0.98;
-        }
-        
-        console.log(`Exporting ${imageCount} images with multiplier ${multiplier}x and quality ${quality}`);
-        
+        const expectedWidthPx = Math.round(canvasWidthInches * DPI_PRINT);
+        const expectedHeightPx = Math.round(canvasHeightInches * DPI_PRINT);
+
+        console.log(`Exporting ${imageCount} images at ${DPI_PRINT} DPI (${EXPORT_MULTIPLIER.toFixed(2)}x multiplier)`);
+        console.log(`Expected output: ${expectedWidthPx}px × ${expectedHeightPx}px`);
+
         const dataUrl = fabricCanvasRef.current.toDataURL({
           format: 'png',
-          quality: quality,
-          multiplier: multiplier,
+          quality: 1.0,
+          multiplier: EXPORT_MULTIPLIER,
           enableRetinaScaling: false,
         });
-        
+
         return dataUrl;
       } catch (error) {
         console.error("Export error:", error);

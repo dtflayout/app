@@ -10,6 +10,10 @@ import AppPage from "./pages/AppPage";
 import { SheetLogs } from "./pages/SheetLogs";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
+import Home from "./pages/marketing/Home";
+import Product from "./pages/marketing/Product";
+import Pricing from "./pages/marketing/Pricing";
+import Contact from "./pages/marketing/Contact";
 
 const queryClient = new QueryClient();
 
@@ -21,7 +25,11 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Landing />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/product" element={<Product />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/landing" element={<Landing />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route
               path="/app"

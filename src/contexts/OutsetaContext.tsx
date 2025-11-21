@@ -77,17 +77,10 @@ export const OutsetaProvider = ({ children }: OutsetaProviderProps) => {
       try {
         console.log("[OutsetaContext] Calling Outseta.getUser()");
         const currentUser = await window.Outseta.getUser();
-        console.log("[OutsetaContext] getUser result:", currentUser);
+        console.log("[OutsetaContext] User fetched:", currentUser?.Email);
 
-        // Deep log the user object structure
-        if (currentUser) {
-          console.log("[OutsetaContext] User properties:", Object.keys(currentUser));
-          console.log("[OutsetaContext] User.Account:", currentUser.Account);
-
-          if (currentUser.Account) {
-            console.log("[OutsetaContext] Account properties:", Object.keys(currentUser.Account));
-            console.log("[OutsetaContext] Account full object:", JSON.stringify(currentUser.Account, null, 2));
-          }
+        if (currentUser?.Account) {
+          console.log("[OutsetaContext] Credits balance:", currentUser.Account.CreditsBalance);
         }
 
         setUser(currentUser);

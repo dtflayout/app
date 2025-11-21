@@ -15,8 +15,34 @@ import { AlertTriangle } from "lucide-react";
 import { ConfirmLayoutDialog } from "./ConfirmLayoutDialog";
 import { ErrorDialog } from "./ErrorDialog";
 import { CreditWarningBanner } from "./CreditWarningBanner";
-import { updateAccountCreditsWithFallback } from "@/lib/outsetaApi";
 import { logSheetGeneration } from "@/lib/usageLogger";
+import { addDpiToPng, downloadBlob } from "@/utils/pngDpiHelper";
+import { estimateMemoryUsage, validateCanvasSize } from "@/utils/memoryEstimator";
+import { MemoryWarningModal } from "./MemoryWarningModal";
+
+// Debug flag - set to true to enable debug logging
+const DEBUG = false;
+
+const debugLog = (...args: any[]) => {
+  if (DEBUG) console.log(...args);
+};
+
+// Helper functions (moved outside component for performance)
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
+const formatNumber = (num: number): string => {
+  return num.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
 
 export type ImageObject = {
   id: string;
@@ -50,15 +76,52 @@ export const CollageCreator = () => {
     title: string;
     message: string;
   } | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [memoryWarning, setMemoryWarning] = useState<{
+    isOpen: boolean;
+    riskLevel: 'medium' | 'high' | 'critical';
+    memoryMB: number;
+    message: string;
+  }>({
+    isOpen: false,
+    riskLevel: 'medium',
+    memoryMB: 0,
+    message: ''
+  });
   const canvasRef = useRef<any>(null);
 
-  // Helper function to format numbers with commas and 2 decimal places
-  const formatNumber = (num: number): string => {
-    return num.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+  // Track blob URLs for cleanup, but DON'T auto-revoke during renders/HMR
+  // Only revoke when explicitly deleting images or on true unmount
+  const blobUrlsRef = useRef<Set<string>>(new Set());
+  const isUnmountingRef = useRef(false);
+
+  useEffect(() => {
+    // Track all current blob URLs
+    images.forEach(img => {
+      if (img.url && img.url.startsWith('blob:')) {
+        blobUrlsRef.current.add(img.url);
+      }
     });
-  };
+  }, [images]);
+
+  // Only cleanup on ACTUAL unmount (not during HMR or re-renders)
+  useEffect(() => {
+    return () => {
+      // Set flag to indicate true unmount
+      isUnmountingRef.current = true;
+
+      // Give React a tick to complete unmount
+      setTimeout(() => {
+        if (isUnmountingRef.current) {
+          debugLog(`[Memory Cleanup] Component unmounting, cleaning up ${blobUrlsRef.current.size} blob URLs`);
+          blobUrlsRef.current.forEach(url => {
+            URL.revokeObjectURL(url);
+          });
+          blobUrlsRef.current.clear();
+        }
+      }, 0);
+    };
+  }, []); // Empty deps - only runs on mount/unmount
 
   // Helper function to get user's credit balance
   const getUserCredits = (): number => {
@@ -72,103 +135,211 @@ export const CollageCreator = () => {
     );
   };
 
+  // CRITICAL: Reset state to prevent corrupted state after errors
+  const resetGenerationState = () => {
+    debugLog('🔄 Resetting generation state');
+    setLayout([]);
+    setTotalSqInchesUsed(null);
+    setPendingLayout(null);
+  };
+
   const handleImagesAdded = (newImages: ImageObject[]) => {
+    // Blob URLs are automatically tracked by useEffect when images state updates
     setImages((prev) => [...prev, ...newImages]);
     toast.success(`${newImages.length} image(s) added to your collage`);
   };
 
   const handleImagesRemoved = (imageIds: string[]) => {
+    // CRITICAL: ONLY revoke blob URLs for images being deleted
+    const imagesToRemove = images.filter(img => imageIds.includes(img.id));
+    const imagesToKeep = images.filter(img => !imageIds.includes(img.id));
+
+    // Revoke ONLY the deleted images' URLs
+    imagesToRemove.forEach(img => {
+      if (img.url && img.url.startsWith('blob:')) {
+        URL.revokeObjectURL(img.url);
+        blobUrlsRef.current.delete(img.url);
+      }
+    });
+
     // Remove images from the state
     setImages((prev) => prev.filter(img => !imageIds.includes(img.id)));
-    
+
     // Remove dimensions for these images
     setImageDimensions((prev) => prev.filter(dim => !imageIds.includes(dim.id)));
-    
+
     // If these images were in the layout, regenerate layout
     const wasInLayout = layout.some(item => imageIds.includes(item.id));
     if (wasInLayout) {
       setLayout([]);
     }
-    
+
+    debugLog(`[Memory Cleanup] Removed ${imageIds.length} image(s), ${imagesToKeep.length} remaining`);
     toast.info(`${imageIds.length} image(s) removed`);
   };
 
   const handleImageDimensionsChanged = (dimensions: ImageDimension[]) => {
-    console.log("Dimensions changed:", dimensions);
+    debugLog("Dimensions changed:", dimensions);
     setImageDimensions(dimensions);
   };
 
+  // Actual layout generation logic (called after memory check passes)
+  const proceedWithGeneration = () => {
+    debugLog('🎨 proceedWithGeneration called');
+    debugLog('  - imageDimensions.length:', imageDimensions.length);
+    debugLog('  - images.length:', images.length);
+    debugLog('  - imageDimensions:', imageDimensions.map(dim => ({ id: dim.id, w: dim.widthInches, h: dim.heightInches })));
+
+    setIsGenerating(true);
+
+    // Use setTimeout to allow UI to update before heavy computation
+    setTimeout(() => {
+      try {
+        debugLog("🔧 Generating layout with dimensions:", imageDimensions);
+
+        // Generate layout using our algorithm with selected width and spacing
+        const result = generateLayout(imageDimensions, canvasWidthInches, spacingInches);
+        debugLog("Layout result:", result);
+
+        if (result.positionedImages.length === 0) {
+          debugLog('❌ Validation failed: No positioned images generated');
+          toast.error("Failed to generate layout. Please check image dimensions.");
+          setIsGenerating(false);
+          return;
+        }
+
+        // Check sheet height limit (400 inches max for reliable exports)
+        const MAX_SHEET_HEIGHT = 400;
+        if (result.totalHeightInches > MAX_SHEET_HEIGHT) {
+          debugLog(`❌ Validation failed: Sheet too large (${result.totalHeightInches.toFixed(1)}" > ${MAX_SHEET_HEIGHT}")`);
+          const recommendedCount = Math.floor(imageDimensions.length * (MAX_SHEET_HEIGHT / result.totalHeightInches));
+          setErrorDialogData({
+            title: "Sheet Too Large",
+            message: `Your sheet height is ${result.totalHeightInches.toFixed(1)}" which exceeds the ${MAX_SHEET_HEIGHT}" limit.\n\nHow to fix it:\n• Remove some images (currently ${imageDimensions.length})\n• Reduce the size of large images\n• Or generate multiple smaller sheets (recommended: ~${recommendedCount} images per sheet)`,
+          });
+          setShowErrorDialog(true);
+          setIsGenerating(false);
+          return;
+        }
+
+        // Warn if close to height limit (>80%)
+        if (result.totalHeightInches > MAX_SHEET_HEIGHT * 0.8) {
+          toast.warning(
+            `Sheet height: ${result.totalHeightInches.toFixed(1)}" (${((result.totalHeightInches / MAX_SHEET_HEIGHT) * 100).toFixed(0)}% of ${MAX_SHEET_HEIGHT}" limit)`,
+            { duration: 5000 }
+          );
+        }
+
+        // Check for overlaps and show appropriate message
+        const hasOverlaps = result.positionedImages.some((img1, i) =>
+          result.positionedImages.some((img2, j) =>
+            i !== j &&
+            img1.x < img2.x + img2.widthInches &&
+            img1.x + img1.widthInches > img2.x &&
+            img1.y < img2.y + img2.heightInches &&
+            img1.y + img1.heightInches > img2.y
+          )
+        );
+
+        if (hasOverlaps) {
+          toast.warning("Warning: Some images may overlap in the generated layout.");
+        }
+
+        // Validate canvas size against browser limits (with actual calculated height)
+        const sizeCheck = validateCanvasSize(canvasWidthInches, result.totalHeightInches);
+        if (!sizeCheck.isValid) {
+          debugLog('❌ Validation failed: Canvas size exceeds browser limits');
+          setErrorDialogData({
+            title: "Canvas Too Large",
+            message: sizeCheck.errorMessage || "Canvas exceeds maximum size limits.",
+          });
+          setShowErrorDialog(true);
+          setIsGenerating(false);
+          return;
+        }
+
+        // Calculate total square inches needed for this layout
+        const sqInches = canvasWidthInches * result.totalHeightInches;
+
+        // Get user's current credit balance
+        const currentCredits = getUserCredits();
+
+        console.log(`[Credit Check] Layout requires ${sqInches.toFixed(2)} sq.in, user has ${currentCredits} credits`);
+
+        // Check if user has enough credits
+        if (currentCredits < sqInches) {
+          debugLog("❌ Validation failed: Insufficient credits");
+          setInsufficientCreditsData({
+            needed: sqInches,
+            available: currentCredits
+          });
+          setShowInsufficientCreditsModal(true);
+          setIsGenerating(false);
+          return;
+        }
+
+        debugLog("✅ All validations passed! Layout is ready for confirmation.");
+
+        // Credits are sufficient - show confirmation dialog
+        setPendingLayout({
+          positionedImages: result.positionedImages,
+          totalHeightInches: result.totalHeightInches,
+          sqInches: sqInches,
+        });
+        setShowConfirmDialog(true);
+        setIsGenerating(false);
+      } catch (error) {
+        console.error("Layout generation error:", error);
+        toast.error("Failed to generate layout. Please try again.");
+        setIsGenerating(false);
+      }
+    }, 100);
+  };
+
   const handleGenerateLayout = () => {
+    debugLog('🚀 Starting layout generation');
+    debugLog('📋 Current state snapshot:');
+    debugLog('  - images.length:', images.length);
+    debugLog('  - imageDimensions.length:', imageDimensions.length);
+    debugLog('  - images:', images.map(img => ({ id: img.id, name: img.file.name, hasUrl: !!img.url })));
+
+    // CRITICAL: Reset state FIRST to clear any stale data from previous attempts
+    resetGenerationState();
+
     if (imageDimensions.length === 0) {
       toast.error("No images with dimensions available");
       return;
     }
-    
+
     // Check if any image dimensions exceed canvas width
+    // An image can fit if its smaller dimension is <= canvas width (can rotate if needed)
     const oversizedImages = imageDimensions.filter(
-      img => img.widthInches > canvasWidthInches || img.heightInches > canvasWidthInches
+      img => Math.min(img.widthInches, img.heightInches) > canvasWidthInches
     );
-    
+
     if (oversizedImages.length > 0) {
-      toast.error("Cannot generate sheet: Some image dimensions are larger than the selected canvas size. Please reduce their dimensions and try again.");
+      debugLog('❌ Validation failed: Oversized images');
+      const names = oversizedImages.map(img => `${img.widthInches.toFixed(1)}" × ${img.heightInches.toFixed(1)}"`).join(', ');
+      toast.error(`Cannot generate sheet: Some images are too large to fit on a ${canvasWidthInches}" wide canvas (${names}). Please reduce their dimensions.`);
       return;
     }
-    
-    console.log("Generating layout with dimensions:", imageDimensions);
-    
-    // Generate layout using our algorithm with selected width and spacing
-    const result = generateLayout(imageDimensions, canvasWidthInches, spacingInches);
-    console.log("Layout result:", result);
-    
-    if (result.positionedImages.length === 0) {
-      toast.error("Failed to generate layout. Please check image dimensions.");
-      return;
-    }
-    
-    // Check for overlaps and show appropriate message
-    const hasOverlaps = result.positionedImages.some((img1, i) => 
-      result.positionedImages.some((img2, j) => 
-        i !== j && 
-        img1.x < img2.x + img2.widthInches && 
-        img1.x + img1.widthInches > img2.x &&
-        img1.y < img2.y + img2.heightInches &&
-        img1.y + img1.heightInches > img2.y
-      )
-    );
-    
-    if (hasOverlaps) {
-      toast.warning("Warning: Some images may overlap in the generated layout.");
-    }
 
-    // Calculate total square inches needed for this layout
-    const sqInches = canvasWidthInches * result.totalHeightInches;
+    // Estimate memory usage before proceeding
+    const prelimEstimate = estimateMemoryUsage(canvasWidthInches, canvasHeightInches, images);
 
-    // Get user's current credit balance
-    const currentCredits = getUserCredits();
-
-    console.log(`[Credit Check] Layout requires ${sqInches.toFixed(2)} sq.in, user has ${currentCredits} credits`);
-
-    // Check if user has enough credits
-    if (currentCredits < sqInches) {
-      console.log("[Credit Check] FAILED - Insufficient credits");
-      // Show modal instead of toast
-      setInsufficientCreditsData({
-        needed: sqInches,
-        available: currentCredits
+    // Show modal for high or critical risk
+    if (prelimEstimate.riskLevel === 'high' || prelimEstimate.riskLevel === 'critical') {
+      setMemoryWarning({
+        isOpen: true,
+        riskLevel: prelimEstimate.riskLevel,
+        memoryMB: prelimEstimate.totalEstimateMB,
+        message: prelimEstimate.warningMessage || ''
       });
-      setShowInsufficientCreditsModal(true);
-      return; // Don't show layout or set state
+      return;
     }
 
-    console.log("[Credit Check] PASSED - Sufficient credits");
-
-    // Credits are sufficient - show confirmation dialog
-    setPendingLayout({
-      positionedImages: result.positionedImages,
-      totalHeightInches: result.totalHeightInches,
-      sqInches: sqInches,
-    });
-    setShowConfirmDialog(true);
+    // Low/medium risk - proceed directly
+    proceedWithGeneration();
   };
 
   const handleConfirmLayout = async () => {
@@ -194,33 +365,38 @@ export const CollageCreator = () => {
     console.log("[Credit Deduction] Starting transaction...");
     console.log(`[Credit Deduction] Current: ${currentCredits}, New: ${newBalance}, Used: ${pendingLayout.sqInches}`);
 
-    // TODO: Fix Outseta custom property update API
-    // Currently blocked by 401 error - need to research correct endpoint
-    // For now, updating UI state only - see TODO.md for details
-
-    // Step 1: ATTEMPT to update credits in Outseta (tries multiple auth methods)
-    // This is wrapped in a try-catch as a temporary workaround
-    let outsetaSyncSuccess = false;
+    // Step 1: Update credits in Outseta using SDK's user.update() method
     try {
-      const updateResult = await updateAccountCreditsWithFallback(accountUid, newBalance);
+      console.log("[Credit Deduction] Getting fresh user object...");
+      const freshUser = await window.Outseta.getUser();
 
-      if (!updateResult.success) {
-        console.warn("[Credit Deduction] ⚠️ Outseta credit sync failed - updated UI only");
-        console.warn("[Credit Deduction] Outseta error:", updateResult.error);
-        console.warn("[Credit Deduction] Credits will be synced after API fix");
-        console.warn("[Credit Deduction] Continuing with local state update and Supabase logging...");
-        // Don't return - continue with the flow
-      } else {
-        console.log("[Credit Deduction] ✅ Outseta update successful");
-        outsetaSyncSuccess = true;
+      if (!freshUser || !freshUser.Account) {
+        throw new Error("Unable to get user account");
       }
+
+      console.log("[Credit Deduction] Updating credits via user.update()...");
+      console.log(`[Credit Deduction] Setting CreditsBalance from ${freshUser.Account.CreditsBalance} to ${newBalance}`);
+
+      // Use the SDK method that we confirmed works: user.update({ Account: { CreditsBalance } })
+      await freshUser.update({
+        Account: {
+          CreditsBalance: newBalance,
+        },
+      });
+
+      console.log("[Credit Deduction] ✅ Outseta update successful!");
     } catch (err) {
-      console.error("[Credit Deduction] ⚠️ Outseta update exception:", err);
-      console.warn("[Credit Deduction] Continuing with local state update...");
-      // Don't return - continue with the flow
+      console.error("[Credit Deduction] ❌ Failed to update credits in Outseta:", err);
+      setErrorDialogData({
+        title: "Credit Update Failed",
+        message: "We couldn't update your credits in Outseta. Please try again or contact support if the problem persists.",
+      });
+      setShowErrorDialog(true);
+      setShowConfirmDialog(false);
+      return; // Stop the flow - don't generate layout if we can't deduct credits
     }
 
-    // Step 2: Log to Supabase (this should work regardless of Outseta sync)
+    // Step 2: Log to Supabase for usage tracking
     const logResult = await logSheetGeneration({
       user_email: user.Email,
       outseta_account_id: accountUid,
@@ -239,40 +415,59 @@ export const CollageCreator = () => {
       console.log("[Credit Deduction] ✅ Supabase logging successful");
     }
 
-    // Step 3: Update local user state with new balance
-    // This ensures the UI reflects the credit deduction even if Outseta sync failed
-    if (!outsetaSyncSuccess && user.Account) {
-      console.log("[Credit Deduction] Updating local state with new balance:", newBalance);
-      // Update the user object in memory to reflect new balance
-      // Note: This won't persist across page refresh if Outseta sync failed
-      user.Account.credits_balance = newBalance;
-      user.Account.creditsBalance = newBalance;
-      user.Account.CreditsBalance = newBalance;
-    }
-
-    // Step 4: Refresh user data from Outseta (will get synced value if successful, or old value if not)
+    // Step 3: Refresh user data from Outseta to update navbar
     await refreshUser();
 
-    // Step 5: Show the layout
-    setLayout(pendingLayout.positionedImages);
-    setCanvasHeightInches(pendingLayout.totalHeightInches);
-    setTotalSqInchesUsed(pendingLayout.sqInches);
+    // Step 4: Convert images to base64 to avoid blob URL issues
+    console.log('🔄 Converting images to base64 for canvas generation...');
+    try {
+      const imagesWithBase64 = await Promise.all(
+        images.map(async (img) => {
+          const base64 = await fileToBase64(img.file);
+          return {
+            ...img,
+            url: base64, // Replace blob URL with base64
+          };
+        })
+      );
+
+      console.log('✅ All images converted to base64');
+      console.log('📸 Images with base64:', imagesWithBase64.length);
+
+      // CRITICAL: Revoke old blob URLs to prevent memory leak
+      debugLog('[Memory] Revoking old blob URLs after base64 conversion');
+      images.forEach(img => {
+        if (img.url && img.url.startsWith('blob:')) {
+          debugLog('[Memory]   - Revoking blob:', img.url.substring(0, 50) + '...');
+          URL.revokeObjectURL(img.url);
+          if (blobUrlsRef && blobUrlsRef.current) {
+            blobUrlsRef.current.delete(img.url);
+          }
+        }
+      });
+      debugLog('[Memory] ✅ Old blob URLs revoked');
+
+      // Now update images state with base64 URLs
+      setImages(imagesWithBase64);
+
+      // Step 5: Show the layout
+      setLayout(pendingLayout.positionedImages);
+      setCanvasHeightInches(pendingLayout.totalHeightInches);
+      setTotalSqInchesUsed(pendingLayout.sqInches);
+    } catch (error) {
+      console.error('❌ Failed to convert images to base64:', error);
+      toast.error('Failed to prepare images for canvas. Please try again.');
+      return;
+    }
 
     // Step 6: Close dialog and show success
     setShowConfirmDialog(false);
     setPendingLayout(null);
 
-    // Show appropriate success message
-    if (outsetaSyncSuccess) {
-      toast.success(`Layout generated! ${formatNumber(pendingLayout.sqInches)} sq.in deducted from your balance.`);
-    } else {
-      toast.success(`Layout generated! ${formatNumber(pendingLayout.sqInches)} sq.in used (UI updated, Outseta sync pending).`);
-    }
+    // Show success message
+    toast.success(`Layout generated! ${formatNumber(pendingLayout.sqInches)} sq.in deducted from your balance.`);
 
-    console.log("[Credit Deduction] Transaction complete!");
-    if (!outsetaSyncSuccess) {
-      console.warn("[Credit Deduction] ⚠️ Note: Credits updated in UI only. Outseta sync failed - see TODO.md");
-    }
+    console.log("[Credit Deduction] ✅ Transaction complete!");
   };
 
   const handleExport = async () => {
@@ -280,19 +475,27 @@ export const CollageCreator = () => {
       toast.error("No layout to export");
       return;
     }
-    
+
+    // Check memory estimate before export (this is the heavy operation)
+    const exportEstimate = estimateMemoryUsage(canvasWidthInches, canvasHeightInches, images);
+
+    if (exportEstimate.riskLevel === 'high') {
+      toast.warning(`High memory usage expected (~${exportEstimate.totalEstimateMB}MB). Export may be slow.`);
+    } else if (exportEstimate.riskLevel === 'critical') {
+      toast.warning(`Critical memory usage (~${exportEstimate.totalEstimateMB}MB). Export may freeze browser.`);
+    }
+
     try {
       setIsExporting(true);
+      toast.info("Generating high-resolution export...");
       const dataUrl = await canvasRef.current.exportCanvas();
-      
-      const link = document.createElement("a");
-      link.download = `print-sheet-${new Date().toISOString().slice(0, 10)}.png`;
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast.success("Print sheet exported successfully!");
+
+      // Add 150 DPI metadata to PNG for professional print quality
+      const pngBlob = await addDpiToPng(dataUrl, 150);
+      const filename = `print-sheet-${new Date().toISOString().slice(0, 10)}.png`;
+      downloadBlob(pngBlob, filename);
+
+      toast.success("Print sheet exported at 150 DPI!");
     } catch (error) {
       toast.error("Failed to export print sheet");
       console.error(error);
@@ -372,7 +575,8 @@ export const CollageCreator = () => {
           >
             Generate Layout
           </Button>
-          
+          <p className="text-xs text-gray-500">Max sheet height: 400"</p>
+
           <Button 
             onClick={handleExport} 
             disabled={layout.length === 0 || isExporting}
@@ -414,10 +618,10 @@ export const CollageCreator = () => {
       {layout.length === 0 && (
         <div className="bg-white rounded-lg shadow-sm border p-6 animate-fade-in">
           <h2 className="text-xl font-semibold mb-4">Upload Images</h2>
-          <ImageUploader onImagesAdded={handleImagesAdded} />
+          <ImageUploader onImagesAdded={handleImagesAdded} currentImageCount={images.length} />
           {images.length > 0 && (
             <div className="mt-4 text-sm text-muted-foreground">
-              {images.length} / 30 images uploaded
+              {images.length} / 40 images uploaded
             </div>
           )}
         </div>
@@ -514,6 +718,52 @@ export const CollageCreator = () => {
           title={errorDialogData.title}
           message={errorDialogData.message}
         />
+      )}
+
+      {/* Memory Warning Modal */}
+      <MemoryWarningModal
+        isOpen={memoryWarning.isOpen}
+        onClose={() => setMemoryWarning(prev => ({ ...prev, isOpen: false }))}
+        onProceed={proceedWithGeneration}
+        riskLevel={memoryWarning.riskLevel}
+        memoryMB={memoryWarning.memoryMB}
+        message={memoryWarning.message}
+      />
+
+      {/* Loading Overlay - Layout Generation */}
+      {isGenerating && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4 text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 mx-auto mb-4"></div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">
+              Generating Layout...
+            </h3>
+            <p className="text-slate-600 mb-4">
+              Please wait while we create your optimized layout.
+            </p>
+            <p className="text-sm text-slate-500">
+              Do not refresh or close this page
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Overlay - Export */}
+      {isExporting && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4 text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">
+              Exporting High-Resolution PNG...
+            </h3>
+            <p className="text-slate-600 mb-4">
+              Creating 150 DPI print-ready file.
+            </p>
+            <p className="text-sm text-slate-500">
+              This may take 5-15 seconds for large layouts
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -6,20 +6,47 @@ import { ImagePlus, X, Image as ImageIcon } from "lucide-react";
 import { ImageObject } from "./CollageCreator";
 import { toast } from "sonner";
 
+// File and count limits to prevent memory issues
+const MAX_FILE_SIZE_MB = 30; // Maximum size per file
+const MAX_TOTAL_IMAGES = 40; // Maximum number of images
+
 interface ImageUploaderProps {
   onImagesAdded: (images: ImageObject[]) => void;
+  currentImageCount?: number; // Track how many images are already uploaded
 }
 
-export const ImageUploader = ({ onImagesAdded }: ImageUploaderProps) => {
+export const ImageUploader = ({ onImagesAdded, currentImageCount = 0 }: ImageUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleFiles = useCallback(
     (files: FileList) => {
       const fileArray = Array.from(files);
       const imageFiles = fileArray.filter((file) => file.type.startsWith("image/"));
-      
+
       if (imageFiles.length === 0) {
         toast.error("Please upload image files only");
+        return;
+      }
+
+      // Check total count limit
+      if (currentImageCount + imageFiles.length > MAX_TOTAL_IMAGES) {
+        toast.error(
+          `Maximum ${MAX_TOTAL_IMAGES} images allowed. You have ${currentImageCount} images and are trying to add ${imageFiles.length} more.`
+        );
+        return;
+      }
+
+      // Check for oversized files - block only, no warnings
+      const oversizedFiles = imageFiles.filter(
+        (f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024
+      );
+      if (oversizedFiles.length > 0) {
+        const fileList = oversizedFiles
+          .map((f) => `• ${f.name} (${(f.size / (1024 * 1024)).toFixed(1)}MB)`)
+          .join("\n");
+        toast.error(
+          `Files exceed ${MAX_FILE_SIZE_MB}MB limit:\n${fileList}\n\nPlease compress or resize these images.`
+        );
         return;
       }
 
@@ -31,7 +58,7 @@ export const ImageUploader = ({ onImagesAdded }: ImageUploaderProps) => {
 
       onImagesAdded(imageObjects);
     },
-    [onImagesAdded]
+    [onImagesAdded, currentImageCount]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {

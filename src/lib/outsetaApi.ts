@@ -264,5 +264,161 @@ export async function updateAccountCreditsWithFallback(
   };
 }
 
+/**
+ * NEW APPROACH: Update credits using Outseta SDK's user.update() method
+ * This uses the client-side SDK directly instead of REST API calls
+ * @param newBalance - The new credit balance to set
+ * @returns Object with success status, optional error message, and optional response data
+ */
+export async function updateCreditsViaSDK(
+  newBalance: number
+): Promise<{ success: boolean; error?: string; data?: any }> {
+  console.log('[Outseta SDK] Starting credit update via user.update()...');
+  console.log(`[Outseta SDK] New Balance: ${newBalance}`);
+
+  try {
+    // Validate input
+    if (typeof newBalance !== 'number' || newBalance < 0) {
+      const error = 'New balance must be a non-negative number';
+      console.error('[Outseta SDK] Validation error:', error);
+      return { success: false, error };
+    }
+
+    // Get fresh user object
+    if (!window.Outseta) {
+      const error = 'Outseta SDK not loaded';
+      console.error('[Outseta SDK]', error);
+      return { success: false, error };
+    }
+
+    console.log('[Outseta SDK] Getting fresh user object...');
+    const user = await window.Outseta.getUser();
+
+    if (!user) {
+      const error = 'No user found. User may not be authenticated.';
+      console.error('[Outseta SDK]', error);
+      return { success: false, error };
+    }
+
+    if (!user.Account) {
+      const error = 'User has no Account object';
+      console.error('[Outseta SDK]', error);
+      return { success: false, error };
+    }
+
+    console.log('[Outseta SDK] Current user:', {
+      email: user.Email,
+      accountUid: user.Account.Uid,
+      currentCredits: user.Account.CreditsBalance,
+    });
+
+    // Check if user has update method
+    if (typeof user.update !== 'function') {
+      const error = 'User object does not have update() method';
+      console.error('[Outseta SDK]', error);
+      return { success: false, error };
+    }
+
+    console.log('[Outseta SDK] user.update() method found!');
+
+    // APPROACH 1: Try updating with nested Account object
+    console.log('[Outseta SDK] Approach 1: Updating with nested Account.CreditsBalance...');
+    const updatePayload1 = {
+      Account: {
+        CreditsBalance: newBalance,
+      },
+    };
+    console.log('[Outseta SDK] Update payload:', JSON.stringify(updatePayload1, null, 2));
+
+    try {
+      const result = await user.update(updatePayload1);
+      console.log('[Outseta SDK] Approach 1 SUCCESS!');
+      console.log('[Outseta SDK] Update result:', result);
+
+      // Verify the update
+      const updatedUser = await window.Outseta.getUser();
+      console.log('[Outseta SDK] New credits balance:', updatedUser?.Account?.CreditsBalance);
+
+      return {
+        success: true,
+        data: {
+          method: 'user.update({ Account: { CreditsBalance } })',
+          result,
+          newBalance: updatedUser?.Account?.CreditsBalance,
+        },
+      };
+    } catch (error1) {
+      console.log('[Outseta SDK] Approach 1 failed:', error1);
+
+      // APPROACH 2: Try modifying user object directly then calling update
+      console.log('[Outseta SDK] Approach 2: Modifying user object directly then calling update...');
+      user.Account.CreditsBalance = newBalance;
+      console.log('[Outseta SDK] Modified user.Account.CreditsBalance to:', newBalance);
+      console.log('[Outseta SDK] Calling user.update(user)...');
+
+      try {
+        const result = await user.update(user);
+        console.log('[Outseta SDK] Approach 2 SUCCESS!');
+        console.log('[Outseta SDK] Update result:', result);
+
+        // Verify the update
+        const updatedUser = await window.Outseta.getUser();
+        console.log('[Outseta SDK] New credits balance:', updatedUser?.Account?.CreditsBalance);
+
+        return {
+          success: true,
+          data: {
+            method: 'user.update(user) after modifying property',
+            result,
+            newBalance: updatedUser?.Account?.CreditsBalance,
+          },
+        };
+      } catch (error2) {
+        console.log('[Outseta SDK] Approach 2 failed:', error2);
+
+        // APPROACH 3: Try calling update with no parameters
+        console.log('[Outseta SDK] Approach 3: Calling user.update() with no params...');
+        user.Account.CreditsBalance = newBalance;
+
+        try {
+          const result = await user.update();
+          console.log('[Outseta SDK] Approach 3 SUCCESS!');
+          console.log('[Outseta SDK] Update result:', result);
+
+          // Verify the update
+          const updatedUser = await window.Outseta.getUser();
+          console.log('[Outseta SDK] New credits balance:', updatedUser?.Account?.CreditsBalance);
+
+          return {
+            success: true,
+            data: {
+              method: 'user.update() after modifying property',
+              result,
+              newBalance: updatedUser?.Account?.CreditsBalance,
+            },
+          };
+        } catch (error3) {
+          console.error('[Outseta SDK] All approaches failed');
+          console.error('[Outseta SDK] Error 1:', error1);
+          console.error('[Outseta SDK] Error 2:', error2);
+          console.error('[Outseta SDK] Error 3:', error3);
+
+          return {
+            success: false,
+            error: `All SDK update approaches failed. Errors: ${error1}, ${error2}, ${error3}`,
+          };
+        }
+      }
+    }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('[Outseta SDK] Exception during credit update:', err);
+    return {
+      success: false,
+      error: `SDK error: ${errorMessage}`,
+    };
+  }
+}
+
 // Backwards compatibility alias
 export const updateCreditsBalance = updateAccountCreditsWithFallback;

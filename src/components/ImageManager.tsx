@@ -56,8 +56,8 @@ export const ImageManager = ({
           const widthPixels = imageEl.naturalWidth;
           const heightPixels = imageEl.naturalHeight;
           
-          // Assume 300 DPI as standard for calculating initial inch dimensions
-          const standardDpi = 300;
+          // Assume 150 DPI as standard for calculating initial inch dimensions (matches export resolution)
+          const standardDpi = 150;
           const widthInches = parseFloat((widthPixels / standardDpi).toFixed(2));
           const heightInches = parseFloat((heightPixels / standardDpi).toFixed(2));
           
