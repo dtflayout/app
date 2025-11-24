@@ -1,4 +1,68 @@
-# Welcome to your Lovable project
+Change all 8 design placeholder boxes to mint/emerald gradient:
+
+TASK: Replace all colorful gradients on the design boxes with uniform mint/emerald color
+
+CHANGES NEEDED:
+
+Replace ALL 8 boxes with the same mint/emerald gradient:
+
+FROM (colorful - different colors):
+- from-purple-400 to-pink-500
+- from-orange-400 to-red-500
+- from-cyan-400 to-blue-500
+- from-green-400 to-emerald-500
+- from-pink-400 to-purple-500
+- from-yellow-400 to-orange-500
+- from-teal-400 to-cyan-500
+- from-indigo-400 to-purple-500
+
+TO (all mint/emerald):
+bg-gradient-to-br from-cyan-100 to-emerald-200
+
+OR for slightly more visible boxes:
+bg-gradient-to-br from-emerald-100 to-teal-200
+
+UPDATED GRID CODE:
+-----------------
+
+{/* Grid of different-sized design placeholders - ALL MINT/EMERALD */}
+<div className="relative w-full h-full flex flex-col gap-4">
+  
+  {/* Row 1 - Two different sized boxes */}
+  <div className="flex gap-4 h-[25%]">
+    <div className="w-[40%] bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
+    <div className="flex-1 bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
+  </div>
+  
+  {/* Row 2 - One wide box */}
+  <div className="h-[20%]">
+    <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
+  </div>
+  
+  {/* Row 3 - Three different sized boxes */}
+  <div className="flex gap-4 h-[30%]">
+    <div className="w-[30%] bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
+    <div className="w-[45%] bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
+    <div className="flex-1 bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
+  </div>
+  
+  {/* Row 4 - Two boxes */}
+  <div className="flex gap-4 flex-1">
+    <div className="flex-1 bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
+    <div className="w-[35%] bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
+  </div>
+  
+</div>
+
+SUMMARY:
+--------
+✅ All 8 boxes now use: from-emerald-100 to-teal-200
+✅ Uniform, cohesive color scheme
+✅ Subtle mint/emerald gradient throughout
+✅ Professional, clean look
+✅ Matches background blobs
+
+Show me the updated design with all mint/emerald boxes!# Welcome to your Lovable project
 
 ## Project info
 
