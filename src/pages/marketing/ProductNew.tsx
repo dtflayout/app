@@ -1,254 +1,19 @@
-import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import MarketingLayout from "@/components/marketing/MarketingLayout";
+import FeatureCard from "@/components/marketing/FeatureCard";
 import GradientButton from "@/components/marketing/GradientButton";
-import { Star, ChevronLeft, ChevronRight } from "lucide-react";
-
-// Testimonial Data
-const testimonials = [
-  {
-    name: "Rajesh Kumar",
-    role: "DTF Print Shop Owner, Mumbai",
-    photo: "https://randomuser.me/api/portraits/men/32.jpg",
-    quote: "This tool has completely transformed our workflow. What used to take hours now takes minutes. The automatic layout saves us so much material!",
-  },
-  {
-    name: "Priya Sharma",
-    role: "Custom T-Shirt Business, Delhi",
-    photo: "https://randomuser.me/api/portraits/women/44.jpg",
-    quote: "Finally, a DTF sheet creator that understands print shop needs. The aspect ratio preservation is perfect every time. Highly recommended!",
-  },
-  {
-    name: "Amit Patel",
-    role: "Textile Printing Unit, Surat",
-    photo: "https://randomuser.me/api/portraits/men/67.jpg",
-    quote: "We've reduced our film waste by 40% since using this tool. The intelligent auto-arrangement is a game changer for our production.",
-  },
-];
-
-// DESIGN OPTION 1 - Cards in a Row
-const TestimonialsOption1 = () => {
-  return (
-    <section className="py-20 bg-gradient-to-b from-white to-slate-50">
-      <div className="container max-w-7xl mx-auto px-6">
-        {/* Design Label */}
-        <div className="text-center mb-4">
-          <span className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-bold">
-            DESIGN OPTION 1
-          </span>
-        </div>
-
-        {/* Section Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
-            What Our Customers Say
-          </h2>
-          <p className="text-lg text-slate-600">
-            Trusted by print professionals across India
-          </p>
-        </div>
-
-        {/* Cards Grid */}
-        <div className="grid md:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8 hover:shadow-xl transition-shadow"
-            >
-              {/* Quote Icon */}
-              <div className="mb-6">
-                <svg className="w-10 h-10 text-emerald-500 opacity-50" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-                </svg>
-              </div>
-
-              {/* Quote */}
-              <p className="text-slate-700 text-lg leading-relaxed mb-6">
-                "{testimonial.quote}"
-              </p>
-
-              {/* Author */}
-              <div className="flex items-center gap-4">
-                <img
-                  src={testimonial.photo}
-                  alt={testimonial.name}
-                  className="w-14 h-14 rounded-full object-cover border-2 border-emerald-200"
-                />
-                <div>
-                  <h4 className="font-bold text-slate-900">{testimonial.name}</h4>
-                  <p className="text-sm text-slate-600">{testimonial.role}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-// DESIGN OPTION 2 - Carousel/Slider Style
-const TestimonialsOption2 = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  const nextSlide = () => {
-    setCurrentIndex((prev) => (prev + 1) % testimonials.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-  };
-
-  const current = testimonials[currentIndex];
-
-  return (
-    <section className="py-20 bg-gradient-to-br from-emerald-50 via-white to-teal-50">
-      <div className="container max-w-5xl mx-auto px-6">
-        {/* Design Label */}
-        <div className="text-center mb-4">
-          <span className="inline-block px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-bold">
-            DESIGN OPTION 2
-          </span>
-        </div>
-
-        {/* Section Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
-            Trusted by Print Professionals
-          </h2>
-          <p className="text-lg text-slate-600">
-            Hear from our satisfied customers
-          </p>
-        </div>
-
-        {/* Carousel Card */}
-        <div className="relative">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 p-10 md:p-16 text-center">
-            {/* Large Photo */}
-            <div className="mb-8">
-              <img
-                src={current.photo}
-                alt={current.name}
-                className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover mx-auto border-4 border-emerald-300 shadow-lg"
-              />
-            </div>
-
-            {/* Quote */}
-            <div className="mb-8">
-              <svg className="w-12 h-12 text-emerald-400 opacity-40 mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-              </svg>
-              <p className="text-xl md:text-2xl text-slate-700 leading-relaxed max-w-3xl mx-auto">
-                "{current.quote}"
-              </p>
-            </div>
-
-            {/* Author */}
-            <div>
-              <h4 className="text-xl font-bold text-slate-900">{current.name}</h4>
-              <p className="text-slate-600">{current.role}</p>
-            </div>
-          </div>
-
-          {/* Navigation Arrows */}
-          <button
-            onClick={prevSlide}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-6 w-12 h-12 bg-white rounded-full shadow-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
-          >
-            <ChevronLeft className="w-6 h-6 text-slate-600" />
-          </button>
-          <button
-            onClick={nextSlide}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-6 w-12 h-12 bg-white rounded-full shadow-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
-          >
-            <ChevronRight className="w-6 h-6 text-slate-600" />
-          </button>
-        </div>
-
-        {/* Navigation Dots */}
-        <div className="flex justify-center gap-3 mt-8">
-          {testimonials.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={`w-3 h-3 rounded-full transition-all ${
-                index === currentIndex
-                  ? "bg-emerald-500 w-8"
-                  : "bg-slate-300 hover:bg-slate-400"
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-// DESIGN OPTION 3 - Masonry/Staggered Layout with Stars
-const TestimonialsOption3 = () => {
-  return (
-    <section className="py-20 bg-gradient-to-b from-slate-50 to-white">
-      <div className="container max-w-7xl mx-auto px-6">
-        {/* Design Label */}
-        <div className="text-center mb-4">
-          <span className="inline-block px-4 py-2 bg-orange-100 text-orange-700 rounded-full text-sm font-bold">
-            DESIGN OPTION 3
-          </span>
-        </div>
-
-        {/* Section Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
-            Love from Our Users
-          </h2>
-          <p className="text-lg text-slate-600">
-            Real feedback from real businesses
-          </p>
-        </div>
-
-        {/* Masonry Grid */}
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map((testimonial, index) => (
-            <div
-              key={index}
-              className={`bg-white rounded-2xl shadow-lg border border-slate-200 p-6 hover:shadow-xl transition-all hover:-translate-y-1 ${
-                index === 1 ? "md:mt-8" : index === 2 ? "md:mt-4" : ""
-              }`}
-            >
-              {/* Star Rating */}
-              <div className="flex gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className="w-5 h-5 fill-yellow-400 text-yellow-400"
-                  />
-                ))}
-              </div>
-
-              {/* Quote */}
-              <p className="text-slate-700 leading-relaxed mb-6">
-                "{testimonial.quote}"
-              </p>
-
-              {/* Author */}
-              <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
-                <img
-                  src={testimonial.photo}
-                  alt={testimonial.name}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-                <div>
-                  <h4 className="font-semibold text-slate-900 text-sm">{testimonial.name}</h4>
-                  <p className="text-xs text-slate-500">{testimonial.role}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
+import {
+  Image,
+  Layers,
+  Maximize2,
+  Settings,
+  FileOutput,
+  Scan,
+  Factory,
+  Users,
+  Sparkles,
+} from "lucide-react";
 
 // Lock Aspect Ratio Card Component with functional toggle
 const LockAspectRatioCard = () => {
@@ -333,286 +98,136 @@ const LockAspectRatioCard = () => {
   );
 };
 
-const Home = () => {
+const ProductNew = () => {
   const navigate = useNavigate();
 
   return (
     <MarketingLayout>
-      {/* Hero Section with Vibrant Gradient and Pattern */}
-      <section
-        className="relative py-20 overflow-hidden animate-gradient-slow"
-        style={{
-          backgroundImage: 'linear-gradient(135deg, #10b981, #14b8a6, #2dd4bf, #06b6d4, #0ea5e9, #3b82f6)',
-          backgroundSize: '400% 400%',
-        }}
-      >
-        {/* Dot Pattern Overlay */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.5) 2px, transparent 1px)',
-            backgroundSize: '36px 36px',
-          }}
-        />
-
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-transparent" />
-
-        {/* Animated Gradient Orbs */}
-        <div className="absolute top-20 left-10 w-64 h-64 bg-emerald-400/30 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-10 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-700" />
-
-        <div className="relative container max-w-7xl mx-auto px-6">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left: Content */}
-            <div className="text-white">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold mb-6 leading-tight">
-                Create Professional DTF Print Collages in Minutes
-              </h1>
-              <p className="text-xl md:text-2xl mb-10 text-white/95 leading-relaxed">
-                Transform your DTF printing workflow with intelligent collages. Upload hundreds of images, auto-arrange them perfectly, and maximize efficiency like never before.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 items-start">
-                <GradientButton
-                  variant="white"
-                  size="xl"
-                  onClick={() => navigate("/auth")}
-                  className="group"
-                >
-                  <span>Start Free Trial</span>
-                  <svg
-                    className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 7l5 5m0 0l-5 5m5-5H6"
-                    />
-                  </svg>
-                </GradientButton>
-                <GradientButton
-                  variant="outline"
-                  size="xl"
-                  onClick={() => navigate("/product")}
-                >
-                  Learn More
-                </GradientButton>
-              </div>
-              <p className="mt-6 text-white/80 text-sm">
-                No credit card required • 14-day free trial • Cancel anytime
-              </p>
-            </div>
-
-            {/* Right: Hero Visual - Portrait Browser Mockup */}
-            <div className="hidden lg:block">
-              <div className="relative">
-                {/* Floating Animation */}
-                <div className="animate-float">
-
-                  {/* Browser Window - Portrait orientation */}
-                  <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden w-[600px] h-[750px] xl:w-[600px] xl:h-[750px] lg:w-[500px] lg:h-[650px]">
-
-                    {/* Browser Title Bar */}
-                    <div className="bg-slate-100 px-4 py-3 border-b border-slate-200 flex items-center gap-2">
-                      {/* macOS dots */}
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      </div>
-                      {/* Title */}
-                      <div className="flex-1 text-center">
-                        <span className="text-sm text-slate-600 font-medium">DTF Collage Creator</span>
-                      </div>
-                    </div>
-
-                    {/* Print Sheet Content Area */}
-                    <div className="relative h-full bg-gradient-to-br from-slate-50 to-slate-100 p-8">
-
-                      {/* Print Sheet - CHECKERBOARD BACKGROUND with flex layout */}
-                      <div className="relative w-full h-[calc(100%-40px)] checkerboard-print-sheet rounded-xl shadow-lg border-2 border-slate-200 p-6 flex flex-col">
-
-                        {/* Grid of mint/emerald gradient boxes */}
-                        <div className="relative w-full flex-1 flex flex-col gap-4 mb-4">
-
-                          {/* Row 1 */}
-                          <div className="flex gap-4 h-[25%]">
-                            <div className="w-[40%] bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
-                            <div className="flex-1 bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
-                          </div>
-
-                          {/* Row 2 */}
-                          <div className="h-[20%]">
-                            <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
-                          </div>
-
-                          {/* Row 3 */}
-                          <div className="flex gap-4 h-[30%]">
-                            <div className="w-[30%] bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
-                            <div className="w-[45%] bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
-                            <div className="flex-1 bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
-                          </div>
-
-                          {/* Row 4 */}
-                          <div className="flex gap-4 flex-1">
-                            <div className="flex-1 bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
-                            <div className="w-[35%] bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
-                          </div>
-
-                        </div>
-
-                        {/* Button - INSIDE WHITE CARD, DIRECTLY BELOW BOXES */}
-                        <div className="w-full">
-                          <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-4 px-6 rounded-xl shadow-lg flex items-center justify-center">
-                            <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                            <span className="text-lg font-bold">Print File is Ready</span>
-                          </div>
-                        </div>
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-                {/* Decorative gradient blobs - ALL SOFT MINT/EMERALD */}
-                <div className="absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br from-cyan-100 to-emerald-200 rounded-full blur-3xl opacity-40 -z-10"></div>
-                <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-gradient-to-br from-cyan-100 to-emerald-200 rounded-full blur-3xl opacity-40 -z-10"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Main wrapper with gradient background */}
       <div
         style={{
           background: 'linear-gradient(135deg, #ecfdf5 0%, #ede9fe 50%, #fce7f3 100%)',
         }}
       >
-      {/* How It Works Section */}
-      <section className="py-24">
-        <div className="container mx-auto px-4">
-
-          {/* Section Header */}
-          <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
-              How It Works - 3 Simple Steps
-            </h2>
-            <p className="text-xl text-slate-600">
-              Create Your DTF Print Sheet in Minutes
-            </p>
+        {/* Hero Section */}
+        <section className="pt-12 md:pt-16 pb-8 md:pb-12">
+          <div className="container max-w-7xl mx-auto px-6">
+            <div className="max-w-4xl mx-auto text-center">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold mb-6 text-slate-900 leading-tight">
+                No Photoshop skills needed
+              </h1>
+              <p className="text-xl md:text-2xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+                Just follow 3 simple steps and your DTF print sheet is ready.
+              </p>
+            </div>
           </div>
+        </section>
 
-          {/* 3 Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-7xl mx-auto">
+        {/* How It Works Section */}
+        <section className="py-12">
+          <div className="container mx-auto px-4">
 
-            {/* CARD 1: Upload Your Files */}
-            <div className="relative bg-white rounded-2xl shadow-xl border border-slate-200 p-8 hover:shadow-2xl transition-shadow">
+            {/* 3 Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-7xl mx-auto">
 
-              {/* Step Number Badge */}
-              <div className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg">
-                1
-              </div>
+              {/* CARD 1: Upload Your Files */}
+              <div className="relative bg-white rounded-2xl shadow-xl border border-slate-200 p-8 hover:shadow-2xl transition-shadow">
 
-              {/* Visual - Upload Zone */}
-              <div className="mb-6 mt-4">
-                <div className="relative bg-slate-50 border-2 border-dashed border-emerald-400 rounded-xl p-8 h-64 flex flex-col items-center">
+                {/* Step Number Badge */}
+                <div className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                  1
+                </div>
 
-                  {/* Content positioned at TOP - PULLED UP */}
-                  <div className="flex flex-col items-center pt-2">
-                    {/* Upload Icon */}
-                    <div className="mb-3">
-                      <svg className="w-14 h-14 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
+                {/* Visual - Upload Zone */}
+                <div className="mb-6 mt-4">
+                  <div className="relative bg-slate-50 border-2 border-dashed border-emerald-400 rounded-xl p-8 h-64 flex flex-col items-center">
+
+                    {/* Content positioned at TOP - PULLED UP */}
+                    <div className="flex flex-col items-center pt-2">
+                      {/* Upload Icon */}
+                      <div className="mb-3">
+                        <svg className="w-14 h-14 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                      </div>
+                      <p className="text-emerald-600 font-bold text-base mb-1.5">DROP FILES HERE</p>
+                      <p className="text-slate-700 text-sm font-semibold">or click to browse</p>
                     </div>
-                    <p className="text-emerald-600 font-bold text-base mb-1.5">DROP FILES HERE</p>
-                    <p className="text-slate-700 text-sm font-semibold">or click to browse</p>
-                  </div>
 
-                  {/* Floating Image Thumbnails - KEEP SAME POSITION */}
-                  <div className="absolute bottom-4 left-4 right-4 flex gap-2 justify-center">
-                    <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg shadow-md transform -rotate-6"></div>
-                    <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg shadow-md transform rotate-3"></div>
-                    <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg shadow-md transform -rotate-3"></div>
+                    {/* Floating Image Thumbnails - KEEP SAME POSITION */}
+                    <div className="absolute bottom-4 left-4 right-4 flex gap-2 justify-center">
+                      <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg shadow-md transform -rotate-6"></div>
+                      <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg shadow-md transform rotate-3"></div>
+                      <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg shadow-md transform -rotate-3"></div>
+                    </div>
                   </div>
                 </div>
+
+                {/* Title */}
+                <h3 className="text-2xl font-bold text-slate-900 mb-3">
+                  Upload Your Files
+                </h3>
+
+                {/* Description */}
+                <p className="text-slate-600 leading-relaxed">
+                  Simply drag and drop your PNG artwork — instant previews make it effortless to get started.
+                </p>
               </div>
 
-              {/* Title */}
-              <h3 className="text-2xl font-bold text-slate-900 mb-3">
-                Upload Your Files
-              </h3>
+              {/* CARD 2: Set the Dimensions */}
+              <LockAspectRatioCard />
 
-              {/* Description */}
-              <p className="text-slate-600 leading-relaxed">
-                Simply drag and drop your PNG artwork — instant previews make it effortless to get started.
-              </p>
-            </div>
+              {/* CARD 3: Generate Sheet */}
+              <div className="relative bg-white rounded-2xl shadow-xl border border-slate-200 p-8 hover:shadow-2xl transition-shadow">
 
-            {/* CARD 2: Set the Dimensions */}
-            <LockAspectRatioCard />
-
-            {/* CARD 3: Generate Sheet */}
-            <div className="relative bg-white rounded-2xl shadow-xl border border-slate-200 p-8 hover:shadow-2xl transition-shadow">
-
-              {/* Step Number Badge */}
-              <div className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg">
-                3
-              </div>
-
-              {/* Visual - Mini Collage Preview */}
-              <div className="mb-6 mt-4">
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-
-                  {/* Mini Grid Layout */}
-                  <div className="grid grid-cols-3 gap-2 mb-4 h-40">
-                    <div className="bg-gradient-to-br from-emerald-100 to-teal-200 rounded-lg"></div>
-                    <div className="bg-gradient-to-br from-emerald-100 to-teal-200 rounded-lg col-span-2"></div>
-                    <div className="bg-gradient-to-br from-emerald-100 to-teal-200 rounded-lg col-span-2"></div>
-                    <div className="bg-gradient-to-br from-emerald-100 to-teal-200 rounded-lg"></div>
-                    <div className="bg-gradient-to-br from-emerald-100 to-teal-200 rounded-lg col-span-3"></div>
-                  </div>
-
-                  {/* Generate Button */}
-                  <button className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    <span>Generate Sheet</span>
-                  </button>
-
+                {/* Step Number Badge */}
+                <div className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                  3
                 </div>
+
+                {/* Visual - Mini Collage Preview */}
+                <div className="mb-6 mt-4">
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+
+                    {/* Mini Grid Layout */}
+                    <div className="grid grid-cols-3 gap-2 mb-4 h-40">
+                      <div className="bg-gradient-to-br from-emerald-100 to-teal-200 rounded-lg"></div>
+                      <div className="bg-gradient-to-br from-emerald-100 to-teal-200 rounded-lg col-span-2"></div>
+                      <div className="bg-gradient-to-br from-emerald-100 to-teal-200 rounded-lg col-span-2"></div>
+                      <div className="bg-gradient-to-br from-emerald-100 to-teal-200 rounded-lg"></div>
+                      <div className="bg-gradient-to-br from-emerald-100 to-teal-200 rounded-lg col-span-3"></div>
+                    </div>
+
+                    {/* Generate Button */}
+                    <button className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      <span>Generate Sheet</span>
+                    </button>
+
+                  </div>
+                </div>
+
+                {/* Title */}
+                <h3 className="text-2xl font-bold text-slate-900 mb-3">
+                  Generate Sheet
+                </h3>
+
+                {/* Description */}
+                <p className="text-slate-600 leading-relaxed">
+                  With one click, your images are arranged into a clean, print-ready sheet ready to download.
+                </p>
               </div>
 
-              {/* Title */}
-              <h3 className="text-2xl font-bold text-slate-900 mb-3">
-                Generate Sheet
-              </h3>
-
-              {/* Description */}
-              <p className="text-slate-600 leading-relaxed">
-                With one click, your images are arranged into a clean, print-ready sheet ready to download.
-              </p>
             </div>
 
           </div>
-
-        </div>
-      </section>
+        </section>
 
       {/* CTA Section with Gradient and Pattern */}
       <section
-        className="relative bg-gradient-to-br from-emerald-400 via-teal-500 to-blue-600 py-24 mt-8"
+        className="relative bg-gradient-to-br from-emerald-400 via-teal-500 to-blue-600 py-24 mt-12"
         style={{
           backgroundImage: `
             radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
@@ -659,7 +274,7 @@ const Home = () => {
       {/* Features Section - Alternating Layout */}
 
       {/* Section 1: Easy Upload - Text LEFT, Image RIGHT */}
-      <section className="py-12 lg:py-16">
+      <section className="pt-20 lg:pt-28 pb-12 lg:pb-16">
         <div className="container max-w-7xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Text Column */}
@@ -1391,14 +1006,164 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Testimonial Sections - 3 Design Options for Review */}
-      <TestimonialsOption1 />
-      <TestimonialsOption2 />
-      <TestimonialsOption3 />
+      {/* Core Features */}
+      <section className="py-24">
+        <div className="container max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="inline-block mb-4">
+              <span className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full text-sm font-semibold">
+                Core Features
+              </span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4 leading-tight">
+              Everything You Need
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+              Powerful tools in one seamless platform
+            </p>
+          </div>
 
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <FeatureCard
+              icon={<Image className="w-8 h-8 text-emerald-600" />}
+              title="Auto DTF Sheet Builder"
+              description="Upload your images, set your sheet dimensions, and get an auto-generated print-optimized DTF sheet with preserved aspect ratios and perfect scaling."
+            />
+            <FeatureCard
+              icon={<Layers className="w-8 h-8 text-emerald-600" />}
+              title="Next-Gen Auto Layouts"
+              description="No more hours arranging images — our app auto-builds and balances DTF collage layouts in seconds."
+            />
+            <FeatureCard
+              icon={<Maximize2 className="w-8 h-8 text-emerald-600" />}
+              title="Custom Canvas Sizes"
+              description="Supports two standard DTF sheet widths: 11 inch and 23 inch, optimized for automatic layout and print-ready output."
+            />
+            <FeatureCard
+              icon={<Settings className="w-8 h-8 text-emerald-600" />}
+              title="Advanced Controls"
+              description="Intelligent system automatically handles spacing, rotation, alignment and layout optimization for perfect DTF sheet structure."
+            />
+            <FeatureCard
+              icon={<FileOutput className="w-8 h-8 text-emerald-600" />}
+              title="Export Options"
+              description="Export your DTF sheets in PNG with 150 DPI or 300 DPI output, optimized for print quality and accurate sizing."
+            />
+            <FeatureCard
+              icon={<Scan className="w-8 h-8 text-emerald-600" />}
+              title="Perfect Aspect Ratio"
+              description="Maintains original image aspect ratio while scaling and arranging DTF print sheets for accurate size and placement."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Use Cases */}
+      <section className="py-24">
+        <div className="container max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="inline-block mb-4">
+              <span className="px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-sm font-semibold">
+                Use Cases
+              </span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4 leading-tight">
+              Built for Print Professionals
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+              Trusted by businesses of all sizes, from startups to enterprises
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <FeatureCard
+              icon={<Sparkles className="w-8 h-8 text-emerald-600" />}
+              title="Small Businesses"
+              description="Get started quickly with easy-to-use tools and affordable pricing. Perfect for solo entrepreneurs and small teams."
+            />
+            <FeatureCard
+              icon={<Users className="w-8 h-8 text-emerald-600" />}
+              title="Print Shops"
+              description="Handle high-volume orders efficiently with batch processing, templates, and team collaboration features."
+            />
+            <FeatureCard
+              icon={<Factory className="w-8 h-8 text-emerald-600" />}
+              title="Production Facilities"
+              description="Scale operations with enterprise-grade DTF sheet outputs, higher processing bandwidth, and dedicated support for business needs."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Advanced Features */}
+      <section className="py-24">
+        <div className="container max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="inline-block mb-4">
+              <span className="px-4 py-2 bg-purple-50 text-purple-600 rounded-full text-sm font-semibold">
+                Advanced
+              </span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4 leading-tight">
+              Pro-Level Capabilities
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+              Take your workflow to the next level
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            <div className="group bg-white rounded-2xl p-10 shadow-lg hover:shadow-2xl transition-all duration-300 border border-slate-100 hover:scale-105 transform">
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">
+                Smart Templates
+              </h3>
+              <p className="text-slate-600 leading-relaxed mb-6">
+                Save your frequently used layouts as templates. Apply them to new projects with one click and maintain consistency across all orders.
+              </p>
+              <ul className="space-y-3 text-slate-600">
+                <li className="flex items-start">
+                  <span className="text-emerald-600 mr-3 text-lg">✓</span>
+                  Save unlimited templates
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-600 mr-3 text-lg">✓</span>
+                  Share with team members
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-600 mr-3 text-lg">✓</span>
+                  Version control included
+                </li>
+              </ul>
+            </div>
+
+            <div className="group bg-white rounded-2xl p-10 shadow-lg hover:shadow-2xl transition-all duration-300 border border-slate-100 hover:scale-105 transform">
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">
+                Batch Processing
+              </h3>
+              <p className="text-slate-600 leading-relaxed mb-6">
+                Process multiple collages simultaneously. Perfect for high-volume operations that need to maintain speed without sacrificing quality.
+              </p>
+              <ul className="space-y-3 text-slate-600">
+                <li className="flex items-start">
+                  <span className="text-emerald-600 mr-3 text-lg">✓</span>
+                  Queue unlimited jobs
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-600 mr-3 text-lg">✓</span>
+                  Background processing
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-600 mr-3 text-lg">✓</span>
+                  Priority queue support
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
       </div>
     </MarketingLayout>
   );
 };
 
-export default Home;
+export default ProductNew;

@@ -29,7 +29,10 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
   const navLinks = [
     { label: "Home", href: "/" },
     { label: "Product", href: "/product" },
+    { label: "Product New", href: "/product-new" },
     { label: "Pricing", href: "/pricing" },
+    { label: "Pricing New", href: "/pricing-new" },
+    { label: "Pricing 3", href: "/pricing-3" },
     { label: "Contact", href: "/contact" },
   ];
 

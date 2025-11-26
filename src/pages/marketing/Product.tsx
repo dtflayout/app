@@ -78,8 +78,8 @@ const Product = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <FeatureCard
               icon={<Image className="w-8 h-8 text-emerald-600" />}
-              title="Bulk Image Processing"
-              description="Upload and process hundreds of images at once. Automatic resizing, optimization, and format conversion included."
+              title="Auto DTF Sheet Builder"
+              description="Upload your images, enter the exact sheet dimensions, and our system automatically generates a print-optimized DTF sheet, keeping each image's aspect ratio intact for perfect scaling and layout."
             />
             <FeatureCard
               icon={<Layers className="w-8 h-8 text-emerald-600" />}
