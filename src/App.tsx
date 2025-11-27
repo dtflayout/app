@@ -12,10 +12,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 import Home from "./pages/marketing/Home";
 import Product from "./pages/marketing/Product";
-import ProductNew from "./pages/marketing/ProductNew";
 import Pricing from "./pages/marketing/Pricing";
-import PricingNew from "./pages/marketing/PricingNew";
-import Pricing3 from "./pages/marketing/Pricing3";
 import Contact from "./pages/marketing/Contact";
 import PrivacyPolicy from "./pages/marketing/PrivacyPolicy";
 import TermsConditions from "./pages/marketing/TermsConditions";
@@ -33,10 +30,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/product" element={<Product />} />
-            <Route path="/product-new" element={<ProductNew />} />
             <Route path="/pricing" element={<Pricing />} />
-            <Route path="/pricing-new" element={<PricingNew />} />
-            <Route path="/pricing-3" element={<Pricing3 />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-conditions" element={<TermsConditions />} />
