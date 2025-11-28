@@ -2,7 +2,7 @@ import { ButtonHTMLAttributes, forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface GradientButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "hero" | "secondary" | "outline" | "white";
+  variant?: "hero" | "secondary" | "outline" | "white" | "outline-teal";
   size?: "sm" | "md" | "lg" | "xl";
 }
 
@@ -29,6 +29,8 @@ const GradientButton = forwardRef<HTMLButtonElement, GradientButtonProps>(
         "border-2 border-white/30 backdrop-blur-sm text-white hover:bg-white/10 hover:border-white/50 shadow-lg hover:shadow-xl",
       white:
         "bg-white text-emerald-600 shadow-xl hover:shadow-2xl hover:scale-105",
+      "outline-teal":
+        "border-2 border-teal-600 bg-transparent text-teal-700 hover:bg-teal-50 shadow-lg hover:shadow-xl",
     };
 
     return (

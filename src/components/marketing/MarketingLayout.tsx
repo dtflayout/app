@@ -36,30 +36,30 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
   return (
     <div className="min-h-screen flex flex-col">
       <header
-        className={`sticky top-0 z-50 w-full bg-white/80 backdrop-blur-lg border-b border-slate-200/50 transition-all duration-300 ${
-          isScrolled ? "shadow-md" : "shadow-sm"
+        className={`sticky top-0 z-50 w-full bg-white/90 backdrop-blur-lg border-b border-slate-200/50 transition-all duration-300 ${
+          isScrolled ? "shadow-lg" : "shadow-sm"
         }`}
       >
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
-                <span className="text-white font-bold text-sm">DC</span>
+          <div className="flex items-center justify-between h-20">
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
+                <span className="text-white font-bold text-base">DC</span>
               </div>
-              <span className="text-xl font-bold text-emerald-600">
+              <span className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                 DTF Collage Creator
               </span>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-8">
+            <nav className="hidden md:flex items-center gap-10">
               {navLinks.map((link) => (
                 <Link
                   key={link.label}
                   to={link.href}
-                  className={`text-sm font-medium transition-colors hover:text-emerald-600 ${
+                  className={`text-base font-medium transition-all duration-200 ${
                     location.pathname === link.href
                       ? "text-emerald-600"
-                      : "text-slate-600"
+                      : "text-slate-600 hover:text-emerald-600"
                   }`}
                 >
                   {link.label}
@@ -68,13 +68,13 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
             </nav>
 
             <div className="hidden md:flex items-center gap-4">
-              <Link to="/auth">
-                <Button variant="ghost" className="text-slate-600">
+              <Link to="/login">
+                <Button variant="ghost" className="text-slate-600 text-base font-medium hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-200">
                   Login
                 </Button>
               </Link>
-              <Link to="/auth">
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              <Link to="/signup">
+                <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-base font-medium rounded-xl shadow-md hover:shadow-xl hover:scale-105 transition-all duration-200 px-6">
                   Sign Up
                 </Button>
               </Link>
@@ -100,7 +100,7 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
                   <Link
                     key={link.label}
                     to={link.href}
-                    className={`text-sm font-medium transition-colors hover:text-emerald-600 ${
+                    className={`text-base font-medium transition-colors hover:text-emerald-600 ${
                       location.pathname === link.href
                         ? "text-emerald-600"
                         : "text-slate-600"
@@ -110,16 +110,16 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
                   </Link>
                 ))}
                 <div className="flex flex-col gap-2 mt-4">
-                  <Link to="/auth">
+                  <Link to="/login">
                     <Button
                       variant="ghost"
-                      className="w-full text-slate-600"
+                      className="w-full text-slate-600 text-base"
                     >
                       Login
                     </Button>
                   </Link>
-                  <Link to="/auth">
-                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+                  <Link to="/signup">
+                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-base">
                       Sign Up
                     </Button>
                   </Link>

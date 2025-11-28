@@ -7,7 +7,7 @@ import { ImageObject } from "./CollageCreator";
 import { toast } from "sonner";
 
 // File and count limits to prevent memory issues
-const MAX_FILE_SIZE_MB = 30; // Maximum size per file
+const MAX_FILE_SIZE_MB = 25; // Maximum size per file
 const MAX_TOTAL_IMAGES = 40; // Maximum number of images
 
 interface ImageUploaderProps {
@@ -105,34 +105,39 @@ export const ImageUploader = ({ onImagesAdded, currentImageCount = 0 }: ImageUpl
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`
-          relative border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors
-          ${isDragging 
-            ? "border-primary bg-primary/5" 
-            : "border-border hover:border-primary/50 hover:bg-muted/50"
+          relative border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-all duration-200
+          ${isDragging
+            ? "border-emerald-400 bg-emerald-50"
+            : "hover:border-emerald-400 hover:bg-emerald-50/50"
           }
         `}
+        style={{ borderColor: isDragging ? undefined : 'rgb(167, 243, 208)' }}
         onClick={() => document.getElementById("file-upload")?.click()}
       >
         <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <ImagePlus className="h-8 w-8 text-primary" />
+          <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
+            <ImagePlus className="h-8 w-8 text-emerald-600" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold mb-1">Upload Images</h3>
-            <p className="text-sm text-muted-foreground mb-4">
+            <h3 className="text-xl font-semibold mb-1">Upload Images</h3>
+            <p className="text-base text-muted-foreground mb-4">
               Drag and drop your images here or click to browse
             </p>
             <Button
               type="button"
-              variant="outline"
-              className="pointer-events-none"
+              className="pointer-events-none bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl px-6 py-2 shadow-md hover:shadow-xl transition-all duration-200"
             >
               Browse Files
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Supported formats: PNG, JPG, JPEG, GIF, WebP
+          <p className="text-sm text-muted-foreground">
+            Supported formats: PNG, JPG, JPEG
           </p>
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-6 py-3 mt-2">
+            <p className="text-base text-emerald-700 font-medium">
+              Max 40 images per sheet &bull; Max 25 MB per image
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useOutseta } from "@/contexts/OutsetaContext";
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -36,11 +37,11 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   // Still checking authentication
   if (isLoading && !showTimeout) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-emerald-50/50 via-white to-white">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-          <p className="mt-2 text-xs text-gray-400">Checking authentication</p>
+          <Loader2 className="animate-spin w-12 h-12 text-emerald-500 mx-auto" />
+          <p className="mt-6 text-2xl font-bold text-slate-900">Loading...</p>
+          <p className="mt-2 text-lg text-gray-500">Checking authentication</p>
         </div>
       </div>
     );

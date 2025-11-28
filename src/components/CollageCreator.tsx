@@ -50,7 +50,17 @@ export type ImageObject = {
   url: string;
 };
 
-export const CollageCreator = () => {
+export interface CollageCreatorProps {
+  dpi?: number;
+  maxHeight?: number;
+  mode?: "standard" | "hd";
+}
+
+export const CollageCreator = ({
+  dpi = 150,
+  maxHeight = 400,
+  mode = "standard"
+}: CollageCreatorProps) => {
   const { user, refreshUser } = useOutseta();
   const [images, setImages] = useState<ImageObject[]>([]);
   const [imageDimensions, setImageDimensions] = useState<ImageDimension[]>([]);
@@ -175,7 +185,7 @@ export const CollageCreator = () => {
     }
 
     debugLog(`[Memory Cleanup] Removed ${imageIds.length} image(s), ${imagesToKeep.length} remaining`);
-    toast.info(`${imageIds.length} image(s) removed`);
+    toast.error(`${imageIds.length} image(s) removed`);
   };
 
   const handleImageDimensionsChanged = (dimensions: ImageDimension[]) => {
@@ -208,14 +218,13 @@ export const CollageCreator = () => {
           return;
         }
 
-        // Check sheet height limit (400 inches max for reliable exports)
-        const MAX_SHEET_HEIGHT = 400;
-        if (result.totalHeightInches > MAX_SHEET_HEIGHT) {
-          debugLog(`❌ Validation failed: Sheet too large (${result.totalHeightInches.toFixed(1)}" > ${MAX_SHEET_HEIGHT}")`);
-          const recommendedCount = Math.floor(imageDimensions.length * (MAX_SHEET_HEIGHT / result.totalHeightInches));
+        // Check sheet height limit (use maxHeight prop for reliable exports)
+        if (result.totalHeightInches > maxHeight) {
+          debugLog(`❌ Validation failed: Sheet too large (${result.totalHeightInches.toFixed(1)}" > ${maxHeight}")`);
+          const recommendedCount = Math.floor(imageDimensions.length * (maxHeight / result.totalHeightInches));
           setErrorDialogData({
             title: "Sheet Too Large",
-            message: `Your sheet height is ${result.totalHeightInches.toFixed(1)}" which exceeds the ${MAX_SHEET_HEIGHT}" limit.\n\nHow to fix it:\n• Remove some images (currently ${imageDimensions.length})\n• Reduce the size of large images\n• Or generate multiple smaller sheets (recommended: ~${recommendedCount} images per sheet)`,
+            message: `Your sheet height is ${result.totalHeightInches.toFixed(1)}" which exceeds the ${maxHeight}" limit.\n\nHow to fix it:\n• Remove some images (currently ${imageDimensions.length})\n• Reduce the size of large images\n• Or generate multiple smaller sheets (recommended: ~${recommendedCount} images per sheet)`,
           });
           setShowErrorDialog(true);
           setIsGenerating(false);
@@ -223,9 +232,9 @@ export const CollageCreator = () => {
         }
 
         // Warn if close to height limit (>80%)
-        if (result.totalHeightInches > MAX_SHEET_HEIGHT * 0.8) {
-          toast.warning(
-            `Sheet height: ${result.totalHeightInches.toFixed(1)}" (${((result.totalHeightInches / MAX_SHEET_HEIGHT) * 100).toFixed(0)}% of ${MAX_SHEET_HEIGHT}" limit)`,
+        if (result.totalHeightInches > maxHeight * 0.8) {
+          toast.info(
+            `Sheet height: ${result.totalHeightInches.toFixed(1)}"`,
             { duration: 5000 }
           );
         }
@@ -490,12 +499,12 @@ export const CollageCreator = () => {
       toast.info("Generating high-resolution export...");
       const dataUrl = await canvasRef.current.exportCanvas();
 
-      // Add 150 DPI metadata to PNG for professional print quality
-      const pngBlob = await addDpiToPng(dataUrl, 150);
-      const filename = `print-sheet-${new Date().toISOString().slice(0, 10)}.png`;
+      // Add DPI metadata to PNG for professional print quality
+      const pngBlob = await addDpiToPng(dataUrl, dpi);
+      const filename = `print-sheet-${dpi}dpi-${new Date().toISOString().slice(0, 10)}.png`;
       downloadBlob(pngBlob, filename);
 
-      toast.success("Print sheet exported at 150 DPI!");
+      toast.success(`Print sheet exported at ${dpi} DPI!`);
     } catch (error) {
       toast.error("Failed to export print sheet");
       console.error(error);
@@ -514,18 +523,18 @@ export const CollageCreator = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 px-16">
       {/* Credit Warning Banner */}
       <CreditWarningBanner credits={getUserCredits()} />
 
       {/* Layout Settings */}
-      <div className="bg-white rounded-lg shadow-sm border p-6 animate-fade-in">
-        <h2 className="text-xl font-semibold mb-4">Layout Settings</h2>
+      <div className="bg-white rounded-lg shadow-sm border px-6 py-8 animate-fade-in">
+        <h2 className="text-2xl font-bold mb-4">Layout Settings</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="sheet-width">Sheet Width</Label>
-            <Select 
-              value={canvasWidthInches.toString()} 
+            <Label htmlFor="sheet-width" className="text-base font-medium text-slate-700">Sheet Width</Label>
+            <Select
+              value={canvasWidthInches.toString()}
               onValueChange={(value) => {
                 setCanvasWidthInches(Number(value));
                 if (layout.length > 0) {
@@ -534,18 +543,18 @@ export const CollageCreator = () => {
                 }
               }}
             >
-              <SelectTrigger id="sheet-width">
+              <SelectTrigger id="sheet-width" className="h-11 rounded-lg bg-blue-600 text-white border-blue-600 shadow-md text-base font-medium hover:bg-blue-700 hover:border-blue-700 transition-all duration-200 [&>svg]:text-white">
                 <SelectValue placeholder="Select width" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="23">23 inches</SelectItem>
-                <SelectItem value="11">11 inches</SelectItem>
+              <SelectContent className="rounded-lg shadow-lg border-blue-200">
+                <SelectItem value="23" className="text-base font-medium">23 inches</SelectItem>
+                <SelectItem value="11" className="text-base font-medium">11 inches</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="flex flex-col gap-2">
-            <Label htmlFor="spacing">Spacing (inches)</Label>
+            <Label htmlFor="spacing" className="text-base font-medium text-slate-700">Spacing (inches)</Label>
             <input
               id="spacing"
               type="number"
@@ -563,26 +572,25 @@ export const CollageCreator = () => {
                   }
                 }
               }}
-              className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+              className="h-11 px-4 rounded-lg border border-gray-300 bg-background text-base shadow-sm hover:border-gray-400 transition-colors focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
           </div>
-          
+
           <Button
             onClick={handleGenerateLayout}
             disabled={images.length === 0 || getUserCredits() === 0}
-            className="bg-green-600 hover:bg-green-700"
+            className="h-11 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-lg font-semibold rounded-xl shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
             title={getUserCredits() === 0 ? "Out of credits! Purchase more to continue." : ""}
           >
             Generate Layout
           </Button>
-          <p className="text-xs text-gray-500">Max sheet height: 400"</p>
 
-          <Button 
-            onClick={handleExport} 
+          <Button
+            onClick={handleExport}
             disabled={layout.length === 0 || isExporting}
-            className="bg-blue-500 hover:bg-blue-600"
+            className="h-11 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-lg font-semibold rounded-xl shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
           >
-            <Download className="mr-2 h-4 w-4" />
+            <Download className="mr-2 h-5 w-5" />
             {isExporting ? "Exporting..." : "Download Sheet"}
           </Button>
         </div>
@@ -590,7 +598,7 @@ export const CollageCreator = () => {
 
       {/* Success Card - Show after layout generation */}
       {totalSqInchesUsed !== null && layout.length > 0 && (
-        <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6 animate-fade-in">
+        <div className="bg-white border-2 border-green-200 rounded-lg p-6 animate-fade-in shadow-sm">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -601,11 +609,11 @@ export const CollageCreator = () => {
               <h3 className="text-lg font-semibold text-green-900 mb-2">
                 Layout generated successfully!
               </h3>
-              <div className="space-y-1 text-green-800">
-                <p className="text-sm">
+              <div className="space-y-2 text-green-800">
+                <p className="text-lg leading-relaxed">
                   <span className="font-medium">Sheet size:</span> {canvasWidthInches}" × {formatNumber(canvasHeightInches)}"
                 </p>
-                <p className="text-lg font-bold">
+                <p className="text-lg font-bold leading-relaxed">
                   <span className="font-medium">Total area:</span> {formatNumber(totalSqInchesUsed)} sq.inches
                 </p>
               </div>
@@ -617,10 +625,10 @@ export const CollageCreator = () => {
       {/* Upload Images - Only show when no layout is generated */}
       {layout.length === 0 && (
         <div className="bg-white rounded-lg shadow-sm border p-6 animate-fade-in">
-          <h2 className="text-xl font-semibold mb-4">Upload Images</h2>
+          <h2 className="text-2xl font-bold mb-4">Upload Images</h2>
           <ImageUploader onImagesAdded={handleImagesAdded} currentImageCount={images.length} />
           {images.length > 0 && (
-            <div className="mt-4 text-sm text-muted-foreground">
+            <div className="mt-4 text-lg font-semibold text-slate-700">
               {images.length} / 40 images uploaded
             </div>
           )}
@@ -628,25 +636,29 @@ export const CollageCreator = () => {
       )}
       
       {images.length > 0 && (
-        <ImageManager
-          images={images}
-          onImagesRemoved={handleImagesRemoved}
-          onImagesAdded={handleImagesAdded}
-          onImageDimensionsChanged={handleImageDimensionsChanged}
-          onGenerateLayout={handleGenerateLayout}
-          canvasWidthInches={canvasWidthInches}
-          spacingInches={spacingInches}
-        />
+        <div className="mb-8">
+          <ImageManager
+            images={images}
+            onImagesRemoved={handleImagesRemoved}
+            onImagesAdded={handleImagesAdded}
+            onImageDimensionsChanged={handleImageDimensionsChanged}
+            onGenerateLayout={handleGenerateLayout}
+            canvasWidthInches={canvasWidthInches}
+            spacingInches={spacingInches}
+          />
+        </div>
       )}
-      
+
       {layout.length > 0 && (
-        <Canvas
-          ref={canvasRef}
-          images={images}
-          layout={layout}
-          canvasHeightInches={canvasHeightInches}
-          canvasWidthInches={canvasWidthInches}
-        />
+        <div className="mt-8 pb-16">
+          <Canvas
+            ref={canvasRef}
+            images={images}
+            layout={layout}
+            canvasHeightInches={canvasHeightInches}
+            canvasWidthInches={canvasWidthInches}
+          />
+        </div>
       )}
 
       {/* Insufficient Credits Modal */}
@@ -733,15 +745,19 @@ export const CollageCreator = () => {
       {/* Loading Overlay - Layout Generation */}
       {isGenerating && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4 text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 mx-auto mb-4"></div>
-            <h3 className="text-xl font-bold text-slate-900 mb-2">
+          <div className="bg-white rounded-2xl p-10 shadow-2xl max-w-lg w-full mx-4 text-center">
+            {/* Modern gradient spinner */}
+            <div className="relative w-16 h-16 mx-auto mb-6">
+              <div className="absolute inset-0 rounded-full border-4 border-emerald-100"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-emerald-500 border-r-teal-500 animate-spin"></div>
+            </div>
+            <h3 className="text-2xl font-bold text-slate-900 mb-3">
               Generating Layout...
             </h3>
-            <p className="text-slate-600 mb-4">
+            <p className="text-lg text-slate-600 mb-4">
               Please wait while we create your optimized layout.
             </p>
-            <p className="text-sm text-slate-500">
+            <p className="text-base text-slate-500">
               Do not refresh or close this page
             </p>
           </div>
@@ -751,15 +767,15 @@ export const CollageCreator = () => {
       {/* Loading Overlay - Export */}
       {isExporting && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4 text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-            <h3 className="text-xl font-bold text-slate-900 mb-2">
+          <div className="bg-white rounded-2xl p-10 shadow-2xl max-w-lg w-full mx-4 text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-6"></div>
+            <h3 className="text-2xl font-bold text-slate-900 mb-3">
               Exporting High-Resolution PNG...
             </h3>
-            <p className="text-slate-600 mb-4">
-              Creating 150 DPI print-ready file.
+            <p className="text-lg text-slate-600 mb-4">
+              Creating {dpi} DPI print-ready file.
             </p>
-            <p className="text-sm text-slate-500">
+            <p className="text-base text-slate-500">
               This may take 5-15 seconds for large layouts
             </p>
           </div>

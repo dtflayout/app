@@ -46,26 +46,26 @@ export const ErrorDialog: React.FC<ErrorDialogProps> = ({
 
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertCircle className="h-5 w-5" />
+            <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-red-600">
+              <AlertCircle className="h-7 w-7" />
               Sheet Too Large
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <p className="text-gray-700">
+          <div className="space-y-5 py-4">
+            <p className="text-lg leading-relaxed text-gray-700">
               Your sheet height is{" "}
               <span className="font-semibold text-red-600">{height}"</span> which
               exceeds the <span className="font-semibold">{limit}"</span> limit.
             </p>
 
-            <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-              <p className="font-semibold text-gray-900 mb-3">How to fix it:</p>
+            <div className="bg-gray-50 p-5 rounded-lg">
+              <p className="text-xl font-semibold text-gray-900 mb-4">How to fix it:</p>
 
-              <div className="space-y-2 text-sm text-gray-700">
-                <div className="flex gap-2">
+              <div className="space-y-3 text-lg text-gray-700">
+                <div className="flex gap-3">
                   <span className="text-gray-400">•</span>
                   <span>
                     Remove some images (currently{" "}
@@ -73,12 +73,12 @@ export const ErrorDialog: React.FC<ErrorDialogProps> = ({
                   </span>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <span className="text-gray-400">•</span>
                   <span>Reduce the size of large images</span>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <span className="text-gray-400">•</span>
                   <span>
                     Generate multiple smaller sheets (recommended:{" "}
@@ -89,8 +89,11 @@ export const ErrorDialog: React.FC<ErrorDialogProps> = ({
             </div>
           </div>
 
-          <DialogFooter>
-            <Button onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+          <DialogFooter className="mt-4">
+            <Button
+              onClick={() => onOpenChange(false)}
+              className="w-full sm:w-auto px-6 py-3 text-base font-medium h-auto"
+            >
               Got it
             </Button>
           </DialogFooter>

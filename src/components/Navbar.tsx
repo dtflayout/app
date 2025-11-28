@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, LayoutDashboard, AlertTriangle, AlertCircle } from "lucide-react";
+import { FileText, LayoutDashboard, AlertTriangle, AlertCircle, Zap } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -126,6 +126,15 @@ export const Navbar = () => {
             >
               <LayoutDashboard className="h-4 w-4" />
               Create
+            </Button>
+            <Button
+              variant={location.pathname === '/app-300' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => navigate('/app-300')}
+              className="gap-2"
+            >
+              <Zap className="h-4 w-4" />
+              300 DPI
             </Button>
             <Button
               variant={location.pathname === '/logs' ? 'default' : 'ghost'}

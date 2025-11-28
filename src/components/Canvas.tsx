@@ -35,7 +35,7 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [layoutApplied, setLayoutApplied] = useState(false);
-  const [zoom, setZoom] = useState(100);
+  const [zoom, setZoom] = useState(80);
   
   // Calculate canvas dimensions based on props
   const canvasWidthPx = canvasWidthInches * DPI;
@@ -259,7 +259,7 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
       marks.push(
         <div
           key={i}
-          className="absolute flex items-center text-xs text-muted-foreground"
+          className="absolute flex items-center text-sm text-muted-foreground"
           style={
             isVertical
               ? { top: `${i * DPI}px`, left: '2px' }
@@ -276,9 +276,9 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
   return (
     <Card className="p-6 bg-white shadow-md animate-fade-in">
       <div className="mb-4 flex justify-between items-center">
-        <h3 className="text-xl font-semibold">Layout Preview</h3>
+        <h3 className="text-2xl font-bold">Layout Preview</h3>
         <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2">
+          <Badge variant="secondary" className="bg-blue-600 text-white hover:bg-blue-700 px-5 py-2.5 text-lg font-semibold">
             Size: {canvasWidthInches.toFixed(2)}" × {canvasHeightInches.toFixed(2)}"
           </Badge>
           <div className="flex items-center gap-2 border rounded-md p-1">
@@ -316,13 +316,13 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
           </div>
         </div>
       </div>
-      <div 
+      <div
         ref={containerRef}
         className="canvas-container border border-border rounded-md overflow-auto relative bg-background"
-        style={{ 
-          maxWidth: '100%', 
-          minHeight: '500px',
-          maxHeight: '70vh',
+        style={{
+          maxWidth: '100%',
+          minHeight: '1050px',
+          maxHeight: '120vh',
         }}
       >
         {/* Horizontal Ruler */}

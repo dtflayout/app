@@ -3,8 +3,9 @@ import { useState } from "react";
 import MarketingLayout from "@/components/marketing/MarketingLayout";
 import GradientButton from "@/components/marketing/GradientButton";
 import { Card } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { Check, Info } from "lucide-react";
 import { Highlighter } from "@/components/ui/highlighter";
+import { MobileTooltip } from "@/components/ui/tooltip";
 
 // Define pricing data outside component to prevent recreation on every render
 const INCH_PLANS = [
@@ -16,8 +17,8 @@ const INCH_PLANS = [
       features: [
         <><Highlighter action="highlight" color="#FEF08A"><strong>5,000 sq. inch</strong></Highlighter> of total printing capacity included in this plan.</>,
         <><strong><Highlighter action="underline" color="#10b981">0 paisa per sq. inch</Highlighter></strong> — completely free to get started.</>,
-        <>If your print file is <strong>23 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">217 inches</Highlighter> in length with this plan.</>,
-        <>If your print file is <strong>11 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">455 inches</Highlighter> in length with this plan.</>,
+        <>Generating a <strong>23-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>Rs. 0 per inch</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 23 inches wide, you can print approx. 217 inches in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
+        <>Generating a <strong>11-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>Rs. 0 per inch</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 11 inches wide, you can print approx. 455 inches in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Color Enhancer & Image Resizer included.",
       ],
@@ -32,8 +33,8 @@ const INCH_PLANS = [
       features: [
         <><Highlighter action="highlight" color="#FEF08A"><strong>50,000 sq. inch</strong></Highlighter> of total printing capacity unlocked with this plan.</>,
         <><strong><Highlighter action="underline" color="#10b981">1 paisa per sq. inch</Highlighter></strong> — simple and budget-friendly usage pricing.</>,
-        <>If your print file is <strong>23 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">2,175 inches</Highlighter> in length with this plan.</>,
-        <>If your print file is <strong>11 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">4,545 inches</Highlighter> in length with this plan.</>,
+        <>Generating a <strong>23-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>23 paisa per inch</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 23 inches wide, you can print approx. 2,175 inches in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
+        <>Generating a <strong>11-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>11 paisa per inch</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 11 inches wide, you can print approx. 4,545 inches in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Color Enhancer & Image Resizer included.",
       ],
@@ -48,8 +49,8 @@ const INCH_PLANS = [
       features: [
         <><Highlighter action="highlight" color="#FEF08A"><strong>1,00,000 sq. inch</strong></Highlighter> of total printing capacity available in this plan.</>,
         <><strong><Highlighter action="underline" color="#10b981">1 paisa per sq. inch</Highlighter></strong> — simple and budget-friendly usage pricing.</>,
-        <>If your print file is <strong>23 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">4,348 inches</Highlighter> in length with this plan.</>,
-        <>If your print file is <strong>11 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">9,091 inches</Highlighter> in length with this plan.</>,
+        <>Generating a <strong>23-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>23 paisa per inch</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 23 inches wide, you can print approx. 4,348 inches in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
+        <>Generating a <strong>11-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>11 paisa per inch</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 11 inches wide, you can print approx. 9,091 inches in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Color Enhancer & Image Resizer included.",
       ],
@@ -64,8 +65,8 @@ const INCH_PLANS = [
       features: [
         <><Highlighter action="highlight" color="#FEF08A"><strong>2,00,000 sq. inch</strong></Highlighter> of total printing capacity unlocked with this plan.</>,
         <><strong><Highlighter action="underline" color="#10b981">1 paisa per sq. inch</Highlighter></strong> — simple and budget-friendly usage pricing.</>,
-        <>If your print file is <strong>23 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">8,696 inches</Highlighter> in length with this plan.</>,
-        <>If your print file is <strong>11 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">18,182 inches</Highlighter> in length with this plan.</>,
+        <>Generating a <strong>23-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>23 paisa per inch</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 23 inches wide, you can print approx. 8,696 inches in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
+        <>Generating a <strong>11-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>11 paisa per inch</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 11 inches wide, you can print approx. 18,182 inches in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Color Enhancer & Image Resizer included.",
       ],
@@ -78,10 +79,10 @@ const INCH_PLANS = [
       period: "",
       description: "Significantly cheaper per-inch pricing for heavy users.",
       features: [
-        <><Highlighter action="highlight" color="#FEF08A"><strong>6,00,000 sq. inch</strong></Highlighter> of total printing capacity included in this plan.</>,
-        <><strong><Highlighter action="underline" color="#10b981">0.67 paisa per sq. inch</Highlighter></strong> — optimized pricing for scaling operations.</>,
-        <>If your print file is <strong>23 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">26,087 inches</Highlighter> in length with this plan.</>,
-        <>If your print file is <strong>11 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">54,545 inches</Highlighter> in length with this plan.</>,
+        <><Highlighter action="highlight" color="#FEF08A"><strong>5,00,000 sq. inch</strong></Highlighter> of total printing capacity included in this plan.</>,
+        <><strong><Highlighter action="underline" color="#10b981">0.8 paisa per sq. inch</Highlighter></strong> — optimized pricing for scaling operations.</>,
+        <>Generating a <strong>23-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>18 paisa per inch</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 23 inches wide, you can print approx. 21,739 inches in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
+        <>Generating a <strong>11-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>9 paisa per inch</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 11 inches wide, you can print approx. 45,455 inches in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Color Enhancer & Image Resizer included.",
       ],
@@ -94,10 +95,10 @@ const INCH_PLANS = [
       period: "",
       description: "Our lowest per-inch rates — maximum savings unlocked.",
       features: [
-        <><span className="relative inline-block"><span className="absolute inset-0 bg-black/70 -skew-y-1 rounded-sm -z-10 -mx-1"></span><strong>24,00,000 sq. inch</strong></span> of total printing capacity unlocked with this plan.</>,
-        <><span className="relative inline-block"><span className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/70 -skew-y-1"></span><strong>0.33 paisa per sq. inch</strong></span> — our most cost-efficient rate for heavy usage.</>,
-        <>If your print file is <strong>23 inches</strong> wide, you can print approx. <span className="relative inline-block"><span className="absolute inset-0 bg-black/70 -skew-y-1 rounded-sm -z-10 -mx-1"></span>1,04,348 inches</span> in length with this plan.</>,
-        <>If your print file is <strong>11 inches</strong> wide, you can print approx. <span className="relative inline-block"><span className="absolute inset-0 bg-black/70 -skew-y-1 rounded-sm -z-10 -mx-1"></span>2,18,182 inches</span> in length with this plan.</>,
+        <><Highlighter action="highlight" color="#FEF08A"><strong>20,00,000 sq. inch</strong></Highlighter> of total printing capacity unlocked with this plan.</>,
+        <><span className="relative inline-block"><span className="absolute bottom-0 left-0 right-0 h-[3px] bg-teal-500 -skew-y-1"></span><strong>0.4 paisa per sq. inch</strong></span> — our most cost-efficient rate for heavy usage.</>,
+        <>Generating a <strong>23-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>9 paisa per inch</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 23 inches wide, you can print approx. 86,957 inches in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
+        <>Generating a <strong>11-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>4 paisa per inch</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 11 inches wide, you can print approx. 1,81,818 inches in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Color Enhancer & Image Resizer included.",
       ],
@@ -113,10 +114,10 @@ const METER_PLANS = [
       period: "",
       description: "Experience the platform for free before you commit.",
       features: [
-        <><Highlighter action="highlight" color="#FEF08A"><strong>3.23 meter</strong></Highlighter> of total printing capacity included in this plan.</>,
-        <><strong><Highlighter action="underline" color="#10b981">0 paisa per meter</Highlighter></strong> — completely free to get started.</>,
-        <>If your print file is <strong>23 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">5.5 meter</Highlighter> in length with this plan.</>,
-        <>If your print file is <strong>11 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">11.6 meter</Highlighter> in length with this plan.</>,
+        <><Highlighter action="highlight" color="#FEF08A"><strong>3.23 sq. meter</strong></Highlighter> of total printing capacity included in this plan.</>,
+        <><strong><Highlighter action="underline" color="#10b981">0 paisa per sq. meter</Highlighter></strong> — completely free to get started.</>,
+        <>Generating a <strong>23-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>Rs. 0 per meter</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 23 inches wide, you can print approx. 5.5 meter in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
+        <>Generating a <strong>11-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>Rs. 0 per meter</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 11 inches wide, you can print approx. 11.6 meter in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Color Enhancer & Image Resizer included.",
       ],
@@ -129,10 +130,10 @@ const METER_PLANS = [
       period: "",
       description: "Better value at a starter-friendly price.",
       features: [
-        <><Highlighter action="highlight" color="#FEF08A"><strong>32.26 meter</strong></Highlighter> of total printing capacity unlocked with this plan.</>,
-        <><strong><Highlighter action="underline" color="#10b981">15.50 Rs. per meter</Highlighter></strong> — simple and budget-friendly usage pricing.</>,
-        <>If your print file is <strong>23 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">55 meter</Highlighter> in length with this plan.</>,
-        <>If your print file is <strong>11 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">115 meter</Highlighter> in length with this plan.</>,
+        <><Highlighter action="highlight" color="#FEF08A"><strong>32.26 sq. meter</strong></Highlighter> of total printing capacity unlocked with this plan.</>,
+        <><strong><Highlighter action="underline" color="#10b981">15.50 Rs. per sq. meter</Highlighter></strong> — simple and budget-friendly usage pricing.</>,
+        <>Generating a <strong>23-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>Rs. 9.06 per meter</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 23 inches wide, you can print approx. 55 meter in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
+        <>Generating a <strong>11-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>Rs. 4.33 per meter</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 11 inches wide, you can print approx. 115 meter in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Color Enhancer & Image Resizer included.",
       ],
@@ -145,10 +146,10 @@ const METER_PLANS = [
       period: "",
       description: "More savings with a balanced, budget-smart plan.",
       features: [
-        <><Highlighter action="highlight" color="#FEF08A"><strong>64.53 meter</strong></Highlighter> of total printing capacity available in this plan.</>,
-        <><strong><Highlighter action="underline" color="#10b981">15.50 Rs. per meter</Highlighter></strong> — simple and budget-friendly usage pricing.</>,
-        <>If your print file is <strong>23 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">110 meter</Highlighter> in length with this plan.</>,
-        <>If your print file is <strong>11 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">230 meter</Highlighter> in length with this plan.</>,
+        <><Highlighter action="highlight" color="#FEF08A"><strong>64.52 sq. meter</strong></Highlighter> of total printing capacity available in this plan.</>,
+        <><strong><Highlighter action="underline" color="#10b981">15.50 Rs. per sq. meter</Highlighter></strong> — simple and budget-friendly usage pricing.</>,
+        <>Generating a <strong>23-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>Rs. 9.06 per meter</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 23 inches wide, you can print approx. 110 meter in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
+        <>Generating a <strong>11-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>Rs. 4.33 per meter</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 11 inches wide, you can print approx. 230 meter in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Color Enhancer & Image Resizer included.",
       ],
@@ -161,10 +162,10 @@ const METER_PLANS = [
       period: "",
       description: "Unlock even better rates for regular users.",
       features: [
-        <><Highlighter action="highlight" color="#FEF08A"><strong>129.03 meter</strong></Highlighter> of total printing capacity unlocked with this plan.</>,
-        <><strong><Highlighter action="underline" color="#10b981">15.50 Rs. per meter</Highlighter></strong> — simple and budget-friendly usage pricing.</>,
-        <>If your print file is <strong>23 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">220 meter</Highlighter> in length with this plan.</>,
-        <>If your print file is <strong>11 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">460 meter</Highlighter> in length with this plan.</>,
+        <><Highlighter action="highlight" color="#FEF08A"><strong>129.03 sq. meter</strong></Highlighter> of total printing capacity unlocked with this plan.</>,
+        <><strong><Highlighter action="underline" color="#10b981">15.50 Rs. per sq. meter</Highlighter></strong> — simple and budget-friendly usage pricing.</>,
+        <>Generating a <strong>23-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>Rs. 9.06 per meter</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 23 inches wide, you can print approx. 220 meter in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
+        <>Generating a <strong>11-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>Rs. 4.33 per meter</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 11 inches wide, you can print approx. 460 meter in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Color Enhancer & Image Resizer included.",
       ],
@@ -177,10 +178,10 @@ const METER_PLANS = [
       period: "",
       description: "Significantly cheaper per-inch pricing for heavy users.",
       features: [
-        <><Highlighter action="highlight" color="#FEF08A"><strong>387.10 meter</strong></Highlighter> of total printing capacity included in this plan.</>,
-        <><strong><Highlighter action="underline" color="#10b981">10.39 Rs. per meter</Highlighter></strong> — optimized pricing for scaling operations.</>,
-        <>If your print file is <strong>23 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">660 meter</Highlighter> in length with this plan.</>,
-        <>If your print file is <strong>11 inches</strong> wide, you can print approx. <Highlighter action="highlight" color="#FEF08A">1,385 meter</Highlighter> in length with this plan.</>,
+        <><Highlighter action="highlight" color="#FEF08A"><strong>322.58 sq. meter</strong></Highlighter> of total printing capacity included in this plan.</>,
+        <><strong><Highlighter action="underline" color="#10b981">12.40 Rs. per sq. meter</Highlighter></strong> — optimized pricing for scaling operations.</>,
+        <>Generating a <strong>23-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>Rs. 7.24 per meter</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 23 inches wide, you can print approx. 552 meter in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
+        <>Generating a <strong>11-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>Rs. 3.46 per meter</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 11 inches wide, you can print approx. 1,154 meter in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Color Enhancer & Image Resizer included.",
       ],
@@ -193,10 +194,10 @@ const METER_PLANS = [
       period: "",
       description: "Our lowest per-meter rates — maximum savings unlocked.",
       features: [
-        <><span className="relative inline-block"><span className="absolute inset-0 bg-black/70 -skew-y-1 rounded-sm -z-10 -mx-1"></span><strong>1,548.39 meter</strong></span> of total printing capacity unlocked with this plan.</>,
-        <><span className="relative inline-block"><span className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/70 -skew-y-1"></span><strong>5.12 Rs. per meter</strong></span> — our most cost-efficient rate for heavy usage.</>,
-        <>If your print file is <strong>23 inches</strong> wide, you can print approx. <span className="relative inline-block"><span className="absolute inset-0 bg-black/70 -skew-y-1 rounded-sm -z-10 -mx-1"></span>2,650 meter</span> in length with this plan.</>,
-        <>If your print file is <strong>11 inches</strong> wide, you can print approx. <span className="relative inline-block"><span className="absolute inset-0 bg-black/70 -skew-y-1 rounded-sm -z-10 -mx-1"></span>5,540 meter</span> in length with this plan.</>,
+        <><Highlighter action="highlight" color="#FEF08A"><strong>1,290.32 sq. meter</strong></Highlighter> of total printing capacity unlocked with this plan.</>,
+        <><span className="relative inline-block"><span className="absolute bottom-0 left-0 right-0 h-[3px] bg-teal-500 -skew-y-1"></span><strong>6.20 Rs. per sq. meter</strong></span> — our most cost-efficient rate for heavy usage.</>,
+        <>Generating a <strong>23-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>Rs. 3.62 per meter</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 23 inches wide, you can print approx. 2,208 meter in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
+        <>Generating a <strong>11-inch</strong> wide file will cost you only <Highlighter action="highlight" color="#FEF08A"><strong>Rs. 1.73 per meter</strong></Highlighter> in length on this plan. <MobileTooltip content={<p>If your print file is 11 inches wide, you can print approx. 4,618 meter in length with this plan.</p>}><Info className="w-[18px] h-[18px] text-[#059669] hover:text-emerald-700" /></MobileTooltip></>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Color Enhancer & Image Resizer included.",
       ],
@@ -229,37 +230,37 @@ const Pricing3 = () => {
                 Simple, Transparent Pricing
               </h1>
               <p className="text-xl md:text-2xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-                Choose the plan that fits your business. Start with a 14-day free trial, no credit card required.
+                Pick a plan based on your needs — the higher you go, the less you pay per unit.
               </p>
             </div>
           </div>
         </section>
 
         {/* Unit Toggle */}
-        <section className="py-8">
+        <section className="-mt-4 pb-2">
           <div className="container max-w-7xl mx-auto px-6">
             <div className="flex justify-center">
               <div className="inline-flex items-center bg-white/80 backdrop-blur-sm rounded-full p-1 shadow-md">
                 <button
                   onClick={() => setSelectedUnit("Inch")}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm transition-all duration-300 ${
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-lg transition-all duration-300 ${
                     selectedUnit === "Inch"
                       ? "bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 text-white shadow-lg"
                       : "bg-transparent text-slate-700 hover:text-slate-900"
                   }`}
                 >
-                  <span className="text-lg">📊</span>
+                  <span className="text-xl">📊</span>
                   <span>Inch</span>
                 </button>
                 <button
                   onClick={() => setSelectedUnit("Meter")}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm transition-all duration-300 ${
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-lg transition-all duration-300 ${
                     selectedUnit === "Meter"
                       ? "bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 text-white shadow-lg"
                       : "bg-transparent text-slate-700 hover:text-slate-900"
                   }`}
                 >
-                  <span className="text-lg">📏</span>
+                  <span className="text-xl">📏</span>
                   <span>Meter</span>
                 </button>
               </div>
@@ -277,9 +278,9 @@ const Pricing3 = () => {
                 className="relative"
               >
                 <Card
-                  className={`relative h-full p-10 rounded-3xl shadow-2xl hover:-translate-y-2 transition-transform duration-300 overflow-hidden ${
+                  className={`relative h-full p-10 rounded-3xl shadow-2xl hover:-translate-y-2 transition-transform duration-300 ${
                     plan.popular
-                      ? "text-white border-0"
+                      ? "border-0 border-teal-200"
                       : "bg-white border border-slate-100"
                   }`}
                 >
@@ -319,16 +320,12 @@ const Pricing3 = () => {
 
                   {/* Background mask - covers the rotating gradient inside the card */}
                   <div
-                    className="absolute inset-[2px] rounded-3xl z-0"
+                    className={`absolute inset-[2px] rounded-3xl z-0 ${
+                      plan.popular ? "bg-gradient-to-br from-cyan-50 to-teal-100" : ""
+                    }`}
                     style={
                       plan.popular
-                        ? {
-                            backgroundImage: `
-                              radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-                              linear-gradient(to bottom right, #3b82f6, #06b6d4, #10b981)
-                            `,
-                            backgroundSize: '20px 20px, 100% 100%',
-                          }
+                        ? {}
                         : { backgroundColor: 'white' }
                     }
                   />
@@ -338,14 +335,14 @@ const Pricing3 = () => {
                     <div className="text-left mb-4">
                       <h3
                         className={`text-[3rem] font-extrabold mb-2 ${
-                          plan.popular ? "text-white" : "text-slate-900"
+                          plan.popular ? "text-slate-900" : "text-slate-900"
                         }`}
                       >
                         {plan.name}
                       </h3>
                       <p
                         className={`font-semibold ${
-                          plan.popular ? "text-white/95" : "text-slate-600"
+                          plan.popular ? "text-slate-600" : "text-slate-600"
                         }`}
                       >
                         {plan.description}
@@ -353,7 +350,7 @@ const Pricing3 = () => {
                       <div className="mb-1">
                         <span
                           className={`text-[2.75rem] font-bold ${
-                            plan.popular ? "text-white" : "text-slate-900"
+                            plan.popular ? "text-slate-900" : "text-slate-900"
                           }`}
                         >
                           {plan.price}
@@ -361,7 +358,7 @@ const Pricing3 = () => {
                         {plan.period && (
                           <span
                             className={`text-lg ${
-                              plan.popular ? "text-white/90" : "text-slate-600"
+                              plan.popular ? "text-slate-600" : "text-slate-600"
                             }`}
                           >
                             {plan.period}
@@ -371,19 +368,19 @@ const Pricing3 = () => {
                     </div>
 
                     {/* Divider between price and features */}
-                    <div className={`h-px mt-0 mb-6 ${plan.popular ? "bg-white/30" : "bg-gray-200"}`}></div>
+                    <div className={`h-px mt-0 mb-6 ${plan.popular ? "bg-teal-200" : "bg-gray-200"}`}></div>
 
                     <ul className="space-y-4 mb-10">
                       {plan.features.map((feature, idx) => (
                         <li key={`${selectedUnit}-${plan.name}-feature-${idx}`} className="flex items-start">
                           <Check
                             className={`w-6 h-6 mr-3 flex-shrink-0 mt-0.5 ${
-                              plan.popular ? "text-white" : "text-emerald-600"
+                              plan.popular ? "text-teal-600" : "text-emerald-600"
                             }`}
                           />
                           <span
                             className={`${
-                              plan.popular ? "text-white/95" : "text-slate-600"
+                              plan.popular ? "text-slate-700" : "text-slate-600"
                             }`}
                           >
                             {feature}
@@ -392,32 +389,19 @@ const Pricing3 = () => {
                       ))}
                     </ul>
 
-                    {plan.popular ? (
-                      <GradientButton
-                        variant="white"
-                        className="w-full"
-                        onClick={() => navigate("/auth")}
-                      >
-                        {plan.cta}
-                      </GradientButton>
-                    ) : (
-                      <GradientButton
-                        variant="hero"
-                        className="w-full"
-                        onClick={() => navigate("/auth")}
-                      >
-                        {plan.cta}
-                      </GradientButton>
-                    )}
+                    <GradientButton
+                      variant="hero"
+                      className="w-full"
+                      onClick={() => navigate("/auth")}
+                    >
+                      {plan.cta}
+                    </GradientButton>
                   </div>
                 </Card>
               </div>
             ))}
           </div>
 
-          <p className="text-center mt-12 text-slate-600">
-            All plans include 14-day free trial • No credit card required • Cancel anytime
-          </p>
         </div>
       </section>
       </div>

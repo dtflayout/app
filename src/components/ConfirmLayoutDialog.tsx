@@ -51,36 +51,36 @@ export const ConfirmLayoutDialog: React.FC<ConfirmLayoutDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-xl p-8">
         <DialogHeader>
-          <DialogTitle className="text-xl">Confirm Layout Generation</DialogTitle>
-          <DialogDescription className="text-base pt-3">
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-2">Sheet dimensions:</p>
-                <p className="text-2xl font-bold text-blue-900">
+          <DialogTitle className="text-2xl font-bold">Confirm Layout Generation</DialogTitle>
+          <DialogDescription className="text-base pt-4">
+            <div className="space-y-5">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">
+                <p className="text-lg text-gray-600 mb-2">Sheet dimensions:</p>
+                <p className="text-3xl font-bold text-blue-900">
                   {sheetWidth}" × {formatNumber(sheetHeight)}"
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <p className="text-gray-700">
+              <div className="space-y-3">
+                <p className="text-lg text-gray-700">
                   This layout will use{" "}
                   <span className="font-bold text-gray-900">
                     {formatNumber(sqInchesUsed)} sq.inches
                   </span>
                 </p>
 
-                <div className="bg-gray-50 rounded-lg p-3 space-y-1.5 text-sm">
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Current balance:</span>
-                    <span className="font-semibold text-gray-900">
+                    <span className="text-base text-gray-600">Current balance:</span>
+                    <span className="text-lg font-semibold text-gray-900">
                       {formatNumber(currentCredits)} sq.in
                     </span>
                   </div>
-                  <div className="flex justify-between border-t pt-1.5">
-                    <span className="text-gray-600">After generation:</span>
-                    <span className="font-semibold text-green-700">
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="text-base text-gray-600">After generation:</span>
+                    <span className="text-lg font-semibold text-green-700">
                       {formatNumber(creditsAfter)} sq.in
                     </span>
                   </div>
@@ -89,22 +89,23 @@ export const ConfirmLayoutDialog: React.FC<ConfirmLayoutDialogProps> = ({
             </div>
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-3 sm:gap-2 mt-4">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isConfirming}
+            className="h-11 px-6"
           >
             Cancel
           </Button>
           <Button
-            className="bg-green-600 hover:bg-green-700"
+            className="h-11 px-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-lg font-semibold rounded-xl shadow-md hover:shadow-xl transition-all duration-200"
             onClick={handleConfirm}
             disabled={isConfirming}
           >
             {isConfirming ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Processing...
               </>
             ) : (

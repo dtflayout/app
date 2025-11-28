@@ -1,15 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Copy, Trash2, Lock } from "lucide-react";
+import { Copy, Trash2 } from "lucide-react";
 import { ImageObject } from "./CollageCreator";
 import { toast } from "sonner";
 import { ImageDimension } from "@/utils/layoutAlgorithm";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Input as SearchInput } from "@/components/ui/input";
-import { Search } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ImageManagerProps {
@@ -41,7 +36,6 @@ export const ImageManager = ({
   const [aspectRatioLocked, setAspectRatioLocked] = useState<Map<string, boolean>>(new Map());
   const [dimensionErrors, setDimensionErrors] = useState<Map<string, { width: boolean; height: boolean }>>(new Map());
   const [inputValues, setInputValues] = useState<Map<string, { width: string; height: string }>>(new Map());
-  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const newDimensions = new Map(imageDimensions);
@@ -261,10 +255,6 @@ export const ImageManager = ({
     setAspectRatioLocked(newAspectRatioLocks);
   };
 
-  const filteredImages = images.filter(img => 
-    img.file.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   const getDpiColor = (dpi: number) => {
     if (dpi < 150) return "bg-red-600";
     if (dpi < 250) return "bg-yellow-600";
@@ -280,146 +270,155 @@ export const ImageManager = ({
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="bg-white rounded-lg shadow-sm border p-6 animate-fade-in">
-      <h2 className="text-xl font-semibold mb-4">Upload Images</h2>
-      
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <SearchInput
-          type="text"
-          placeholder="Search images..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9"
-        />
-      </div>
+      <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-4 animate-fade-in">
+        <h2 className="text-2xl font-bold mb-4 text-slate-800">Uploaded Images</h2>
 
-      {filteredImages.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto pr-2">
-          {filteredImages.map((image) => {
-            const dimensions = imageDimensions.get(image.id);
-            const isLocked = aspectRatioLocked.get(image.id) || false;
-            const errors = dimensionErrors.get(image.id);
-            const inputs = inputValues.get(image.id);
-            
-            return (
-              <div key={image.id} className="border rounded-lg p-4 bg-card hover:shadow-md transition-shadow">
-                <div className="flex gap-3">
-                  <img 
-                    src={image.url} 
-                    alt={image.file.name}
-                    className="w-20 h-20 object-contain border rounded flex-shrink-0" 
-                  />
-                  
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <p className="text-sm font-medium truncate" title={image.file.name}>
-                      {image.file.name}
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Width</Label>
-                        <div className="relative">
-                          <Input
-                            type="text"
-                            value={inputs?.width || ""}
-                            onChange={(e) => handleInputChange(image.id, 'width', e.target.value)}
-                            onBlur={() => handleInputBlur(image.id, 'width')}
-                            className={`h-8 text-sm ${errors?.width ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                          />
-                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                            inches
-                          </span>
-                        </div>
-                        {errors?.width && (
-                          <p className="text-xs text-red-500 mt-0.5">Exceeds canvas limit</p>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Height</Label>
-                        <div className="relative">
-                          <Input
-                            type="text"
-                            value={inputs?.height || ""}
-                            onChange={(e) => handleInputChange(image.id, 'height', e.target.value)}
-                            onBlur={() => handleInputBlur(image.id, 'height')}
-                            className={`h-8 text-sm ${errors?.height ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                          />
-                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                            inches
-                          </span>
-                        </div>
-                        {errors?.height && (
-                          <p className="text-xs text-red-500 mt-0.5">Exceeds canvas limit</p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {dimensions && (
-                      <p className="text-xs text-muted-foreground">
-                        Original: {dimensions.widthPixels} × {dimensions.heightPixels} px
-                      </p>
-                    )}
-                    
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id={`lock-${image.id}`}
-                        checked={isLocked}
-                        onCheckedChange={() => toggleAspectRatioLock(image.id)}
+        {images.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7 max-h-[900px] overflow-y-auto pr-2">
+            {images.map((image) => {
+              const dimensions = imageDimensions.get(image.id);
+              const isLocked = aspectRatioLocked.get(image.id) || false;
+              const errors = dimensionErrors.get(image.id);
+              const inputs = inputValues.get(image.id);
+
+              return (
+                <div
+                  key={image.id}
+                  className="border border-emerald-200 rounded-xl p-5 shadow-lg hover:shadow-xl transition-shadow"
+                  style={{ backgroundColor: '#f6fffb' }}
+                >
+                  {/* Top section: Thumbnail + Filename + DPI */}
+                  <div className="flex gap-3 mb-3">
+                    {/* Thumbnail */}
+                    <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center flex-shrink-0 overflow-hidden border border-slate-200">
+                      <img
+                        src={image.url}
+                        alt={image.file.name}
+                        className="max-w-full max-h-full object-contain"
                       />
-                      <Label
-                        htmlFor={`lock-${image.id}`}
-                        className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1"
-                      >
-                        <Lock className="h-3 w-3" />
-                        Lock Aspect Ratio
-                      </Label>
                     </div>
-                    
-                    {dimensions && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Badge className={`${getDpiColor(dimensions.dpi)} text-white hover:opacity-90 cursor-help`}>
-                            {dimensions.dpi} DPI
-                          </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{getDpiLabel(dimensions.dpi)}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-                    
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleCopyImage(image.id)}
-                        className="flex-1 h-8"
-                      >
-                        <Copy className="h-3 w-3 mr-1" />
-                        Duplicate
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onImagesRemoved([image.id])}
-                        className="flex-1 h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-3 w-3 mr-1" />
-                        Delete
-                      </Button>
+
+                    {/* Filename + DPI */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                      <p className="text-lg font-bold text-slate-800 truncate" title={image.file.name}>
+                        {image.file.name}
+                      </p>
+
+                      {dimensions && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className={`inline-block px-3 py-1 text-white text-sm font-bold rounded-full cursor-help w-fit ${
+                              dimensions.dpi < 100
+                                ? 'bg-gradient-to-r from-red-500 to-red-600'
+                                : 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                            }`}>
+                              {dimensions.dpi} DPI
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{getDpiLabel(dimensions.dpi)}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
                   </div>
+
+                  {/* Dimensions section */}
+                  <div className="grid grid-cols-2 gap-3 mb-2">
+                    {/* Width */}
+                    <div>
+                      <Label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Width</Label>
+                      <div className="relative mt-1">
+                        <Input
+                          type="text"
+                          value={inputs?.width || ""}
+                          onChange={(e) => handleInputChange(image.id, 'width', e.target.value)}
+                          onBlur={() => handleInputBlur(image.id, 'width')}
+                          className={`h-11 text-xl font-bold text-slate-800 pr-14 ${errors?.width ? 'border-red-500 focus-visible:ring-red-500' : 'border-slate-200'}`}
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+                          inches
+                        </span>
+                      </div>
+                      {errors?.width && (
+                        <p className="text-xs text-red-500 mt-1">Exceeds canvas</p>
+                      )}
+                    </div>
+
+                    {/* Height */}
+                    <div>
+                      <Label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Height</Label>
+                      <div className="relative mt-1">
+                        <Input
+                          type="text"
+                          value={inputs?.height || ""}
+                          onChange={(e) => handleInputChange(image.id, 'height', e.target.value)}
+                          onBlur={() => handleInputBlur(image.id, 'height')}
+                          className={`h-11 text-xl font-bold text-slate-800 pr-14 ${errors?.height ? 'border-red-500 focus-visible:ring-red-500' : 'border-slate-200'}`}
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+                          inches
+                        </span>
+                      </div>
+                      {errors?.height && (
+                        <p className="text-xs text-red-500 mt-1">Exceeds canvas</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Original dimensions */}
+                  {dimensions && (
+                    <p className="text-sm text-slate-500 mb-2">
+                      Original: <span className="font-mono">{dimensions.widthPixels} × {dimensions.heightPixels} px</span>
+                    </p>
+                  )}
+
+                  {/* Lock Aspect Ratio Toggle - Homepage style */}
+                  <div className="flex items-center gap-2 mb-3 py-2 border-t border-slate-100">
+                    <button
+                      onClick={() => toggleAspectRatioLock(image.id)}
+                      className="relative inline-flex items-center cursor-pointer focus:outline-none group"
+                      aria-label="Toggle aspect ratio lock"
+                    >
+                      <div className={`w-10 h-6 rounded-full shadow-sm transition-all duration-200 ${
+                        isLocked
+                          ? 'bg-emerald-500 group-hover:bg-emerald-600'
+                          : 'bg-slate-300 group-hover:bg-slate-400'
+                      }`}>
+                        <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all duration-200 ${
+                          isLocked ? 'translate-x-4' : 'translate-x-0.5'
+                        }`}></div>
+                      </div>
+                    </button>
+                    <span className="text-sm text-slate-700 select-none">Lock Aspect Ratio</span>
+                  </div>
+
+                  {/* Action buttons - Homepage style */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleCopyImage(image.id)}
+                      className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:text-slate-800 transition-colors"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Duplicate
+                    </button>
+                    <button
+                      onClick={() => onImagesRemoved([image.id])}
+                      className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 text-sm font-medium text-red-600 bg-white border border-slate-300 rounded-lg hover:bg-red-50 hover:border-red-300 transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="text-center py-8 text-muted-foreground">
-          {searchQuery ? "No images match your search" : "No images uploaded yet"}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-slate-400 text-base">
+            No images uploaded yet
+          </div>
+        )}
       </div>
     </TooltipProvider>
   );

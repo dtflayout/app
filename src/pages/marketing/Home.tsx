@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import MarketingLayout from "@/components/marketing/MarketingLayout";
 import GradientButton from "@/components/marketing/GradientButton";
-import { Star, ChevronLeft, ChevronRight } from "lucide-react";
 
 // Testimonial Data
 const testimonials = [
@@ -26,18 +25,11 @@ const testimonials = [
   },
 ];
 
-// DESIGN OPTION 1 - Cards in a Row
-const TestimonialsOption1 = () => {
+// Testimonials - Cards in a Row
+const Testimonials = () => {
   return (
     <section className="py-20 bg-gradient-to-b from-white to-slate-50">
       <div className="container max-w-7xl mx-auto px-6">
-        {/* Design Label */}
-        <div className="text-center mb-4">
-          <span className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-bold">
-            DESIGN OPTION 1
-          </span>
-        </div>
-
         {/* Section Header */}
         <div className="text-center mb-12">
           <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
@@ -87,168 +79,6 @@ const TestimonialsOption1 = () => {
   );
 };
 
-// DESIGN OPTION 2 - Carousel/Slider Style
-const TestimonialsOption2 = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  const nextSlide = () => {
-    setCurrentIndex((prev) => (prev + 1) % testimonials.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-  };
-
-  const current = testimonials[currentIndex];
-
-  return (
-    <section className="py-20 bg-gradient-to-br from-emerald-50 via-white to-teal-50">
-      <div className="container max-w-5xl mx-auto px-6">
-        {/* Design Label */}
-        <div className="text-center mb-4">
-          <span className="inline-block px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-bold">
-            DESIGN OPTION 2
-          </span>
-        </div>
-
-        {/* Section Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
-            Trusted by Print Professionals
-          </h2>
-          <p className="text-lg text-slate-600">
-            Hear from our satisfied customers
-          </p>
-        </div>
-
-        {/* Carousel Card */}
-        <div className="relative">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 p-10 md:p-16 text-center">
-            {/* Large Photo */}
-            <div className="mb-8">
-              <img
-                src={current.photo}
-                alt={current.name}
-                className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover mx-auto border-4 border-emerald-300 shadow-lg"
-              />
-            </div>
-
-            {/* Quote */}
-            <div className="mb-8">
-              <svg className="w-12 h-12 text-emerald-400 opacity-40 mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-              </svg>
-              <p className="text-xl md:text-2xl text-slate-700 leading-relaxed max-w-3xl mx-auto">
-                "{current.quote}"
-              </p>
-            </div>
-
-            {/* Author */}
-            <div>
-              <h4 className="text-xl font-bold text-slate-900">{current.name}</h4>
-              <p className="text-slate-600">{current.role}</p>
-            </div>
-          </div>
-
-          {/* Navigation Arrows */}
-          <button
-            onClick={prevSlide}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-6 w-12 h-12 bg-white rounded-full shadow-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
-          >
-            <ChevronLeft className="w-6 h-6 text-slate-600" />
-          </button>
-          <button
-            onClick={nextSlide}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-6 w-12 h-12 bg-white rounded-full shadow-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
-          >
-            <ChevronRight className="w-6 h-6 text-slate-600" />
-          </button>
-        </div>
-
-        {/* Navigation Dots */}
-        <div className="flex justify-center gap-3 mt-8">
-          {testimonials.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={`w-3 h-3 rounded-full transition-all ${
-                index === currentIndex
-                  ? "bg-emerald-500 w-8"
-                  : "bg-slate-300 hover:bg-slate-400"
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-// DESIGN OPTION 3 - Masonry/Staggered Layout with Stars
-const TestimonialsOption3 = () => {
-  return (
-    <section className="py-20 bg-gradient-to-b from-slate-50 to-white">
-      <div className="container max-w-7xl mx-auto px-6">
-        {/* Design Label */}
-        <div className="text-center mb-4">
-          <span className="inline-block px-4 py-2 bg-orange-100 text-orange-700 rounded-full text-sm font-bold">
-            DESIGN OPTION 3
-          </span>
-        </div>
-
-        {/* Section Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
-            Love from Our Users
-          </h2>
-          <p className="text-lg text-slate-600">
-            Real feedback from real businesses
-          </p>
-        </div>
-
-        {/* Masonry Grid */}
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map((testimonial, index) => (
-            <div
-              key={index}
-              className={`bg-white rounded-2xl shadow-lg border border-slate-200 p-6 hover:shadow-xl transition-all hover:-translate-y-1 ${
-                index === 1 ? "md:mt-8" : index === 2 ? "md:mt-4" : ""
-              }`}
-            >
-              {/* Star Rating */}
-              <div className="flex gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className="w-5 h-5 fill-yellow-400 text-yellow-400"
-                  />
-                ))}
-              </div>
-
-              {/* Quote */}
-              <p className="text-slate-700 leading-relaxed mb-6">
-                "{testimonial.quote}"
-              </p>
-
-              {/* Author */}
-              <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
-                <img
-                  src={testimonial.photo}
-                  alt={testimonial.name}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-                <div>
-                  <h4 className="font-semibold text-slate-900 text-sm">{testimonial.name}</h4>
-                  <p className="text-xs text-slate-500">{testimonial.role}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
 
 // Lock Aspect Ratio Card Component with functional toggle
 const LockAspectRatioCard = () => {
@@ -1391,10 +1221,8 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Testimonial Sections - 3 Design Options for Review */}
-      <TestimonialsOption1 />
-      <TestimonialsOption2 />
-      <TestimonialsOption3 />
+      {/* Testimonials Section */}
+      <Testimonials />
 
       </div>
     </MarketingLayout>

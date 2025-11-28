@@ -4,6 +4,7 @@ import { getUserLogs, calculateUsageStats, UsageLogRecord } from "@/lib/usageLog
 import { Button } from "@/components/ui/button";
 import { RefreshCw, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { AppLayout } from "@/components/AppLayout";
 
 export const SheetLogs = () => {
   const { user } = useOutseta();
@@ -70,6 +71,7 @@ export const SheetLogs = () => {
   };
 
   return (
+    <AppLayout>
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
@@ -296,5 +298,7 @@ export const SheetLogs = () => {
         </>
       )}
     </div>
+    </AppLayout>
   );
 };
+
