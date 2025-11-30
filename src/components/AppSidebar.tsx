@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   User,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,11 @@ const menuItems: MenuItem[] = [
       { label: "150 DPI", icon: <Layers className="w-4 h-4 flex-shrink-0" />, path: "/app" },
       { label: "300 DPI", icon: <Zap className="w-4 h-4 flex-shrink-0" />, path: "/app-300" },
     ],
+  },
+  {
+    label: "Image Enhancer",
+    icon: <Sparkles className="w-5 h-5 flex-shrink-0" />,
+    path: "/app/image-enhancer",
   },
   {
     label: "History",

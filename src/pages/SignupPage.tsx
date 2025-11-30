@@ -1,14 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useOutseta } from "@/contexts/OutsetaContext";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
 const SignupPage = () => {
   const navigate = useNavigate();
-  const { outseta, user, refreshUser } = useOutseta();
+  const { user, refreshUser } = useOutseta();
   const { toast } = useToast();
-  const widgetInitialized = useRef(false);
 
   useEffect(() => {
     // Check if user is already authenticated
@@ -18,25 +17,9 @@ const SignupPage = () => {
   }, [user, navigate]);
 
   useEffect(() => {
-    // Initialize Outseta auth widget in embedded mode - register only
-    if (outseta && !widgetInitialized.current) {
-      widgetInitialized.current = true;
-
-      // Small delay to ensure DOM is ready
-      setTimeout(() => {
-        outseta.auth.open({
-          mode: 'embed',
-          selector: '#outseta-signup-embed',
-          widgetMode: 'register',
-          authenticationCallbackUrl: window.location.origin + "/app",
-          planUid: 'rmk5109g', // Free Trial plan
-        });
-      }, 100);
-    }
-
     // Handle successful signup - set initial credits
-    const handleSignup = async (data: any) => {
-      console.log("Signup event triggered", data);
+    const handleSignup = async () => {
+      console.log("Signup event triggered");
 
       try {
         // Get the newly created user
@@ -77,7 +60,7 @@ const SignupPage = () => {
     return () => {
       window.removeEventListener("signup", handleSignup);
     };
-  }, [outseta, navigate, refreshUser, toast]);
+  }, [navigate, refreshUser, toast]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-emerald-50/50 via-white to-white py-12 px-4">
@@ -120,13 +103,13 @@ const SignupPage = () => {
 
         {/* Outseta auth widget embedded here */}
         <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-          <div id="outseta-signup-embed" className="min-h-[380px] flex items-center justify-center">
-            {/* Loading state while widget initializes */}
-            <div className="text-center py-12">
-              <Loader2 className="animate-spin w-8 h-8 text-emerald-500 mx-auto mb-3" />
-              <p className="text-slate-500">Loading...</p>
-            </div>
-          </div>
+          <div
+            data-o-auth="1"
+            data-mode="embed"
+            data-widget-mode="register"
+            data-plan-uid="rmk5109g"
+            className="w-full min-h-[380px]"
+          ></div>
         </div>
 
         {/* Footer link */}

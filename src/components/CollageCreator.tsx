@@ -19,6 +19,9 @@ import { logSheetGeneration } from "@/lib/usageLogger";
 import { addDpiToPng, downloadBlob } from "@/utils/pngDpiHelper";
 import { estimateMemoryUsage, validateCanvasSize } from "@/utils/memoryEstimator";
 import { MemoryWarningModal } from "./MemoryWarningModal";
+import { ImageTrimModal } from "./ImageTrimModal";
+import { BackgroundRemoverModal } from "./BackgroundRemoverModal";
+import { quickPaddingCheck } from "@/utils/imageTrimUtils";
 
 // Debug flag - set to true to enable debug logging
 const DEBUG = false;
@@ -48,6 +51,9 @@ export type ImageObject = {
   id: string;
   file: File;
   url: string;
+  // Original dimensions before trimming (only set if image was trimmed)
+  originalWidth?: number;
+  originalHeight?: number;
 };
 
 export interface CollageCreatorProps {
@@ -98,6 +104,10 @@ export const CollageCreator = ({
     memoryMB: 0,
     message: ''
   });
+  const [trimModalOpen, setTrimModalOpen] = useState(false);
+  const [imagesToTrim, setImagesToTrim] = useState<ImageObject[]>([]);
+  const [backgroundRemoverModalOpen, setBackgroundRemoverModalOpen] = useState(false);
+  const [imageToRemoveBackground, setImageToRemoveBackground] = useState<ImageObject | null>(null);
   const canvasRef = useRef<any>(null);
 
   // Track blob URLs for cleanup, but DON'T auto-revoke during renders/HMR
@@ -153,10 +163,128 @@ export const CollageCreator = ({
     setPendingLayout(null);
   };
 
-  const handleImagesAdded = (newImages: ImageObject[]) => {
+  const handleImagesAdded = async (newImages: ImageObject[]) => {
     // Blob URLs are automatically tracked by useEffect when images state updates
     setImages((prev) => [...prev, ...newImages]);
     toast.success(`${newImages.length} image(s) added to your collage`);
+
+    // Check for images that might benefit from trimming (only PNG files)
+    const pngImages = newImages.filter(img =>
+      img.file.type === 'image/png' || img.file.name.toLowerCase().endsWith('.png')
+    );
+
+    if (pngImages.length > 0) {
+      // Quick check for padding on each PNG
+      const imagesToCheck: ImageObject[] = [];
+
+      for (const img of pngImages) {
+        try {
+          const hasPadding = await quickPaddingCheck(img.url);
+          if (hasPadding) {
+            imagesToCheck.push(img);
+          }
+        } catch {
+          // Silently skip images that fail padding check
+        }
+      }
+
+      if (imagesToCheck.length > 0) {
+        setImagesToTrim(imagesToCheck);
+        setTrimModalOpen(true);
+        // Show explanatory toast when auto-opening trim modal
+        toast.info(
+          "We detected extra empty space around your design. You can trim it to save print area, or keep the original.",
+          { duration: 6000 }
+        );
+      }
+    }
+  };
+
+  // Handle opening trim modal for a single image from ImageManager
+  const handleTrimImage = (image: ImageObject) => {
+    setImagesToTrim([image]);
+    setTrimModalOpen(true);
+  };
+
+  // Handle trim modal completion
+  const handleTrimComplete = (trimmedImages: ImageObject[]) => {
+    // Update images state with trimmed versions
+    setImages(prevImages => {
+      return prevImages.map(img => {
+        const trimmed = trimmedImages.find(t => t.id === img.id);
+        if (trimmed && trimmed.url !== img.url) {
+          // Clean up old blob URL
+          if (img.url.startsWith('blob:')) {
+            URL.revokeObjectURL(img.url);
+            blobUrlsRef.current.delete(img.url);
+          }
+          // Track new blob URL
+          if (trimmed.url.startsWith('blob:')) {
+            blobUrlsRef.current.add(trimmed.url);
+          }
+          return trimmed;
+        }
+        return img;
+      });
+    });
+
+    // Also clear the image dimensions so ImageManager recalculates them
+    setImageDimensions([]);
+
+    // Reset layout if any trimmed images were in it
+    if (layout.length > 0) {
+      const trimmedIds = new Set(trimmedImages.filter((t, i) =>
+        t.url !== imagesToTrim[i]?.url
+      ).map(t => t.id));
+
+      if (layout.some(item => trimmedIds.has(item.id))) {
+        setLayout([]);
+        toast.info("Layout reset due to image changes. Please regenerate.");
+      }
+    }
+
+    setTrimModalOpen(false);
+    setImagesToTrim([]);
+  };
+
+  // Handle opening background remover modal for a single image from ImageManager
+  const handleRemoveBackground = (image: ImageObject) => {
+    setImageToRemoveBackground(image);
+    setBackgroundRemoverModalOpen(true);
+  };
+
+  // Handle background removal completion
+  const handleBackgroundRemovalComplete = (newImage: ImageObject) => {
+    // Update images state with the new version
+    setImages(prevImages => {
+      return prevImages.map(img => {
+        if (img.id === newImage.id) {
+          // Clean up old blob URL
+          if (img.url.startsWith('blob:')) {
+            URL.revokeObjectURL(img.url);
+            blobUrlsRef.current.delete(img.url);
+          }
+          // Track new blob URL
+          if (newImage.url.startsWith('blob:')) {
+            blobUrlsRef.current.add(newImage.url);
+          }
+          return newImage;
+        }
+        return img;
+      });
+    });
+
+    // Clear image dimensions so ImageManager recalculates them
+    setImageDimensions([]);
+
+    // Reset layout if this image was in it
+    if (layout.length > 0 && layout.some(item => item.id === newImage.id)) {
+      setLayout([]);
+      toast.info("Layout reset due to image changes. Please regenerate.");
+    }
+
+    setBackgroundRemoverModalOpen(false);
+    setImageToRemoveBackground(null);
   };
 
   const handleImagesRemoved = (imageIds: string[]) => {
@@ -643,6 +771,8 @@ export const CollageCreator = ({
             onImagesAdded={handleImagesAdded}
             onImageDimensionsChanged={handleImageDimensionsChanged}
             onGenerateLayout={handleGenerateLayout}
+            onTrimImage={handleTrimImage}
+            onRemoveBackground={handleRemoveBackground}
             canvasWidthInches={canvasWidthInches}
             spacingInches={spacingInches}
           />
@@ -740,6 +870,28 @@ export const CollageCreator = ({
         riskLevel={memoryWarning.riskLevel}
         memoryMB={memoryWarning.memoryMB}
         message={memoryWarning.message}
+      />
+
+      {/* Image Trim Modal */}
+      <ImageTrimModal
+        isOpen={trimModalOpen}
+        onClose={() => {
+          setTrimModalOpen(false);
+          setImagesToTrim([]);
+        }}
+        images={imagesToTrim}
+        onTrimComplete={handleTrimComplete}
+      />
+
+      {/* Background Remover Modal */}
+      <BackgroundRemoverModal
+        isOpen={backgroundRemoverModalOpen}
+        onClose={() => {
+          setBackgroundRemoverModalOpen(false);
+          setImageToRemoveBackground(null);
+        }}
+        image={imageToRemoveBackground}
+        onRemovalComplete={handleBackgroundRemovalComplete}
       />
 
       {/* Loading Overlay - Layout Generation */}

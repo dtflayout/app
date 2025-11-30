@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
-import { Copy, Trash2 } from "lucide-react";
+import { Copy, Trash2, Scissors, Eraser } from "lucide-react";
 import { ImageObject } from "./CollageCreator";
 import { toast } from "sonner";
 import { ImageDimension } from "@/utils/layoutAlgorithm";
@@ -13,16 +13,20 @@ interface ImageManagerProps {
   onImagesAdded: (images: ImageObject[]) => void;
   onImageDimensionsChanged: (dimensions: ImageDimension[]) => void;
   onGenerateLayout: () => void;
+  onTrimImage: (image: ImageObject) => void;
+  onRemoveBackground: (image: ImageObject) => void;
   canvasWidthInches: number;
   spacingInches: number;
 }
 
-export const ImageManager = ({ 
-  images, 
-  onImagesRemoved, 
+export const ImageManager = ({
+  images,
+  onImagesRemoved,
   onImagesAdded,
   onImageDimensionsChanged,
   onGenerateLayout,
+  onTrimImage,
+  onRemoveBackground,
   canvasWidthInches,
   spacingInches
 }: ImageManagerProps) => {
@@ -36,52 +40,70 @@ export const ImageManager = ({
   const [aspectRatioLocked, setAspectRatioLocked] = useState<Map<string, boolean>>(new Map());
   const [dimensionErrors, setDimensionErrors] = useState<Map<string, { width: boolean; height: boolean }>>(new Map());
   const [inputValues, setInputValues] = useState<Map<string, { width: string; height: string }>>(new Map());
+  // Use ref to track image URLs (avoids stale closure issues)
+  const imageUrlsRef = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
-    const newDimensions = new Map(imageDimensions);
-    const newAspectRatioLocks = new Map(aspectRatioLocked);
-    let hasNewImages = false;
-    
     images.forEach(img => {
-      if (!newDimensions.has(img.id)) {
-        hasNewImages = true;
+      const previousUrl = imageUrlsRef.current.get(img.id);
+      const isNewImage = !imageDimensions.has(img.id);
+      const urlChanged = previousUrl !== undefined && previousUrl !== img.url;
+
+      // Need to recalculate if it's a new image OR if the URL changed (e.g., after trimming)
+      if (isNewImage || urlChanged) {
+        // Update the ref immediately
+        imageUrlsRef.current.set(img.id, img.url);
+
         const imageEl = new Image();
         imageEl.onload = () => {
           const widthPixels = imageEl.naturalWidth;
           const heightPixels = imageEl.naturalHeight;
-          
+
           // Assume 150 DPI as standard for calculating initial inch dimensions (matches export resolution)
           const standardDpi = 150;
           const widthInches = parseFloat((widthPixels / standardDpi).toFixed(2));
           const heightInches = parseFloat((heightPixels / standardDpi).toFixed(2));
-          
-          newDimensions.set(img.id, { 
-            width: widthInches, 
-            height: heightInches,
-            widthPixels,
-            heightPixels,
-            dpi: standardDpi
+
+          setImageDimensions(prev => {
+            const updated = new Map(prev);
+            updated.set(img.id, {
+              width: widthInches,
+              height: heightInches,
+              widthPixels,
+              heightPixels,
+              dpi: standardDpi
+            });
+            return updated;
           });
-          newAspectRatioLocks.set(img.id, true);
-          
-          const newInputValues = new Map(inputValues);
-          newInputValues.set(img.id, { 
-            width: widthInches.toFixed(2), 
-            height: heightInches.toFixed(2) 
+
+          setAspectRatioLocked(prev => {
+            const updated = new Map(prev);
+            updated.set(img.id, true);
+            return updated;
           });
-          setInputValues(newInputValues);
-          
-          setImageDimensions(new Map(newDimensions));
-          setAspectRatioLocked(new Map(newAspectRatioLocks));
+
+          setInputValues(prev => {
+            const updated = new Map(prev);
+            updated.set(img.id, {
+              width: widthInches.toFixed(2),
+              height: heightInches.toFixed(2)
+            });
+            return updated;
+          });
         };
         imageEl.src = img.url;
+      } else if (!imageUrlsRef.current.has(img.id)) {
+        // Track URL for existing images that weren't tracked before
+        imageUrlsRef.current.set(img.id, img.url);
       }
     });
-    
-    if (hasNewImages) {
-      setImageDimensions(newDimensions);
-      setAspectRatioLocked(newAspectRatioLocks);
-    }
+
+    // Clean up URLs for removed images
+    imageUrlsRef.current.forEach((_, id) => {
+      if (!images.find(img => img.id === id)) {
+        imageUrlsRef.current.delete(id);
+      }
+    });
   }, [images]);
 
   const handleCopyImage = (id: string) => {
@@ -366,11 +388,27 @@ export const ImageManager = ({
                     </div>
                   </div>
 
-                  {/* Original dimensions */}
+                  {/* Image dimensions - show original and trimmed if image was trimmed */}
                   {dimensions && (
-                    <p className="text-sm text-slate-500 mb-2">
-                      Original: <span className="font-mono">{dimensions.widthPixels} × {dimensions.heightPixels} px</span>
-                    </p>
+                    <div className="text-sm text-slate-500 mb-2 space-y-0.5">
+                      {image.originalWidth && image.originalHeight ? (
+                        <>
+                          <p>
+                            Original: <span className="font-mono">{image.originalWidth} × {image.originalHeight} px</span>
+                          </p>
+                          <p className="text-emerald-600">
+                            Trimmed: <span className="font-mono">{dimensions.widthPixels} × {dimensions.heightPixels} px</span>
+                            <span className="ml-1 text-xs">
+                              (-{Math.round((1 - (dimensions.widthPixels * dimensions.heightPixels) / (image.originalWidth * image.originalHeight)) * 100)}%)
+                            </span>
+                          </p>
+                        </>
+                      ) : (
+                        <p>
+                          Original: <span className="font-mono">{dimensions.widthPixels} × {dimensions.heightPixels} px</span>
+                        </p>
+                      )}
+                    </div>
                   )}
 
                   {/* Lock Aspect Ratio Toggle - Homepage style */}
@@ -393,22 +431,42 @@ export const ImageManager = ({
                     <span className="text-sm text-slate-700 select-none">Lock Aspect Ratio</span>
                   </div>
 
-                  {/* Action buttons - Homepage style */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleCopyImage(image.id)}
-                      className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:text-slate-800 transition-colors"
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                      Duplicate
-                    </button>
-                    <button
-                      onClick={() => onImagesRemoved([image.id])}
-                      className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 text-sm font-medium text-red-600 bg-white border border-slate-300 rounded-lg hover:bg-red-50 hover:border-red-300 transition-colors"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Delete
-                    </button>
+                  {/* Action buttons */}
+                  <div className="space-y-2">
+                    {/* Row 1: Trim and Remove Background */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => onTrimImage(image)}
+                        className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 text-sm font-medium text-emerald-600 bg-white border border-slate-300 rounded-lg hover:bg-emerald-50 hover:border-emerald-300 transition-colors"
+                      >
+                        <Scissors className="h-3.5 w-3.5" />
+                        Trim
+                      </button>
+                      <button
+                        onClick={() => onRemoveBackground(image)}
+                        className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 text-sm font-medium text-purple-600 bg-white border border-slate-300 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-colors"
+                      >
+                        <Eraser className="h-3.5 w-3.5" />
+                        Remove BG
+                      </button>
+                    </div>
+                    {/* Row 2: Duplicate and Delete */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleCopyImage(image.id)}
+                        className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:text-slate-800 transition-colors"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        Duplicate
+                      </button>
+                      <button
+                        onClick={() => onImagesRemoved([image.id])}
+                        className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 text-sm font-medium text-red-600 bg-white border border-slate-300 rounded-lg hover:bg-red-50 hover:border-red-300 transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               );

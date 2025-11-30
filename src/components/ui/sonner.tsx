@@ -13,11 +13,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
       position="bottom-center"
       duration={4000}
       className="toaster group"
+      style={{ '--width': '560px' } as React.CSSProperties}
       toastOptions={{
         unstyled: true,
         classNames: {
           toast:
-            "!flex !flex-row !items-center !gap-4 p-4 rounded-2xl bg-white max-w-[400px] w-full transition-all duration-200 ease-in-out hover:scale-[1.03]",
+            "!flex !flex-row !items-center !gap-4 p-4 rounded-2xl bg-white w-[560px] transition-all duration-200 ease-in-out hover:scale-[1.03]",
           title: "text-lg font-medium text-slate-900 !ml-2",
           description: "text-slate-600 text-sm !ml-2",
           actionButton:
@@ -28,6 +29,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         },
         style: {
           boxShadow: '0 4px 12px rgba(0,0,0,.1), 0 20px 40px rgba(0,0,0,.1)',
+          width: '560px',
         },
       }}
       icons={{

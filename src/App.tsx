@@ -14,6 +14,7 @@ import { SheetLogs } from "./pages/SheetLogs";
 import Dashboard from "./pages/Dashboard";
 import Billing from "./pages/Billing";
 import Support from "./pages/Support";
+import ImageEnhancerPage from "./pages/ImageEnhancerPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 import Home from "./pages/marketing/Home";
@@ -90,6 +91,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Support />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/app/image-enhancer"
+              element={
+                <ProtectedRoute>
+                  <ImageEnhancerPage />
                 </ProtectedRoute>
               }
             />

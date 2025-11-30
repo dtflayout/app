@@ -1,12 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useOutseta } from "@/contexts/OutsetaContext";
-import { Loader2 } from "lucide-react";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { outseta, user, refreshUser } = useOutseta();
-  const widgetInitialized = useRef(false);
+  const { user, refreshUser } = useOutseta();
 
   useEffect(() => {
     // Check if user is already authenticated
@@ -16,21 +14,6 @@ const LoginPage = () => {
   }, [user, navigate]);
 
   useEffect(() => {
-    // Initialize Outseta auth widget in embedded mode - login only
-    if (outseta && !widgetInitialized.current) {
-      widgetInitialized.current = true;
-
-      // Small delay to ensure DOM is ready
-      setTimeout(() => {
-        outseta.auth.open({
-          mode: 'embed',
-          selector: '#outseta-login-embed',
-          widgetMode: 'login',
-          authenticationCallbackUrl: window.location.origin + "/app",
-        });
-      }, 100);
-    }
-
     // Handle successful login - just redirect
     const handleLogin = async () => {
       console.log("Login event triggered");
@@ -44,7 +27,7 @@ const LoginPage = () => {
     return () => {
       window.removeEventListener("accessToken.set", handleLogin);
     };
-  }, [outseta, navigate, refreshUser]);
+  }, [navigate, refreshUser]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-emerald-50/50 via-white to-white py-12 px-4">
@@ -69,13 +52,12 @@ const LoginPage = () => {
 
         {/* Outseta auth widget embedded here */}
         <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-          <div id="outseta-login-embed" className="min-h-[320px] flex items-center justify-center">
-            {/* Loading state while widget initializes */}
-            <div className="text-center py-12">
-              <Loader2 className="animate-spin w-8 h-8 text-emerald-500 mx-auto mb-3" />
-              <p className="text-slate-500">Loading...</p>
-            </div>
-          </div>
+          <div
+            data-o-auth="1"
+            data-mode="embed"
+            data-widget-mode="login"
+            className="w-full min-h-[320px]"
+          ></div>
         </div>
 
         {/* Footer link */}
