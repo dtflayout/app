@@ -1,16 +1,29 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import MarketingLayout from "@/components/marketing/MarketingLayout";
 import GradientButton from "@/components/marketing/GradientButton";
 import { Card } from "@/components/ui/card";
-import { Check, Info } from "lucide-react";
+import { Check, Info, Loader2 } from "lucide-react";
 import { Highlighter } from "@/components/ui/highlighter";
 import { MobileTooltip } from "@/components/ui/tooltip";
+import { toast } from "sonner";
+import { useOutseta } from "@/contexts/OutsetaContext";
+import {
+  initiateRazorpayCheckout,
+  verifyPaymentAndAddCredits,
+  PricingPlan,
+  UserInfo,
+} from "@/services/paymentService";
 
 // Define pricing data outside component to prevent recreation on every render
+// Each plan includes id and priceValue for payment processing
 const PLANS = [
     {
+      id: "free_trial",
       price: "Rs. 0",
+      priceValue: 0,
       credits: "5,000 sq.inch",
+      creditsValue: 5000,
       rate: "0 paisa/sq.inch",
       gradient: "linear-gradient(to bottom, #f0f9ff 0%, #f0f9ff 20%, white 50%, white 100%)",  // lightest
       badge: "Free Trial",
@@ -24,8 +37,11 @@ const PLANS = [
       popular: false,
     },
     {
+      id: "lite",
       price: "Rs. 1,000",
+      priceValue: 1000,
       credits: "1 Lac sq.inch",
+      creditsValue: 100000,
       rate: "1 paisa/sq.inch",
       gradient: "linear-gradient(to bottom, #e0f2fe 0%, #e0f2fe 20%, white 50%, white 100%)",
       badge: "Lite",
@@ -39,8 +55,11 @@ const PLANS = [
       popular: false,
     },
     {
+      id: "pro",
       price: "Rs. 4,000",
+      priceValue: 4000,
       credits: "5 Lac sq.inch",
+      creditsValue: 500000,
       rate: "0.8 paisa/sq.inch",
       gradient: "linear-gradient(to bottom, #d6f0fd 0%, #d6f0fd 20%, white 50%, white 100%)",
       badge: "Pro",
@@ -54,8 +73,11 @@ const PLANS = [
       popular: false,
     },
     {
+      id: "enterprise",
       price: "Rs. 8,000",
+      priceValue: 8000,
       credits: "16 Lac sq.inch",
+      creditsValue: 1600000,
       rate: "0.5 paisa/sq.inch",
       gradient: "linear-gradient(to bottom, #bae6fd 0%, #bae6fd 20%, white 50%, white 100%)",  // darkest
       badge: "Enterprise",
@@ -68,10 +90,101 @@ const PLANS = [
       cta: "Get Started",
       popular: true,
     },
-] as const;
+];
 
 const Pricing3 = () => {
   const navigate = useNavigate();
+  const { user, refreshUser } = useOutseta();
+  const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
+
+  // Handle plan purchase
+  const handleGetStarted = async (plan: typeof PLANS[number]) => {
+    // If user is not logged in, redirect to auth
+    if (!user) {
+      toast.info("Please sign in to purchase a plan");
+      navigate("/auth");
+      return;
+    }
+
+    // Prevent double-clicks
+    if (processingPlanId) return;
+
+    setProcessingPlanId(plan.id);
+
+    try {
+      // Prepare user info for Razorpay
+      const userInfo: UserInfo = {
+        name: `${user.FirstName || ''} ${user.LastName || ''}`.trim() || user.Email,
+        email: user.Email,
+        phone: user.PhoneNumber || undefined,
+        outsetaAccountId: user.Account?.Uid,
+      };
+
+      // Convert plan to PricingPlan format for payment service
+      const pricingPlan: PricingPlan = {
+        id: plan.id,
+        name: plan.badge,
+        price: plan.priceValue,
+        credits: plan.creditsValue,
+        badge: plan.badge,
+        description: plan.description,
+        features: [], // Not needed for checkout
+      };
+
+      // Handle free trial differently
+      if (plan.priceValue === 0) {
+        // Add free trial credits via backend
+        const verifyResult = await verifyPaymentAndAddCredits({
+          razorpay_payment_id: `free_trial_${Date.now()}`,
+          plan_id: plan.id,
+          outseta_account_id: userInfo.outsetaAccountId || '',
+          user_email: userInfo.email || '',
+          amount: 0,
+        });
+
+        if (verifyResult.success) {
+          toast.success(`Free trial activated! ${plan.credits} added to your account.`);
+          await refreshUser();
+          navigate("/app");
+        } else {
+          toast.error(verifyResult.error || "Failed to activate free trial");
+        }
+        return;
+      }
+
+      // Initiate Razorpay checkout for paid plans
+      const result = await initiateRazorpayCheckout(pricingPlan, userInfo);
+
+      if (result.success && result.paymentId) {
+        console.log("[Payment] Razorpay success! Verifying payment...");
+
+        // Verify payment and add credits via backend
+        const verifyResult = await verifyPaymentAndAddCredits({
+          razorpay_payment_id: result.paymentId,
+          razorpay_order_id: result.orderId,
+          plan_id: plan.id,
+          outseta_account_id: userInfo.outsetaAccountId || '',
+          user_email: userInfo.email || '',
+          amount: plan.priceValue,
+        });
+
+        if (verifyResult.success) {
+          toast.success(`Payment successful! ${verifyResult.credits_added?.toLocaleString()} sq.inch added to your account.`);
+          await refreshUser();
+          navigate("/app");
+        } else {
+          toast.error(verifyResult.error || "Payment verification failed. Please contact support.");
+        }
+      }
+    } catch (error: any) {
+      console.error("[Payment] Error:", error);
+      if (error?.error !== 'Payment cancelled by user') {
+        toast.error(error?.error || "Payment failed. Please try again.");
+      }
+    } finally {
+      setProcessingPlanId(null);
+    }
+  };
 
   return (
     <MarketingLayout>
@@ -205,9 +318,17 @@ const Pricing3 = () => {
                     <GradientButton
                       variant="hero"
                       className="w-full"
-                      onClick={() => navigate("/auth")}
+                      onClick={() => handleGetStarted(plan)}
+                      disabled={processingPlanId !== null}
                     >
-                      {plan.cta}
+                      {processingPlanId === plan.id ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          Processing...
+                        </span>
+                      ) : (
+                        plan.cta
+                      )}
                     </GradientButton>
                   </div>
                 </Card>
