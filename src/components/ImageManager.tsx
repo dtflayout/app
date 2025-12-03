@@ -50,15 +50,36 @@ export const ImageManager = ({
       const isNewImage = !imageDimensions.has(img.id);
       const urlChanged = previousUrl !== undefined && previousUrl !== img.url;
 
-      // Need to recalculate if it's a new image OR if the URL changed (e.g., after trimming)
+      // Need to recalculate if it's a new image OR if the URL changed (e.g., after trimming/bg removal)
       if (isNewImage || urlChanged) {
         // Update the ref immediately
         imageUrlsRef.current.set(img.id, img.url);
+
+        // IMPORTANT: Clear old cached dimensions immediately when URL changes
+        // This forces recalculation and prevents stale dimensions from being used
+        if (urlChanged) {
+          setImageDimensions(prev => {
+            const updated = new Map(prev);
+            updated.delete(img.id);
+            return updated;
+          });
+          setInputValues(prev => {
+            const updated = new Map(prev);
+            updated.delete(img.id);
+            return updated;
+          });
+        }
 
         const imageEl = new Image();
         imageEl.onload = () => {
           const widthPixels = imageEl.naturalWidth;
           const heightPixels = imageEl.naturalHeight;
+
+          // Validate dimensions - protect against invalid image data
+          if (widthPixels <= 0 || heightPixels <= 0) {
+            console.error(`[ImageManager] Invalid dimensions for image ${img.id}: ${widthPixels}x${heightPixels}`);
+            return;
+          }
 
           // Assume 150 DPI as standard for calculating initial inch dimensions (matches export resolution)
           const standardDpi = 150;
@@ -91,6 +112,29 @@ export const ImageManager = ({
             });
             return updated;
           });
+
+          // Immediately notify parent about dimensions when URL changed (e.g., after bg removal)
+          // This ensures the layout algorithm always has fresh dimensions
+          if (urlChanged) {
+            const dimensionsArray: ImageDimension[] = [];
+            // Include this newly calculated dimension
+            dimensionsArray.push({
+              id: img.id,
+              widthInches: widthInches,
+              heightInches: heightInches
+            });
+            // Include all other existing dimensions
+            imageDimensions.forEach((dims, imgId) => {
+              if (imgId !== img.id) {
+                dimensionsArray.push({
+                  id: imgId,
+                  widthInches: dims.width,
+                  heightInches: dims.height
+                });
+              }
+            });
+            onImageDimensionsChanged(dimensionsArray);
+          }
         };
         imageEl.src = img.url;
       } else if (!imageUrlsRef.current.has(img.id)) {
@@ -106,6 +150,33 @@ export const ImageManager = ({
       }
     });
   }, [images]);
+
+  // Sync dimensions to parent whenever all images have dimensions calculated
+  // This ensures parent always has the latest dimensions for layout generation
+  useEffect(() => {
+    // Only sync when we have dimensions for all images
+    if (images.length === 0) return;
+    if (imageDimensions.size === 0) return;
+
+    // Check if all images have dimensions
+    const allHaveDimensions = images.every(img => imageDimensions.has(img.id));
+    if (!allHaveDimensions) return;
+
+    const dimensionsArray: ImageDimension[] = [];
+    imageDimensions.forEach((dims, imgId) => {
+      // Skip invalid dimensions
+      if (dims.width <= 0 || dims.height <= 0) return;
+      dimensionsArray.push({
+        id: imgId,
+        widthInches: dims.width,
+        heightInches: dims.height
+      });
+    });
+
+    if (dimensionsArray.length > 0) {
+      onImageDimensionsChanged(dimensionsArray);
+    }
+  }, [imageDimensions, images, onImageDimensionsChanged]);
 
   const handleCopyImage = (id: string) => {
     const imageToCopy = images.find(img => img.id === id);

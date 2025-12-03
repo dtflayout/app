@@ -254,12 +254,32 @@ export const generateLayout = (
   spacingInches: number = 0.3
 ): { positionedImages: PositionedImage[]; totalHeightInches: number } => {
   PADDING_INCHES = spacingInches;
-  
+
   if (images.length === 0) {
     return { positionedImages: [], totalHeightInches: 0 };
   }
 
   console.log("Layout algorithm received images:", images);
+
+  // SAFEGUARD: Filter out images with invalid or zero dimensions
+  // This prevents layout issues when dimensions haven't been calculated yet
+  const validImages = images.filter(img => {
+    const isValid = img.widthInches > 0 && img.heightInches > 0 &&
+                    isFinite(img.widthInches) && isFinite(img.heightInches);
+    if (!isValid) {
+      console.warn(`[Layout] Skipping image ${img.id} with invalid dimensions: ${img.widthInches}x${img.heightInches}`);
+    }
+    return isValid;
+  });
+
+  if (validImages.length === 0) {
+    console.warn("[Layout] No images with valid dimensions to layout");
+    return { positionedImages: [], totalHeightInches: 0 };
+  }
+
+  if (validImages.length !== images.length) {
+    console.warn(`[Layout] Filtered ${images.length - validImages.length} images with invalid dimensions`);
+  }
 
   const availableWidthInches = sheetWidthInches - (PADDING_INCHES * 2);
 
@@ -268,9 +288,9 @@ export const generateLayout = (
   let bestLayout: PositionedImage[] = [];
   let bestHeight = Infinity;
   let bestStrategy = '';
-  
+
   for (const strategy of strategies) {
-    const positions = packWithStrategy(images, availableWidthInches, strategy);
+    const positions = packWithStrategy(validImages, availableWidthInches, strategy);
     const totalHeight = calculateTotalHeight(positions);
     
     if (totalHeight < bestHeight) {
