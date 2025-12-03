@@ -252,7 +252,7 @@ const logPayment = async (
 
   try {
     const { data: insertedData, error } = await supabase
-      .from('payment_logs')
+      .from('transactions')
       .insert(insertData)
       .select();
 

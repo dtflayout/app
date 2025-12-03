@@ -70,7 +70,7 @@ const Billing = () => {
 
     try {
       const { data, error } = await supabase
-        .from('payment_logs')
+        .from('transactions')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
