@@ -6,7 +6,7 @@ import { Canvas } from "./Canvas";
 import { ImageManager } from "./ImageManager";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Download, RefreshCw, CreditCard } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 import { generateLayout, ImageDimension, PositionedImage } from "@/utils/layoutAlgorithm";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -781,58 +781,65 @@ export const CollageCreator = ({
 
       {/* Insufficient Credits Modal */}
       <Dialog open={showInsufficientCreditsModal} onOpenChange={setShowInsufficientCreditsModal}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-xl p-8">
           <DialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="flex-shrink-0 w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6 text-amber-600" />
+            <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+              <div className="flex-shrink-0 w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
               </div>
-              <DialogTitle className="text-xl">Insufficient Credits</DialogTitle>
-            </div>
+              Insufficient Credits
+            </DialogTitle>
             <DialogDescription asChild>
-              <div className="text-base pt-2">
+              <div className="text-base pt-4">
                 {insufficientCreditsData && (
-                  <div className="space-y-4">
-                    {/* Credit comparison */}
-                    <div className="bg-slate-50 rounded-lg p-4 space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Required:</span>
-                        <span className="font-bold text-amber-700">{formatNumber(insufficientCreditsData.needed)} sq.in</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Your Balance:</span>
-                        <span className="font-bold text-red-600">{formatNumber(insufficientCreditsData.available)} sq.in</span>
-                      </div>
-                      <div className="border-t pt-2 flex justify-between items-center">
-                        <span className="text-gray-600">Shortfall:</span>
-                        <span className="font-bold text-red-700">
-                          {formatNumber(insufficientCreditsData.needed - insufficientCreditsData.available)} sq.in
-                        </span>
+                  <div className="space-y-5">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-5">
+                      <p className="text-lg text-gray-600 mb-2">Credits required:</p>
+                      <p className="text-3xl font-bold text-[#1e3a5f]">
+                        {formatNumber(insufficientCreditsData.needed)} sq.in
+                      </p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <p className="text-lg text-gray-700">
+                        You don't have enough credits for this sheet.
+                      </p>
+
+                      <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-base text-gray-600">Your balance:</span>
+                          <span className="text-lg font-semibold text-gray-900">
+                            {formatNumber(insufficientCreditsData.available)} sq.in
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-t pt-2">
+                          <span className="text-base text-gray-600">Amount needed:</span>
+                          <span className="text-lg font-semibold text-red-600">
+                            {formatNumber(insufficientCreditsData.needed - insufficientCreditsData.available)} sq.in
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600">
-                      Purchase more credits to continue generating sheets, or try reducing the number of images.
-                    </p>
                   </div>
                 )}
               </div>
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-3 sm:gap-2 mt-4">
             <Button
               variant="outline"
               onClick={() => setShowInsufficientCreditsModal(false)}
+              className="h-11 px-6"
             >
               Cancel
             </Button>
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="h-11 px-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-lg font-semibold rounded-xl shadow-md hover:shadow-xl transition-all duration-200"
               onClick={() => {
                 setShowInsufficientCreditsModal(false);
                 navigate('/pricing');
               }}
             >
-              <CreditCard className="w-4 h-4 mr-2" />
               Buy Credits
             </Button>
           </DialogFooter>
