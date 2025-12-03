@@ -334,6 +334,48 @@ export const applyStrokeToCanvas = (
 };
 
 /**
+ * Apply color adjustments to an existing canvas (for stacking effects)
+ */
+export const applyColorAdjustmentsToCanvas = (
+  sourceCanvas: HTMLCanvasElement,
+  settings: EnhancementSettings
+): HTMLCanvasElement => {
+  const canvas = document.createElement('canvas');
+  canvas.width = sourceCanvas.width;
+  canvas.height = sourceCanvas.height;
+
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) throw new Error('Could not get canvas context');
+
+  ctx.drawImage(sourceCanvas, 0, 0);
+
+  // Apply color adjustments
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+
+  // Apply adjustments in order
+  if (settings.brightness !== 0) {
+    adjustBrightness(data, settings.brightness);
+  }
+  if (settings.contrast !== 0) {
+    adjustContrast(data, settings.contrast);
+  }
+  if (settings.vibrance !== 0) {
+    adjustVibrance(data, settings.vibrance);
+  }
+  if (settings.hue !== 0) {
+    adjustHue(data, settings.hue);
+  }
+  if (settings.saturation !== 0) {
+    adjustSaturation(data, settings.saturation);
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+
+  return canvas;
+};
+
+/**
  * Apply all enhancements and return a new canvas
  */
 export const applyAllEnhancements = async (

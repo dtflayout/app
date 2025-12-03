@@ -109,6 +109,7 @@ export const CollageCreator = ({
   const [backgroundRemoverModalOpen, setBackgroundRemoverModalOpen] = useState(false);
   const [imageToRemoveBackground, setImageToRemoveBackground] = useState<ImageObject | null>(null);
   const canvasRef = useRef<any>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   // Track blob URLs for cleanup, but DON'T auto-revoke during renders/HMR
   // Only revoke when explicitly deleting images or on true unmount
@@ -604,6 +605,13 @@ export const CollageCreator = ({
     // Show success message
     toast.success(`Layout generated! ${formatNumber(pendingLayout.sqInches)} sq.in deducted from your balance.`);
 
+    // Step 7: Scroll to the canvas after it renders
+    setTimeout(() => {
+      if (canvasContainerRef.current) {
+        canvasContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+
     console.log("[Credit Deduction] ✅ Transaction complete!");
   };
 
@@ -780,7 +788,7 @@ export const CollageCreator = ({
       )}
 
       {layout.length > 0 && (
-        <div className="mt-8 pb-16">
+        <div ref={canvasContainerRef} className="mt-8 pb-16">
           <Canvas
             ref={canvasRef}
             images={images}

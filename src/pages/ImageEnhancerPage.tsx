@@ -8,6 +8,7 @@ import {
   EnhancementSettings,
   defaultEnhancementSettings,
   applyColorAdjustments,
+  applyColorAdjustmentsToCanvas,
   applyStrokeToCanvas,
   applyEnhancementsToBlob,
   hasChanges,
@@ -67,8 +68,11 @@ const ImageEnhancerPage = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const originalImageRef = useRef<HTMLImageElement | null>(null);
+  // Color adjusted canvas (without stroke) - base for applying stroke
   const colorAdjustedCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  // Store the stroked canvas so color adjustments don't overwrite it
+  // Pure stroked canvas (stroke applied to color-adjusted, before further color adjustments)
+  const pureStrokedCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  // Final combined canvas: stroke + color adjustments (this is what we display)
   const strokedCanvasRef = useRef<HTMLCanvasElement | null>(null);
   // Store the canvas state before erasing for undo
   const preEraserCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -137,15 +141,9 @@ const ImageEnhancerPage = () => {
   }, [getDisplayScale]);
 
   // Apply color adjustments in real-time (fast, no stroke)
-  // If stroke has been applied, display the stroked canvas instead
+  // If stroke has been applied, apply color adjustments on TOP of the stroked image
   useEffect(() => {
     if (!imageUrl || !canvasRef.current) return;
-
-    // If stroke is applied, just display the stroked canvas (don't re-process)
-    if (strokedCanvasRef.current) {
-      drawToDisplay(strokedCanvasRef.current);
-      return;
-    }
 
     // Need original image to be loaded
     if (imageSize.width === 0) return;
@@ -157,12 +155,20 @@ const ImageEnhancerPage = () => {
     debounceTimeoutRef.current = setTimeout(async () => {
       setIsProcessing(true);
       try {
-        // Only apply color adjustments (fast) - NO stroke here
+        // First, always apply color adjustments to original image (for stroke base)
         const colorCanvas = await applyColorAdjustments(imageUrl, settings);
         colorAdjustedCanvasRef.current = colorCanvas;
 
-        // Display the color-adjusted image (without stroke)
-        drawToDisplay(colorCanvas);
+        // If stroke has been applied, apply color adjustments to the stroked canvas
+        if (pureStrokedCanvasRef.current && strokeApplied) {
+          // Apply color adjustments on top of the pure stroked canvas
+          const combinedCanvas = applyColorAdjustmentsToCanvas(pureStrokedCanvasRef.current, settings);
+          strokedCanvasRef.current = combinedCanvas;
+          drawToDisplay(combinedCanvas);
+        } else {
+          // No stroke, just display color-adjusted image
+          drawToDisplay(colorCanvas);
+        }
       } catch {
         // Error applying enhancements - silently fail
       } finally {
@@ -175,7 +181,7 @@ const ImageEnhancerPage = () => {
         clearTimeout(debounceTimeoutRef.current);
       }
     };
-  }, [imageUrl, settings.brightness, settings.contrast, settings.vibrance, settings.hue, settings.saturation, zoomLevel, drawToDisplay, imageSize.width]);
+  }, [imageUrl, settings.brightness, settings.contrast, settings.vibrance, settings.hue, settings.saturation, zoomLevel, drawToDisplay, imageSize.width, strokeApplied]);
 
   // Apply stroke on-demand (when Apply Stroke button is clicked)
   const handleApplyStroke = useCallback(async () => {
@@ -188,16 +194,21 @@ const ImageEnhancerPage = () => {
     // Use requestAnimationFrame to ensure UI updates before heavy processing
     requestAnimationFrame(() => {
       try {
+        // Apply stroke to the color-adjusted canvas (no color adjustments yet on stroke)
         const strokeCanvas = applyStrokeToCanvas(
           colorAdjustedCanvasRef.current!,
           settings.stroke.color,
           settings.stroke.width
         );
 
-        // Store the stroked canvas so it persists
-        strokedCanvasRef.current = strokeCanvas;
+        // Store the "pure" stroked canvas (stroke applied, but no color adjustments on stroke pixels)
+        pureStrokedCanvasRef.current = strokeCanvas;
 
-        drawToDisplay(strokeCanvas);
+        // Also apply current color adjustments to get the final display canvas
+        const combinedCanvas = applyColorAdjustmentsToCanvas(strokeCanvas, settings);
+        strokedCanvasRef.current = combinedCanvas;
+
+        drawToDisplay(combinedCanvas);
         setStrokeApplied(true);
         setImageSize({ width: strokeCanvas.width, height: strokeCanvas.height });
 
@@ -208,14 +219,15 @@ const ImageEnhancerPage = () => {
         setIsApplyingStroke(false);
       }
     });
-  }, [settings.stroke.enabled, settings.stroke.color, settings.stroke.width, drawToDisplay]);
+  }, [settings.stroke.enabled, settings.stroke.color, settings.stroke.width, settings, drawToDisplay]);
 
   // Remove stroke
   const handleRemoveStroke = useCallback(async () => {
     if (!imageUrl) return;
 
-    // Clear the stroked canvas ref
+    // Clear the stroked canvas refs
     strokedCanvasRef.current = null;
+    pureStrokedCanvasRef.current = null;
     setStrokeApplied(false);
 
     // Re-render without stroke
@@ -429,6 +441,7 @@ const ImageEnhancerPage = () => {
     setEraserStrokes([]);
     colorAdjustedCanvasRef.current = null;
     strokedCanvasRef.current = null;
+    pureStrokedCanvasRef.current = null;
     preEraserCanvasRef.current = null;
     toast.success(`Loaded: ${file.name}`);
   };
@@ -474,6 +487,7 @@ const ImageEnhancerPage = () => {
     setSettings(defaultEnhancementSettings);
     setStrokeApplied(false);
     strokedCanvasRef.current = null;
+    pureStrokedCanvasRef.current = null;
     // Re-render without stroke by reloading the image
     if (originalImageRef.current) {
       setImageSize({ width: originalImageRef.current.width, height: originalImageRef.current.height });
@@ -558,6 +572,7 @@ const ImageEnhancerPage = () => {
     setEraserStrokes([]);
     colorAdjustedCanvasRef.current = null;
     strokedCanvasRef.current = null;
+    pureStrokedCanvasRef.current = null;
     preEraserCanvasRef.current = null;
   };
 
@@ -582,6 +597,7 @@ const ImageEnhancerPage = () => {
     setStrokeApplied(false);
     colorAdjustedCanvasRef.current = null;
     strokedCanvasRef.current = null;
+    pureStrokedCanvasRef.current = null;
     setShowBackgroundRemover(false);
     toast.success("Background removed!");
   };
@@ -607,6 +623,7 @@ const ImageEnhancerPage = () => {
     setStrokeApplied(false);
     colorAdjustedCanvasRef.current = null;
     strokedCanvasRef.current = null;
+    pureStrokedCanvasRef.current = null;
     setShowTrimModal(false);
     toast.success("Image trimmed!");
   };
@@ -1008,7 +1025,7 @@ const ImageEnhancerPage = () => {
                         value={[settings.stroke.width]}
                         onValueChange={([v]) => updateStrokeSetting('width', v)}
                         min={1}
-                        max={20}
+                        max={40}
                         step={1}
                         disabled={!imageUrl}
                       />

@@ -6,6 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { ImageObject } from "./CollageCreator";
 import {
   RGBColor,
+  ColorWithTolerance,
   removeColorsFromImage,
   generateRemovalPreviewMultiple,
   rgbToHex,
@@ -29,8 +30,7 @@ export const BackgroundRemoverModal = ({
   image,
   onRemovalComplete,
 }: BackgroundRemoverModalProps) => {
-  const [selectedColors, setSelectedColors] = useState<RGBColor[]>([]);
-  const [tolerance, setTolerance] = useState(30);
+  const [selectedColors, setSelectedColors] = useState<ColorWithTolerance[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
@@ -69,7 +69,6 @@ export const BackgroundRemoverModal = ({
 
     setIsLoading(true);
     setSelectedColors([]);
-    setTolerance(30);
     setShowOriginal(false);
     setPreviewCanvas(null);
 
@@ -136,7 +135,7 @@ export const BackgroundRemoverModal = ({
     }
   }, [imageSize, getDisplayScale, zoomLevel, showOriginal, previewCanvas, selectedColors.length]);
 
-  // Generate preview when colors or tolerance changes (debounced)
+  // Generate preview when colors or tolerances change (debounced)
   useEffect(() => {
     if (selectedColors.length === 0 || !image) {
       setPreviewCanvas(null);
@@ -152,7 +151,7 @@ export const BackgroundRemoverModal = ({
     debounceTimeoutRef.current = setTimeout(async () => {
       setIsProcessing(true);
       try {
-        const preview = await generateRemovalPreviewMultiple(image.url, selectedColors, tolerance);
+        const preview = await generateRemovalPreviewMultiple(image.url, selectedColors);
         setPreviewCanvas(preview);
       } catch (error) {
         console.error("Failed to generate preview:", error);
@@ -166,11 +165,11 @@ export const BackgroundRemoverModal = ({
         clearTimeout(debounceTimeoutRef.current);
       }
     };
-  }, [selectedColors, tolerance, image]);
+  }, [selectedColors, image]);
 
   // Check if a color is already in the selected list (within a small tolerance)
   const isColorAlreadySelected = (newColor: RGBColor): boolean => {
-    return selectedColors.some(color =>
+    return selectedColors.some(({ color }) =>
       Math.abs(color.r - newColor.r) < 5 &&
       Math.abs(color.g - newColor.g) < 5 &&
       Math.abs(color.b - newColor.b) < 5
@@ -207,10 +206,17 @@ export const BackgroundRemoverModal = ({
         return;
       }
 
-      // Add to selected colors
-      setSelectedColors(prev => [...prev, color]);
-      toast.success(`Removed color: ${rgbToHex(color)}`);
+      // Add to selected colors with default 30% tolerance
+      setSelectedColors(prev => [...prev, { color, tolerance: 30 }]);
+      toast.success(`Added color: ${rgbToHex(color)}`);
     }
+  };
+
+  // Update tolerance for a specific color
+  const handleToleranceChange = (index: number, newTolerance: number) => {
+    setSelectedColors(prev => prev.map((item, i) =>
+      i === index ? { ...item, tolerance: newTolerance } : item
+    ));
   };
 
   // Remove a specific color from the list
@@ -271,7 +277,6 @@ export const BackgroundRemoverModal = ({
   // Reset to original
   const handleReset = () => {
     setSelectedColors([]);
-    setTolerance(30);
     setPreviewCanvas(null);
   };
 
@@ -321,7 +326,6 @@ export const BackgroundRemoverModal = ({
       const result = await removeColorsFromImage(
         image.url,
         selectedColors,
-        tolerance,
         image.file.name
       );
 
@@ -347,7 +351,6 @@ export const BackgroundRemoverModal = ({
   // Close and cleanup
   const handleClose = () => {
     setSelectedColors([]);
-    setTolerance(30);
     setPreviewCanvas(null);
     setZoomLevel(75);
     setShowOriginal(false);
@@ -383,8 +386,7 @@ export const BackgroundRemoverModal = ({
         <div className="space-y-4">
           {/* Instructions */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
-            Click on the image to select background colors to remove. You can select multiple colors.
-            Adjust the tolerance slider to fine-tune the selection.
+            Click on the image to select background colors to remove. Each color has its own tolerance slider.
           </div>
 
           {/* Image preview with zoom controls */}
@@ -486,77 +488,78 @@ export const BackgroundRemoverModal = ({
             </div>
           </div>
 
-          {/* Selected colors and tolerance controls */}
-          <div className="p-4 bg-slate-50 rounded-lg space-y-4">
-            {/* Selected colors display */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Colors to remove:</Label>
-                {selectedColors.length > 0 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleClearAllColors}
-                    className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-3 w-3 mr-1" />
-                    Clear All
-                  </Button>
-                )}
-              </div>
-
-              {selectedColors.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {selectedColors.map((color, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-1 bg-white rounded-lg border border-slate-200 px-2 py-1 shadow-sm"
-                    >
-                      <div
-                        className="w-6 h-6 rounded border border-slate-300"
-                        style={{ backgroundColor: rgbToHex(color) }}
-                      />
-                      <span className="text-xs font-mono text-slate-600">
-                        {rgbToHex(color)}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveColor(index)}
-                        className="ml-1 p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors"
-                        title="Remove this color"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-400 italic">
-                  Click on the image to select colors to remove
-                </p>
+          {/* Selected colors with individual tolerance controls */}
+          <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Colors to remove:</Label>
+              {selectedColors.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearAllColors}
+                  className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Clear All
+                </Button>
               )}
             </div>
 
-            {/* Tolerance slider */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Tolerance</Label>
-                <span className="text-sm font-mono text-slate-600">{tolerance}%</span>
+            {selectedColors.length > 0 ? (
+              <div className="space-y-2">
+                {selectedColors.map(({ color, tolerance }, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 bg-white rounded-lg border border-slate-200 px-3 py-2 shadow-sm"
+                  >
+                    {/* Color swatch */}
+                    <div
+                      className="w-8 h-8 rounded border border-slate-300 flex-shrink-0"
+                      style={{ backgroundColor: rgbToHex(color) }}
+                    />
+                    {/* Hex code */}
+                    <span className="text-xs font-mono text-slate-600 w-16 flex-shrink-0">
+                      {rgbToHex(color)}
+                    </span>
+                    {/* Tolerance slider */}
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <Slider
+                        value={[tolerance]}
+                        onValueChange={([value]) => handleToleranceChange(index, value)}
+                        min={0}
+                        max={100}
+                        step={1}
+                        className="flex-1"
+                      />
+                      <span className="text-xs font-mono text-slate-500 w-10 text-right flex-shrink-0">
+                        {tolerance}%
+                      </span>
+                    </div>
+                    {/* Remove button */}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveColor(index)}
+                      className="p-1 rounded hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors flex-shrink-0"
+                      title="Remove this color"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
-              <Slider
-                value={[tolerance]}
-                onValueChange={([value]) => setTolerance(value)}
-                min={0}
-                max={100}
-                step={1}
-                disabled={selectedColors.length === 0}
-                className="w-full"
-              />
-              <p className="text-xs text-slate-500">
-                Higher tolerance removes more similar colors. Start low and increase as needed.
+            ) : (
+              <p className="text-sm text-slate-400 italic">
+                Click on the image to select colors to remove
               </p>
-            </div>
+            )}
+
+            {selectedColors.length > 0 && (
+              <p className="text-xs text-slate-500">
+                Adjust each color's tolerance individually. Higher values remove more similar colors.
+              </p>
+            )}
           </div>
 
           {/* Image info */}

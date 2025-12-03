@@ -36,6 +36,7 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
   const [isLoading, setIsLoading] = useState(false);
   const [layoutApplied, setLayoutApplied] = useState(false);
   const [zoom, setZoom] = useState(80);
+  const [previewBg, setPreviewBg] = useState<'transparent' | 'grey' | 'black'>('transparent');
   
   // Calculate canvas dimensions based on props
   const canvasWidthPx = canvasWidthInches * DPI;
@@ -252,6 +253,22 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
     setZoom(100);
   };
 
+  // Get background style based on selected option
+  const getCanvasBackgroundStyle = () => {
+    switch (previewBg) {
+      case 'grey':
+        return { backgroundColor: '#808080' };
+      case 'black':
+        return { backgroundColor: '#000000' };
+      default: // transparent - checkered pattern
+        return {
+          backgroundImage: 'linear-gradient(45deg, #f3f4f6 25%, transparent 25%), linear-gradient(-45deg, #f3f4f6 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f3f4f6 75%), linear-gradient(-45deg, transparent 75%, #f3f4f6 75%)',
+          backgroundSize: '20px 20px',
+          backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+        };
+    }
+  };
+
   // Generate ruler marks
   const generateRulerMarks = (length: number, isVertical: boolean) => {
     const marks = [];
@@ -281,6 +298,50 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
           <Badge variant="secondary" className="bg-blue-600 text-white hover:bg-blue-700 px-5 py-2.5 text-lg font-semibold">
             Size: {canvasWidthInches.toFixed(2)}" × {canvasHeightInches.toFixed(2)}"
           </Badge>
+          {/* Background Preview (Hold to preview) */}
+          <div className="flex items-center gap-2 border rounded-md px-2 py-1" title="Hold to preview background">
+            <span className="text-xs text-slate-500">Press & hold to preview:</span>
+            <div
+              className="h-6 w-6 rounded flex items-center justify-center bg-blue-50 ring-1 ring-blue-300"
+              title="Default (checkered)"
+            >
+              <div
+                className="w-4 h-4 rounded-sm border border-slate-300"
+                style={{
+                  backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
+                  backgroundSize: '6px 6px',
+                  backgroundPosition: '0 0, 0 3px, 3px -3px, -3px 0px'
+                }}
+              />
+            </div>
+            <button
+              onMouseDown={() => setPreviewBg('grey')}
+              onMouseUp={() => setPreviewBg('transparent')}
+              onMouseLeave={() => setPreviewBg('transparent')}
+              className={`h-6 w-6 rounded flex items-center justify-center transition-colors select-none ${
+                previewBg === 'grey'
+                  ? 'bg-gray-200 ring-2 ring-gray-400'
+                  : 'hover:bg-slate-100'
+              }`}
+              title="Hold to preview grey background"
+            >
+              <div className="w-4 h-4 rounded-sm bg-gray-500 border border-slate-300" />
+            </button>
+            <button
+              onMouseDown={() => setPreviewBg('black')}
+              onMouseUp={() => setPreviewBg('transparent')}
+              onMouseLeave={() => setPreviewBg('transparent')}
+              className={`h-6 w-6 rounded flex items-center justify-center transition-colors select-none ${
+                previewBg === 'black'
+                  ? 'bg-gray-700 ring-2 ring-gray-500'
+                  : 'hover:bg-slate-100'
+              }`}
+              title="Hold to preview black background"
+            >
+              <div className="w-4 h-4 rounded-sm bg-black border border-slate-300" />
+            </button>
+          </div>
+          {/* Zoom Controls */}
           <div className="flex items-center gap-2 border rounded-md p-1">
             <Button
               variant="ghost"
@@ -346,14 +407,12 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
         </div>
         
         {/* Canvas Area */}
-        <div 
+        <div
           className="absolute top-[40px] left-[40px]"
           style={{
             width: `${canvasWidthPx * (zoom / 100)}px`,
             height: `${Math.max(canvasHeightInches * DPI, MIN_CANVAS_HEIGHT_PX) * (zoom / 100)}px`,
-            backgroundImage: 'linear-gradient(45deg, #f3f4f6 25%, transparent 25%), linear-gradient(-45deg, #f3f4f6 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f3f4f6 75%), linear-gradient(-45deg, transparent 75%, #f3f4f6 75%)',
-            backgroundSize: '20px 20px',
-            backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+            ...getCanvasBackgroundStyle()
           }}
         >
           <div style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top left' }}>

@@ -8,6 +8,11 @@ export interface RGBColor {
   b: number;
 }
 
+export interface ColorWithTolerance {
+  color: RGBColor;
+  tolerance: number;
+}
+
 export interface RemovalResult {
   url: string;
   file: File;
@@ -61,6 +66,19 @@ export const isColorWithinToleranceMultiple = (
   tolerance: number
 ): boolean => {
   return targets.some(target => isColorWithinTolerance(pixel, target, tolerance));
+};
+
+/**
+ * Check if a pixel color matches ANY of the target colors, each with its own tolerance
+ * @param pixel The pixel color to check
+ * @param targets Array of colors with individual tolerances
+ * @returns true if the pixel matches any of the target colors within their respective tolerances
+ */
+export const isColorWithinIndividualTolerances = (
+  pixel: RGBColor,
+  targets: ColorWithTolerance[]
+): boolean => {
+  return targets.some(({ color, tolerance }) => isColorWithinTolerance(pixel, color, tolerance));
 };
 
 /**
@@ -146,21 +164,19 @@ export const removeColorFromImage = async (
   tolerance: number,
   originalFileName: string
 ): Promise<RemovalResult> => {
-  return removeColorsFromImage(imageUrl, [targetColor], tolerance, originalFileName);
+  return removeColorsFromImage(imageUrl, [{ color: targetColor, tolerance }], originalFileName);
 };
 
 /**
  * Remove multiple colors from an image, making matching pixels transparent
  * @param imageUrl URL of the source image
- * @param targetColors Array of colors to remove
- * @param tolerance Tolerance value (0-100)
+ * @param targetColors Array of colors with individual tolerances to remove
  * @param originalFileName Original filename for the new File object
  * @returns New image URL and File with the colors removed
  */
 export const removeColorsFromImage = async (
   imageUrl: string,
-  targetColors: RGBColor[],
-  tolerance: number,
+  targetColors: ColorWithTolerance[],
   originalFileName: string
 ): Promise<RemovalResult> => {
   if (targetColors.length === 0) {
@@ -191,7 +207,7 @@ export const removeColorsFromImage = async (
       b: data[i + 2],
     };
 
-    if (isColorWithinToleranceMultiple(pixel, targetColors, tolerance)) {
+    if (isColorWithinIndividualTolerances(pixel, targetColors)) {
       // Make pixel transparent
       data[i + 3] = 0;
     }
@@ -237,20 +253,18 @@ export const generateRemovalPreview = async (
   targetColor: RGBColor,
   tolerance: number
 ): Promise<HTMLCanvasElement> => {
-  return generateRemovalPreviewMultiple(imageUrl, [targetColor], tolerance);
+  return generateRemovalPreviewMultiple(imageUrl, [{ color: targetColor, tolerance }]);
 };
 
 /**
  * Generate a preview of multiple color removal without creating a new file
  * @param imageUrl URL of the source image
- * @param targetColors Array of colors to remove
- * @param tolerance Tolerance value (0-100)
+ * @param targetColors Array of colors with individual tolerances to remove
  * @returns Canvas with the preview
  */
 export const generateRemovalPreviewMultiple = async (
   imageUrl: string,
-  targetColors: RGBColor[],
-  tolerance: number
+  targetColors: ColorWithTolerance[]
 ): Promise<HTMLCanvasElement> => {
   const img = await loadImage(imageUrl);
 
@@ -281,7 +295,7 @@ export const generateRemovalPreviewMultiple = async (
       b: data[i + 2],
     };
 
-    if (isColorWithinToleranceMultiple(pixel, targetColors, tolerance)) {
+    if (isColorWithinIndividualTolerances(pixel, targetColors)) {
       // Make pixel transparent
       data[i + 3] = 0;
     }

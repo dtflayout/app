@@ -40,6 +40,7 @@ export const ImageManager = ({
   const [aspectRatioLocked, setAspectRatioLocked] = useState<Map<string, boolean>>(new Map());
   const [dimensionErrors, setDimensionErrors] = useState<Map<string, { width: boolean; height: boolean }>>(new Map());
   const [inputValues, setInputValues] = useState<Map<string, { width: string; height: string }>>(new Map());
+  const [thumbnailBg, setThumbnailBg] = useState<'transparent' | 'grey' | 'black'>('transparent');
   // Use ref to track image URLs (avoids stale closure issues)
   const imageUrlsRef = useRef<Map<string, string>>(new Map());
 
@@ -290,10 +291,74 @@ export const ImageManager = ({
     return "Excellent Resolution";
   };
 
+  // Get thumbnail background style based on selected option
+  const getThumbnailBgStyle = () => {
+    switch (thumbnailBg) {
+      case 'grey':
+        return { backgroundColor: '#808080' };
+      case 'black':
+        return { backgroundColor: '#000000' };
+      default: // transparent - checkered pattern
+        return {
+          backgroundImage: 'linear-gradient(45deg, #e2e8f0 25%, transparent 25%), linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e2e8f0 75%), linear-gradient(-45deg, transparent 75%, #e2e8f0 75%)',
+          backgroundSize: '10px 10px',
+          backgroundPosition: '0 0, 0 5px, 5px -5px, -5px 0px',
+          backgroundColor: '#f8fafc'
+        };
+    }
+  };
+
   return (
     <TooltipProvider delayDuration={200}>
       <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-4 animate-fade-in">
-        <h2 className="text-2xl font-bold mb-4 text-slate-800">Uploaded Images</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-slate-800">Uploaded Images</h2>
+          {/* Thumbnail Background Preview (Hold to preview) */}
+          {images.length > 0 && (
+            <div className="flex items-center gap-2 border rounded-md px-2 py-1" title="Hold to preview background">
+              <span className="text-xs text-slate-500">Press & hold to preview:</span>
+              <div
+                className="h-5 w-5 rounded flex items-center justify-center bg-blue-50 ring-1 ring-blue-300"
+                title="Default (checkered)"
+              >
+                <div
+                  className="w-3.5 h-3.5 rounded-sm border border-slate-300"
+                  style={{
+                    backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
+                    backgroundSize: '4px 4px',
+                    backgroundPosition: '0 0, 0 2px, 2px -2px, -2px 0px'
+                  }}
+                />
+              </div>
+              <button
+                onMouseDown={() => setThumbnailBg('grey')}
+                onMouseUp={() => setThumbnailBg('transparent')}
+                onMouseLeave={() => setThumbnailBg('transparent')}
+                className={`h-5 w-5 rounded flex items-center justify-center transition-colors select-none ${
+                  thumbnailBg === 'grey'
+                    ? 'bg-gray-200 ring-2 ring-gray-400'
+                    : 'hover:bg-slate-100'
+                }`}
+                title="Hold to preview grey background"
+              >
+                <div className="w-3.5 h-3.5 rounded-sm bg-gray-500 border border-slate-300" />
+              </button>
+              <button
+                onMouseDown={() => setThumbnailBg('black')}
+                onMouseUp={() => setThumbnailBg('transparent')}
+                onMouseLeave={() => setThumbnailBg('transparent')}
+                className={`h-5 w-5 rounded flex items-center justify-center transition-colors select-none ${
+                  thumbnailBg === 'black'
+                    ? 'bg-gray-700 ring-2 ring-gray-500'
+                    : 'hover:bg-slate-100'
+                }`}
+                title="Hold to preview black background"
+              >
+                <div className="w-3.5 h-3.5 rounded-sm bg-black border border-slate-300" />
+              </button>
+            </div>
+          )}
+        </div>
 
         {images.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7 max-h-[900px] overflow-y-auto pr-2">
@@ -312,7 +377,10 @@ export const ImageManager = ({
                   {/* Top section: Thumbnail + Filename + DPI */}
                   <div className="flex gap-3 mb-3">
                     {/* Thumbnail */}
-                    <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center flex-shrink-0 overflow-hidden border border-slate-200">
+                    <div
+                      className="w-20 h-20 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden border border-slate-200"
+                      style={getThumbnailBgStyle()}
+                    >
                       <img
                         src={image.url}
                         alt={image.file.name}
