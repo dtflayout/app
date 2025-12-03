@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHmac } from 'crypto';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Plan credits mapping
 const PLAN_CREDITS: Record<string, number> = {
@@ -18,6 +18,14 @@ const PLAN_PRICES: Record<string, number> = {
   enterprise: 8000,
 };
 
+// Plan names for display
+const PLAN_NAMES: Record<string, string> = {
+  free_trial: 'Free Trial',
+  lite: 'Lite',
+  pro: 'Pro',
+  enterprise: 'Enterprise',
+};
+
 interface VerifyPaymentRequest {
   razorpay_order_id?: string;
   razorpay_payment_id: string;
@@ -28,8 +36,29 @@ interface VerifyPaymentRequest {
   amount: number;
 }
 
+// Database types
+interface UserCreditsRow {
+  user_id: string;
+  email: string;
+  credit_balance: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface TransactionRow {
+  user_id: string;
+  email: string;
+  amount_inr: number;
+  credits_added: number;
+  razorpay_order_id: string | null;
+  razorpay_payment_id: string;
+  status: 'success' | 'failed' | 'pending';
+  plan_name: string;
+  created_at: string;
+}
+
 // Initialize Supabase client for server-side
-const getSupabaseClient = () => {
+const getSupabaseClient = (): SupabaseClient => {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
@@ -56,31 +85,31 @@ const verifyRazorpaySignature = (
 
 // Log transaction to Supabase
 const logTransaction = async (
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   data: {
     razorpay_payment_id: string;
     razorpay_order_id?: string;
-    outseta_account_id: string;
-    user_email: string;
+    user_id: string;
+    email: string;
     plan_id: string;
-    amount: number;
-    credits: number;
+    amount_inr: number;
+    credits_added: number;
     status: 'success' | 'failed' | 'pending';
-    error_message?: string;
   }
 ) => {
-  const { error } = await supabase.from('transactions').insert({
-    razorpay_payment_id: data.razorpay_payment_id,
+  const transactionData: TransactionRow = {
+    user_id: data.user_id,
+    email: data.email,
+    amount_inr: data.amount_inr,
+    credits_added: data.credits_added,
     razorpay_order_id: data.razorpay_order_id || null,
-    outseta_account_id: data.outseta_account_id,
-    user_email: data.user_email,
-    plan_id: data.plan_id,
-    amount: data.amount,
-    credits: data.credits,
+    razorpay_payment_id: data.razorpay_payment_id,
     status: data.status,
-    error_message: data.error_message || null,
+    plan_name: PLAN_NAMES[data.plan_id] || data.plan_id,
     created_at: new Date().toISOString(),
-  });
+  };
+
+  const { error } = await supabase.from('transactions').insert(transactionData);
 
   if (error) {
     console.error('[Transaction Log] Error:', error);
@@ -91,16 +120,16 @@ const logTransaction = async (
 
 // Update user credits in Supabase
 const updateUserCredits = async (
-  supabase: ReturnType<typeof createClient>,
-  outsetaAccountId: string,
-  userEmail: string,
+  supabase: SupabaseClient,
+  userId: string,
+  email: string,
   creditsToAdd: number
-) => {
+): Promise<{ newBalance: number }> => {
   // First, try to get existing record
   const { data: existing, error: fetchError } = await supabase
     .from('user_credits')
-    .select('*')
-    .eq('outseta_account_id', outsetaAccountId)
+    .select('credit_balance')
+    .eq('user_id', userId)
     .single();
 
   if (fetchError && fetchError.code !== 'PGRST116') {
@@ -111,14 +140,16 @@ const updateUserCredits = async (
 
   if (existing) {
     // Update existing record
-    const newBalance = (existing.credit_balance || 0) + creditsToAdd;
+    const currentBalance = (existing as { credit_balance: number }).credit_balance || 0;
+    const newBalance = currentBalance + creditsToAdd;
+
     const { error: updateError } = await supabase
       .from('user_credits')
       .update({
         credit_balance: newBalance,
         updated_at: new Date().toISOString(),
       })
-      .eq('outseta_account_id', outsetaAccountId);
+      .eq('user_id', userId);
 
     if (updateError) {
       console.error('[User Credits] Update error:', updateError);
@@ -128,13 +159,15 @@ const updateUserCredits = async (
     return { newBalance };
   } else {
     // Insert new record
-    const { error: insertError } = await supabase.from('user_credits').insert({
-      outseta_account_id: outsetaAccountId,
-      user_email: userEmail,
+    const newUserCredits: UserCreditsRow = {
+      user_id: userId,
+      email: email,
       credit_balance: creditsToAdd,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    });
+    };
+
+    const { error: insertError } = await supabase.from('user_credits').insert(newUserCredits);
 
     if (insertError) {
       console.error('[User Credits] Insert error:', insertError);
@@ -146,11 +179,6 @@ const updateUserCredits = async (
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Only allow POST
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -158,6 +186,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  // Only allow POST
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
@@ -232,13 +265,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await logTransaction(supabase, {
           razorpay_payment_id,
           razorpay_order_id,
-          outseta_account_id,
-          user_email,
+          user_id: outseta_account_id,
+          email: user_email,
           plan_id,
-          amount: amount || PLAN_PRICES[plan_id],
-          credits,
+          amount_inr: amount || PLAN_PRICES[plan_id],
+          credits_added: credits,
           status: 'failed',
-          error_message: 'Invalid payment signature',
         });
 
         return res.status(400).json({
@@ -264,11 +296,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await logTransaction(supabase, {
         razorpay_payment_id,
         razorpay_order_id,
-        outseta_account_id,
-        user_email,
+        user_id: outseta_account_id,
+        email: user_email,
         plan_id,
-        amount: amount || PLAN_PRICES[plan_id],
-        credits,
+        amount_inr: amount || PLAN_PRICES[plan_id],
+        credits_added: credits,
         status: 'success',
       });
 
@@ -287,13 +319,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await logTransaction(supabase, {
         razorpay_payment_id,
         razorpay_order_id,
-        outseta_account_id,
-        user_email,
+        user_id: outseta_account_id,
+        email: user_email,
         plan_id,
-        amount: amount || PLAN_PRICES[plan_id],
-        credits,
+        amount_inr: amount || PLAN_PRICES[plan_id],
+        credits_added: credits,
         status: 'failed',
-        error_message: dbError.message || 'Database error',
       });
 
       return res.status(500).json({
