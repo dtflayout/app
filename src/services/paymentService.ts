@@ -150,7 +150,57 @@ export interface PaymentResult {
   success: boolean;
   paymentId?: string;
   orderId?: string;
+  signature?: string;
   error?: string;
+}
+
+// Create order response
+interface CreateOrderResponse {
+  success: boolean;
+  order_id?: string;
+  amount?: number;
+  currency?: string;
+  error?: string;
+}
+
+/**
+ * Create a Razorpay order via backend API
+ */
+const createRazorpayOrder = async (
+  planId: string,
+  userEmail: string,
+  outsetaAccountId: string
+): Promise<CreateOrderResponse> => {
+  try {
+    console.log('[Payment] Creating Razorpay order...', { planId, userEmail, outsetaAccountId });
+
+    const response = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        plan_id: planId,
+        user_email: userEmail,
+        outseta_account_id: outsetaAccountId,
+      }),
+    });
+
+    const data = await response.json();
+    console.log('[Payment] Create order response:', data);
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to create order');
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('[Payment] Create order error:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to create payment order',
+    };
+  }
 }
 
 /**
@@ -159,36 +209,52 @@ export interface PaymentResult {
  * @param userInfo - User information for prefilling
  * @returns Promise that resolves with payment details on success
  */
-export const initiateRazorpayCheckout = (
+export const initiateRazorpayCheckout = async (
   plan: PricingPlan,
   userInfo: UserInfo
 ): Promise<PaymentResult> => {
+  // Validate Razorpay is loaded
+  if (!window.Razorpay) {
+    return {
+      success: false,
+      error: 'Payment system not loaded. Please refresh the page.',
+    };
+  }
+
+  // Free trial doesn't need payment
+  if (plan.price === 0) {
+    return {
+      success: true,
+      paymentId: 'free_trial',
+    };
+  }
+
+  // Step 1: Create order via backend API
+  const orderResult = await createRazorpayOrder(
+    plan.id,
+    userInfo.email || '',
+    userInfo.outsetaAccountId || ''
+  );
+
+  if (!orderResult.success || !orderResult.order_id) {
+    return {
+      success: false,
+      error: orderResult.error || 'Failed to create payment order',
+    };
+  }
+
+  console.log('[Payment] Order created:', orderResult.order_id);
+
+  // Step 2: Open Razorpay checkout with order_id
   return new Promise((resolve, reject) => {
-    // Validate Razorpay is loaded
-    if (!window.Razorpay) {
-      reject({
-        success: false,
-        error: 'Payment system not loaded. Please refresh the page.',
-      });
-      return;
-    }
-
-    // Free trial doesn't need payment
-    if (plan.price === 0) {
-      resolve({
-        success: true,
-        paymentId: 'free_trial',
-      });
-      return;
-    }
-
     try {
       const options: RazorpayOptions = {
         key: getRazorpayKey(),
-        amount: plan.price * 100, // Convert to paise
-        currency: 'INR',
+        amount: orderResult.amount || plan.price * 100,
+        currency: orderResult.currency || 'INR',
         name: 'Data Canvas Tech',
         description: `${plan.name} Plan - ${plan.credits.toLocaleString()} sq.inch credits`,
+        order_id: orderResult.order_id, // Important: Pass the order_id
         prefill: {
           name: userInfo.name || '',
           email: userInfo.email || '',
@@ -204,11 +270,16 @@ export const initiateRazorpayCheckout = (
           color: '#10b981', // Emerald green to match our UI
         },
         handler: (response: RazorpaySuccessResponse) => {
-          console.log('[Payment] Success:', response);
+          console.log('[Payment] Razorpay success callback:', {
+            payment_id: response.razorpay_payment_id,
+            order_id: response.razorpay_order_id,
+            signature: response.razorpay_signature,
+          });
           resolve({
             success: true,
             paymentId: response.razorpay_payment_id,
             orderId: response.razorpay_order_id,
+            signature: response.razorpay_signature,
           });
         },
         modal: {
@@ -223,6 +294,12 @@ export const initiateRazorpayCheckout = (
           backdropclose: false,
         },
       };
+
+      console.log('[Payment] Opening Razorpay checkout with options:', {
+        key: options.key ? '***' : 'MISSING',
+        amount: options.amount,
+        order_id: options.order_id,
+      });
 
       const razorpay = new window.Razorpay(options);
 

@@ -156,12 +156,17 @@ const Pricing3 = () => {
       const result = await initiateRazorpayCheckout(pricingPlan, userInfo);
 
       if (result.success && result.paymentId) {
-        console.log("[Payment] Razorpay success! Verifying payment...");
+        console.log("[Payment] Razorpay success! Verifying payment...", {
+          paymentId: result.paymentId,
+          orderId: result.orderId,
+          signature: result.signature ? '***' : 'MISSING',
+        });
 
         // Verify payment and add credits via backend
         const verifyResult = await verifyPaymentAndAddCredits({
           razorpay_payment_id: result.paymentId,
           razorpay_order_id: result.orderId,
+          razorpay_signature: result.signature,
           plan_id: plan.id,
           outseta_account_id: userInfo.outsetaAccountId || '',
           user_email: userInfo.email || '',
