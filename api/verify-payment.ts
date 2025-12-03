@@ -232,31 +232,46 @@ const logPayment = async (
     error_message?: string;
   }
 ) => {
+  const insertData = {
+    user_email: data.user_email,
+    user_id: data.user_id,
+    razorpay_payment_id: data.razorpay_payment_id,
+    razorpay_order_id: data.razorpay_order_id || null,
+    plan_id: data.plan_id,
+    plan_name: data.plan_name,
+    amount_inr: data.amount_inr,
+    credits_added: data.credits_added,
+    credits_before: data.credits_before,
+    credits_after: data.credits_after,
+    status: data.status,
+    error_message: data.error_message || null,
+    created_at: new Date().toISOString(),
+  };
+
+  console.log('[Payment Log] Attempting to insert:', JSON.stringify(insertData, null, 2));
+
   try {
-    const { error } = await supabase.from('payment_logs').insert({
-      user_email: data.user_email,
-      user_id: data.user_id,
-      razorpay_payment_id: data.razorpay_payment_id,
-      razorpay_order_id: data.razorpay_order_id || null,
-      plan_id: data.plan_id,
-      plan_name: data.plan_name,
-      amount_inr: data.amount_inr,
-      credits_added: data.credits_added,
-      credits_before: data.credits_before,
-      credits_after: data.credits_after,
-      status: data.status,
-      error_message: data.error_message || null,
-      created_at: new Date().toISOString(),
-    });
+    const { data: insertedData, error } = await supabase
+      .from('payment_logs')
+      .insert(insertData)
+      .select();
 
     if (error) {
-      console.error('[Payment Log] Error logging to Supabase:', error);
+      console.error('[Payment Log] Error logging to Supabase:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
       // Don't fail the payment if logging fails
     } else {
-      console.log('[Payment Log] Payment logged successfully');
+      console.log('[Payment Log] Payment logged successfully:', insertedData);
     }
-  } catch (err) {
-    console.error('[Payment Log] Exception:', err);
+  } catch (err: any) {
+    console.error('[Payment Log] Exception:', {
+      message: err.message,
+      stack: err.stack,
+    });
     // Don't fail the payment if logging fails
   }
 };

@@ -66,6 +66,8 @@ const Billing = () => {
     }
 
     setIsLoading(true);
+    console.log('[Billing] Fetching payments for user_id:', userId);
+
     try {
       const { data, error } = await supabase
         .from('payment_logs')
@@ -74,15 +76,25 @@ const Billing = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching payments:', error);
-        toast.error('Failed to load payment history');
+        console.error('[Billing] Error fetching payments:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
+        // Don't show error toast if table just doesn't exist or is empty
+        if (error.code !== 'PGRST116') {
+          toast.error('Failed to load payment history');
+        }
+        setPayments([]);
       } else {
         setPayments(data || []);
-        console.log(`Loaded ${data?.length || 0} payments for user`);
+        console.log(`[Billing] Loaded ${data?.length || 0} payments for user`);
       }
-    } catch (err) {
-      console.error('Exception fetching payments:', err);
+    } catch (err: any) {
+      console.error('[Billing] Exception fetching payments:', err?.message || err);
       toast.error('Failed to load payment history');
+      setPayments([]);
     }
 
     setIsLoading(false);
