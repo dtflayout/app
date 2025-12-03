@@ -9,6 +9,7 @@ export interface UsageLogData {
   image_count: number;
   credits_before: number;
   credits_after: number;
+  error_message?: string | null;
 }
 
 export interface UsageLogRecord extends UsageLogData {
@@ -47,6 +48,61 @@ export async function logSheetGeneration(
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
     console.error('Exception while logging usage:', errorMessage);
+    return {
+      success: false,
+      error: errorMessage
+    };
+  }
+}
+
+/**
+ * Log a failed sheet generation attempt
+ * @param data - Partial usage log data with error message
+ * @returns Success status and optional error message
+ */
+export async function logSheetGenerationError(
+  data: {
+    user_email: string;
+    outseta_account_id?: string | null;
+    error_message: string;
+    sq_inches_used?: number;
+    sheet_width?: number;
+    sheet_height?: number;
+    image_count?: number;
+    credits_before?: number;
+    credits_after?: number;
+  }
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const logData: UsageLogData = {
+      user_email: data.user_email,
+      outseta_account_id: data.outseta_account_id,
+      sq_inches_used: data.sq_inches_used ?? 0,
+      sheet_width: data.sheet_width ?? 0,
+      sheet_height: data.sheet_height ?? 0,
+      image_count: data.image_count ?? 0,
+      credits_before: data.credits_before ?? 0,
+      credits_after: data.credits_after ?? data.credits_before ?? 0, // Same as before (no deduction)
+      error_message: data.error_message,
+    };
+
+    const { error } = await supabase
+      .from('usage_logs')
+      .insert([logData]);
+
+    if (error) {
+      console.error('Error logging error to Supabase:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to log error'
+      };
+    }
+
+    console.log('[UsageLogger] Error logged:', data.error_message);
+    return { success: true };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Exception while logging error:', errorMessage);
     return {
       success: false,
       error: errorMessage

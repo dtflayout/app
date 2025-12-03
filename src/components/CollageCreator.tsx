@@ -17,7 +17,7 @@ import { AlertTriangle } from "lucide-react";
 import { ConfirmLayoutDialog } from "./ConfirmLayoutDialog";
 import { ErrorDialog } from "./ErrorDialog";
 import { CreditWarningBanner } from "./CreditWarningBanner";
-import { logSheetGeneration } from "@/lib/usageLogger";
+import { logSheetGeneration, logSheetGenerationError } from "@/lib/usageLogger";
 import { addDpiToPng, downloadBlob } from "@/utils/pngDpiHelper";
 import { estimateMemoryUsage, validateCanvasSize } from "@/utils/memoryEstimator";
 import { MemoryWarningModal } from "./MemoryWarningModal";
@@ -159,6 +159,35 @@ export const CollageCreator = ({
     setLayout([]);
     setTotalSqInchesUsed(null);
     setPendingLayout(null);
+  };
+
+  // Helper to log generation errors to usage_logs table
+  const logGenerationError = async (errorMessage: string, extraData?: {
+    sqInches?: number;
+    sheetWidth?: number;
+    sheetHeight?: number;
+    creditsBalance?: number;
+  }) => {
+    if (!user) return; // Can't log without user
+
+    const accountUid = user.Account?.Uid || user.Uid;
+    const currentCredits = extraData?.creditsBalance ?? getUserCredits();
+
+    try {
+      await logSheetGenerationError({
+        user_email: user.Email,
+        outseta_account_id: accountUid,
+        error_message: errorMessage,
+        sq_inches_used: extraData?.sqInches ?? 0,
+        sheet_width: extraData?.sheetWidth ?? canvasWidthInches,
+        sheet_height: extraData?.sheetHeight ?? 0,
+        image_count: images.length,
+        credits_before: currentCredits,
+        credits_after: currentCredits, // No deduction on error
+      });
+    } catch (e) {
+      console.error('[Error Logging] Failed to log error:', e);
+    }
   };
 
   const handleImagesAdded = async (newImages: ImageObject[]) => {
@@ -390,6 +419,10 @@ export const CollageCreator = ({
           });
           setShowErrorDialog(true);
           setIsGenerating(false);
+          logGenerationError(`Canvas too large: ${sizeCheck.errorMessage || "exceeds browser limits"}`, {
+            sheetWidth: canvasWidthInches,
+            sheetHeight: result.totalHeightInches,
+          });
           return;
         }
 
@@ -410,6 +443,12 @@ export const CollageCreator = ({
           });
           setShowInsufficientCreditsModal(true);
           setIsGenerating(false);
+          logGenerationError(`Insufficient credits: needed ${sqInches.toFixed(2)}, available ${currentCredits}`, {
+            sqInches,
+            sheetWidth: canvasWidthInches,
+            sheetHeight: result.totalHeightInches,
+            creditsBalance: currentCredits,
+          });
           return;
         }
 
@@ -443,6 +482,7 @@ export const CollageCreator = ({
 
     if (imageDimensions.length === 0) {
       toast.error("Please set dimensions for at least one image before generating. Update the width/height for your uploaded images.");
+      logGenerationError("No images with dimensions set");
       return;
     }
 
@@ -456,6 +496,7 @@ export const CollageCreator = ({
       debugLog('❌ Validation failed: Oversized images');
       const names = oversizedImages.map(img => `${img.widthInches.toFixed(1)}" × ${img.heightInches.toFixed(1)}"`).join(', ');
       toast.error(`Cannot generate sheet: Some images are too large to fit on a ${canvasWidthInches}" wide canvas (${names}). Please reduce their dimensions.`);
+      logGenerationError(`Oversized images: ${names}`);
       return;
     }
 
@@ -511,6 +552,12 @@ export const CollageCreator = ({
       });
       setShowErrorDialog(true);
       setShowConfirmDialog(false);
+      logGenerationError(`Credit deduction failed: ${deductResult.error}`, {
+        sqInches: sqInchesToDeduct,
+        sheetWidth: canvasWidthInches,
+        sheetHeight: pendingLayout.totalHeightInches,
+        creditsBalance: currentCredits,
+      });
       return; // Stop the flow - don't generate layout if we can't deduct credits
     }
 
@@ -575,6 +622,11 @@ export const CollageCreator = ({
     } catch (error) {
       console.error('❌ Failed to convert images to base64:', error);
       toast.error('Failed to prepare images for canvas. Please try again.');
+      logGenerationError(`Failed to prepare images: ${error instanceof Error ? error.message : 'Unknown error'}`, {
+        sqInches: pendingLayout.sqInches,
+        sheetWidth: canvasWidthInches,
+        sheetHeight: pendingLayout.totalHeightInches,
+      });
       return;
     }
 
@@ -624,6 +676,10 @@ export const CollageCreator = ({
     } catch (error) {
       toast.error("Failed to export print sheet");
       console.error(error);
+      logGenerationError(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`, {
+        sheetWidth: canvasWidthInches,
+        sheetHeight: canvasHeightInches,
+      });
     } finally {
       setIsExporting(false);
     }
