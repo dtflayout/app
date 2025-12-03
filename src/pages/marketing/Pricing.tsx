@@ -96,7 +96,7 @@ const PLANS = [
 const Pricing3 = () => {
   const navigate = useNavigate();
   const { user, refreshUser } = useOutseta();
-  const { refreshCredits } = useCredits();
+  const { refreshCredits, freeTrialClaimed } = useCredits();
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
 
   // Handle plan purchase
@@ -135,6 +135,13 @@ const Pricing3 = () => {
 
       // Handle free trial differently
       if (plan.priceValue === 0) {
+        // Check if already claimed (frontend check)
+        if (freeTrialClaimed) {
+          toast.error("You have already claimed your free trial");
+          setProcessingPlanId(null);
+          return;
+        }
+
         // Add free trial credits via backend
         const verifyResult = await verifyPaymentAndAddCredits({
           razorpay_payment_id: `free_trial_${Date.now()}`,
@@ -149,7 +156,12 @@ const Pricing3 = () => {
           await refreshCredits(); // Refresh credits from Supabase
           navigate("/app");
         } else {
-          toast.error(verifyResult.error || "Failed to activate free trial");
+          // Handle "already claimed" response from backend
+          if ((verifyResult as any).already_claimed) {
+            toast.error("You have already claimed your free trial");
+          } else {
+            toast.error(verifyResult.error || "Failed to activate free trial");
+          }
         }
         return;
       }
@@ -324,15 +336,17 @@ const Pricing3 = () => {
 
                     <GradientButton
                       variant="hero"
-                      className="w-full"
+                      className={`w-full ${plan.id === 'free_trial' && user && freeTrialClaimed ? 'opacity-60 cursor-not-allowed' : ''}`}
                       onClick={() => handleGetStarted(plan)}
-                      disabled={processingPlanId !== null}
+                      disabled={processingPlanId !== null || (plan.id === 'free_trial' && user && freeTrialClaimed)}
                     >
                       {processingPlanId === plan.id ? (
                         <span className="flex items-center justify-center gap-2">
                           <Loader2 className="h-5 w-5 animate-spin" />
                           Processing...
                         </span>
+                      ) : plan.id === 'free_trial' && user && freeTrialClaimed ? (
+                        'Already Claimed'
                       ) : (
                         plan.cta
                       )}

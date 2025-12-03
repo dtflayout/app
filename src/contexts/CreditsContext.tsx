@@ -4,6 +4,7 @@ import { getOrCreateUserCredits, deductCredits as deductCreditsService } from "@
 
 interface CreditsContextType {
   credits: number;
+  freeTrialClaimed: boolean;
   isLoading: boolean;
   error: string | null;
   refreshCredits: () => Promise<void>;
@@ -12,6 +13,7 @@ interface CreditsContextType {
 
 const CreditsContext = createContext<CreditsContextType>({
   credits: 0,
+  freeTrialClaimed: false,
   isLoading: true,
   error: null,
   refreshCredits: async () => {},
@@ -33,6 +35,7 @@ interface CreditsProviderProps {
 export const CreditsProvider = ({ children }: CreditsProviderProps) => {
   const { user, isLoading: outsetaLoading } = useOutseta();
   const [credits, setCredits] = useState<number>(0);
+  const [freeTrialClaimed, setFreeTrialClaimed] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +56,7 @@ export const CreditsProvider = ({ children }: CreditsProviderProps) => {
     if (!userId || !email) {
       console.log("[CreditsContext] No user logged in, setting credits to 0");
       setCredits(0);
+      setFreeTrialClaimed(false);
       setIsLoading(false);
       return;
     }
@@ -64,12 +68,14 @@ export const CreditsProvider = ({ children }: CreditsProviderProps) => {
     const result = await getOrCreateUserCredits(userId, email);
 
     if (result.success) {
-      console.log("[CreditsContext] Credits loaded:", result.credits, result.isNewUser ? "(new user)" : "");
+      console.log("[CreditsContext] Credits loaded:", result.credits, "freeTrialClaimed:", result.freeTrialClaimed, result.isNewUser ? "(new user)" : "");
       setCredits(result.credits ?? 0);
+      setFreeTrialClaimed(result.freeTrialClaimed ?? false);
     } else {
       console.error("[CreditsContext] Failed to load credits:", result.error);
       setError(result.error || "Failed to load credits");
       setCredits(0);
+      setFreeTrialClaimed(false);
     }
 
     setIsLoading(false);
@@ -107,6 +113,7 @@ export const CreditsProvider = ({ children }: CreditsProviderProps) => {
         refreshCredits();
       } else {
         setCredits(0);
+        setFreeTrialClaimed(false);
         setIsLoading(false);
       }
     }
@@ -114,6 +121,7 @@ export const CreditsProvider = ({ children }: CreditsProviderProps) => {
 
   const value = {
     credits,
+    freeTrialClaimed,
     isLoading,
     error,
     refreshCredits,

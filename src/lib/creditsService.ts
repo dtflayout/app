@@ -6,25 +6,26 @@ export interface UserCredits {
   user_id: string;
   email: string;
   credit_balance: number;
+  free_trial_claimed: boolean;
   created_at: string;
   updated_at: string;
 }
 
 /**
  * Get user credits from Supabase
- * If user doesn't exist, creates a new record with free trial credits
+ * If user doesn't exist, creates a new record with 0 credits (free trial must be claimed separately)
  */
 export async function getOrCreateUserCredits(
   userId: string,
   email: string
-): Promise<{ success: boolean; credits?: number; error?: string; isNewUser?: boolean }> {
+): Promise<{ success: boolean; credits?: number; freeTrialClaimed?: boolean; error?: string; isNewUser?: boolean }> {
   try {
     console.log('[Credits] Fetching credits for user:', userId);
 
     // Try to get existing record
     const { data, error: fetchError } = await supabase
       .from('user_credits')
-      .select('credit_balance')
+      .select('credit_balance, free_trial_claimed')
       .eq('user_id', userId)
       .single();
 
@@ -36,19 +37,25 @@ export async function getOrCreateUserCredits(
 
     if (data) {
       // User exists, return their balance
-      console.log('[Credits] User found, balance:', data.credit_balance);
-      return { success: true, credits: data.credit_balance, isNewUser: false };
+      console.log('[Credits] User found, balance:', data.credit_balance, 'free_trial_claimed:', data.free_trial_claimed);
+      return {
+        success: true,
+        credits: data.credit_balance,
+        freeTrialClaimed: data.free_trial_claimed || false,
+        isNewUser: false
+      };
     }
 
-    // User doesn't exist, create with free trial credits
-    console.log('[Credits] New user, creating with free trial credits:', FREE_TRIAL_CREDITS);
+    // User doesn't exist, create with 0 credits (free trial must be claimed via pricing page)
+    console.log('[Credits] New user, creating with 0 credits');
 
     const { error: insertError } = await supabase
       .from('user_credits')
       .insert({
         user_id: userId,
         email: email,
-        credit_balance: FREE_TRIAL_CREDITS,
+        credit_balance: 0,
+        free_trial_claimed: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
@@ -58,8 +65,8 @@ export async function getOrCreateUserCredits(
       return { success: false, error: insertError.message };
     }
 
-    console.log('[Credits] New user created with', FREE_TRIAL_CREDITS, 'credits');
-    return { success: true, credits: FREE_TRIAL_CREDITS, isNewUser: true };
+    console.log('[Credits] New user created with 0 credits');
+    return { success: true, credits: 0, freeTrialClaimed: false, isNewUser: true };
   } catch (err: any) {
     console.error('[Credits] Exception:', err);
     return { success: false, error: err.message };
@@ -71,11 +78,11 @@ export async function getOrCreateUserCredits(
  */
 export async function getUserCredits(
   userId: string
-): Promise<{ success: boolean; credits?: number; error?: string }> {
+): Promise<{ success: boolean; credits?: number; freeTrialClaimed?: boolean; error?: string }> {
   try {
     const { data, error } = await supabase
       .from('user_credits')
-      .select('credit_balance')
+      .select('credit_balance, free_trial_claimed')
       .eq('user_id', userId)
       .single();
 
@@ -84,7 +91,41 @@ export async function getUserCredits(
       return { success: false, error: error.message };
     }
 
-    return { success: true, credits: data?.credit_balance ?? 0 };
+    return {
+      success: true,
+      credits: data?.credit_balance ?? 0,
+      freeTrialClaimed: data?.free_trial_claimed ?? false
+    };
+  } catch (err: any) {
+    console.error('[Credits] Exception:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Check if user has claimed free trial
+ */
+export async function checkFreeTrialClaimed(
+  userId: string
+): Promise<{ success: boolean; claimed?: boolean; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('user_credits')
+      .select('free_trial_claimed')
+      .eq('user_id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('[Credits] Fetch error:', error);
+      return { success: false, error: error.message };
+    }
+
+    // If user doesn't exist, they haven't claimed
+    if (!data) {
+      return { success: true, claimed: false };
+    }
+
+    return { success: true, claimed: data.free_trial_claimed || false };
   } catch (err: any) {
     console.error('[Credits] Exception:', err);
     return { success: false, error: err.message };

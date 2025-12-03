@@ -67,12 +67,12 @@ const getOrCreateUserCredits = async (
   supabase: SupabaseClient,
   userId: string,
   email: string
-): Promise<{ success: boolean; balance?: number; error?: string }> => {
+): Promise<{ success: boolean; balance?: number; freeTrialClaimed?: boolean; error?: string }> => {
   try {
     // Try to get existing record
     const { data, error: fetchError } = await supabase
       .from('user_credits')
-      .select('credit_balance')
+      .select('credit_balance, free_trial_claimed')
       .eq('user_id', userId)
       .single();
 
@@ -83,8 +83,8 @@ const getOrCreateUserCredits = async (
     }
 
     if (data) {
-      console.log('[User Credits] Found existing balance:', data.credit_balance);
-      return { success: true, balance: data.credit_balance };
+      console.log('[User Credits] Found existing balance:', data.credit_balance, 'free_trial_claimed:', data.free_trial_claimed);
+      return { success: true, balance: data.credit_balance, freeTrialClaimed: data.free_trial_claimed || false };
     }
 
     // User doesn't exist, create with 0 credits (will add plan credits next)
@@ -95,6 +95,7 @@ const getOrCreateUserCredits = async (
         user_id: userId,
         email: email,
         credit_balance: 0,
+        free_trial_claimed: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
@@ -104,9 +105,65 @@ const getOrCreateUserCredits = async (
       return { success: false, error: insertError.message };
     }
 
-    return { success: true, balance: 0 };
+    return { success: true, balance: 0, freeTrialClaimed: false };
   } catch (err: any) {
     console.error('[User Credits] Exception:', err);
+    return { success: false, error: err.message };
+  }
+};
+
+// Check if user has already claimed free trial
+const hasClaimedFreeTrial = async (
+  supabase: SupabaseClient,
+  userId: string
+): Promise<{ success: boolean; claimed?: boolean; error?: string }> => {
+  try {
+    const { data, error } = await supabase
+      .from('user_credits')
+      .select('free_trial_claimed')
+      .eq('user_id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('[Free Trial Check] Fetch error:', error);
+      return { success: false, error: error.message };
+    }
+
+    // If user doesn't exist yet, they haven't claimed
+    if (!data) {
+      return { success: true, claimed: false };
+    }
+
+    return { success: true, claimed: data.free_trial_claimed || false };
+  } catch (err: any) {
+    console.error('[Free Trial Check] Exception:', err);
+    return { success: false, error: err.message };
+  }
+};
+
+// Mark free trial as claimed
+const markFreeTrialClaimed = async (
+  supabase: SupabaseClient,
+  userId: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const { error } = await supabase
+      .from('user_credits')
+      .update({
+        free_trial_claimed: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('[Free Trial] Failed to mark as claimed:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('[Free Trial] Marked as claimed for user');
+    return { success: true };
+  } catch (err: any) {
+    console.error('[Free Trial] Exception:', err);
     return { success: false, error: err.message };
   }
 };
@@ -271,8 +328,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // For paid plans, verify the Razorpay signature
-    if (plan_id !== 'free_trial') {
+    // For free trial, check if already claimed
+    if (plan_id === 'free_trial') {
+      console.log('[Verify Payment] Free trial request, checking if already claimed...');
+
+      const freeTrialCheck = await hasClaimedFreeTrial(supabase, outseta_account_id);
+
+      if (!freeTrialCheck.success) {
+        console.error('[Verify Payment] Failed to check free trial status:', freeTrialCheck.error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to check free trial status',
+        });
+      }
+
+      if (freeTrialCheck.claimed) {
+        console.log('[Verify Payment] Free trial already claimed by user');
+        return res.status(400).json({
+          success: false,
+          error: 'Free trial already claimed',
+          already_claimed: true,
+        });
+      }
+
+      console.log('[Verify Payment] Free trial not yet claimed, proceeding...');
+    } else {
+      // For paid plans, verify the Razorpay signature
       if (!razorpaySecret) {
         console.error('[Verify Payment] RAZORPAY_KEY_SECRET not configured');
         return res.status(500).json({
@@ -324,7 +405,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('[Verify Payment] Razorpay signature verified successfully');
     }
 
-    // Signature is valid (or free trial) - add credits to Supabase
+    // Signature is valid (or free trial eligible) - add credits to Supabase
     console.log('[Verify Payment] Adding credits to Supabase:', creditsToAdd);
 
     const addResult = await addCreditsToUser(
@@ -357,6 +438,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         success: false,
         error: 'Failed to add credits to account',
       });
+    }
+
+    // If this was a free trial, mark it as claimed
+    if (plan_id === 'free_trial') {
+      const markResult = await markFreeTrialClaimed(supabase, outseta_account_id);
+      if (!markResult.success) {
+        console.error('[Verify Payment] Warning: Failed to mark free trial as claimed:', markResult.error);
+        // Don't fail the request, credits were already added
+      }
     }
 
     // Success! Log the payment
