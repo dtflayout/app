@@ -25,6 +25,7 @@ import Contact from "./pages/marketing/Contact";
 import PrivacyPolicy from "./pages/marketing/PrivacyPolicy";
 import TermsConditions from "./pages/marketing/TermsConditions";
 import RefundPolicy from "./pages/marketing/RefundPolicy";
+import Faq from "./pages/marketing/Faq";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-conditions" element={<TermsConditions />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/faq" element={<Faq />} />
             <Route path="/landing" element={<Landing />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/login" element={<LoginPage />} />

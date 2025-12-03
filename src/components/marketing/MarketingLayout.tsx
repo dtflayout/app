@@ -48,6 +48,7 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
     { label: "Home", href: "/" },
     { label: "Product", href: "/product" },
     { label: "Pricing", href: "/pricing" },
+    { label: "FAQ", href: "/faq" },
     { label: "Contact", href: "/contact" },
   ];
 
