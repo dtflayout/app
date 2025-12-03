@@ -1,11 +1,12 @@
 
 import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { ImageUploader } from "./ImageUploader";
 import { Canvas } from "./Canvas";
 import { ImageManager } from "./ImageManager";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Download, RefreshCw } from "lucide-react";
+import { Download, RefreshCw, CreditCard } from "lucide-react";
 import { generateLayout, ImageDimension, PositionedImage } from "@/utils/layoutAlgorithm";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -68,6 +69,7 @@ export const CollageCreator = ({
   maxHeight = 400,
   mode = "standard"
 }: CollageCreatorProps) => {
+  const navigate = useNavigate();
   const { user, refreshUser } = useOutseta();
   const { credits, deductCredits, refreshCredits } = useCredits();
   const [images, setImages] = useState<ImageObject[]>([]);
@@ -787,17 +789,33 @@ export const CollageCreator = ({
               </div>
               <DialogTitle className="text-xl">Insufficient Credits</DialogTitle>
             </div>
-            <DialogDescription className="text-base pt-2">
-              {insufficientCreditsData && (
-                <div className="space-y-3">
-                  <p className="text-gray-700">
-                    You need <span className="font-bold text-amber-700">{formatNumber(insufficientCreditsData.needed)} sq.in</span> for this sheet but only have <span className="font-bold text-amber-700">{formatNumber(insufficientCreditsData.available)} sq.in</span> remaining.
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Try reducing the number of images or their dimensions, or upgrade your plan to get more credits.
-                  </p>
-                </div>
-              )}
+            <DialogDescription asChild>
+              <div className="text-base pt-2">
+                {insufficientCreditsData && (
+                  <div className="space-y-4">
+                    {/* Credit comparison */}
+                    <div className="bg-slate-50 rounded-lg p-4 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Required:</span>
+                        <span className="font-bold text-amber-700">{formatNumber(insufficientCreditsData.needed)} sq.in</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Your Balance:</span>
+                        <span className="font-bold text-red-600">{formatNumber(insufficientCreditsData.available)} sq.in</span>
+                      </div>
+                      <div className="border-t pt-2 flex justify-between items-center">
+                        <span className="text-gray-600">Shortfall:</span>
+                        <span className="font-bold text-red-700">
+                          {formatNumber(insufficientCreditsData.needed - insufficientCreditsData.available)} sq.in
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      Purchase more credits to continue generating sheets, or try reducing the number of images.
+                    </p>
+                  </div>
+                )}
+              </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
@@ -805,16 +823,17 @@ export const CollageCreator = ({
               variant="outline"
               onClick={() => setShowInsufficientCreditsModal(false)}
             >
-              Close
+              Cancel
             </Button>
             <Button
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-emerald-600 hover:bg-emerald-700"
               onClick={() => {
                 setShowInsufficientCreditsModal(false);
-                window.location.href = '/pricing';
+                navigate('/pricing');
               }}
             >
-              View Plans
+              <CreditCard className="w-4 h-4 mr-2" />
+              Buy Credits
             </Button>
           </DialogFooter>
         </DialogContent>
