@@ -232,8 +232,9 @@ const logPayment = async (
     error_message?: string;
   }
 ) => {
+  // Map to actual transactions table column names
   const insertData = {
-    user_email: data.user_email,
+    email: data.user_email,           // Table uses "email" not "user_email"
     user_id: data.user_id,
     razorpay_payment_id: data.razorpay_payment_id,
     razorpay_order_id: data.razorpay_order_id || null,

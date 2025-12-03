@@ -10,7 +10,7 @@ import { AppLayout } from "@/components/AppLayout";
 
 interface PaymentLog {
   id: string;
-  user_email: string;
+  email: string;              // Table uses "email" not "user_email"
   user_id: string;
   razorpay_payment_id: string;
   razorpay_order_id: string | null;
