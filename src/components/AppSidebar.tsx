@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useOutseta } from "@/contexts/OutsetaContext";
+import { useCredits } from "@/contexts/CreditsContext";
 import { useToast } from "@/hooks/use-toast";
 import {
   LayoutDashboard,
@@ -64,6 +65,7 @@ const menuItems: MenuItem[] = [
 
 export const AppSidebar = () => {
   const { user, logout: contextLogout } = useOutseta();
+  const { credits: creditsBalance, isLoading: creditsLoading } = useCredits();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -107,17 +109,10 @@ export const AppSidebar = () => {
     setIsMobileOpen(false);
   };
 
-  const creditsBalance =
-    user?.Account?.credits_balance ??
-    user?.Account?.creditsBalance ??
-    user?.Account?.CreditsBalance ??
-    user?.credits_balance ??
-    0;
-
   // Calculate usage percentage (assuming initial plan credits)
   // We'll use a reasonable default total based on common plan sizes
   const totalPlanCredits = 50000; // Default plan credits - can be made dynamic later
-  const usedCredits = totalPlanCredits - creditsBalance;
+  const usedCredits = Math.max(totalPlanCredits - creditsBalance, 0);
   const usagePercentage = Math.min(Math.max((usedCredits / totalPlanCredits) * 100, 0), 100);
 
   // Desktop sidebar content with hover expand/collapse

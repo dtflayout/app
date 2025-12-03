@@ -31,7 +31,7 @@ interface VerifyPaymentRequest {
   razorpay_payment_id: string;
   razorpay_signature?: string;
   plan_id: string;
-  outseta_account_id: string;
+  outseta_account_id: string; // This is the user_id for Supabase
   user_email: string;
   amount: number;
 }
@@ -62,80 +62,98 @@ const verifyRazorpaySignature = (
   return expectedSignature === signature;
 };
 
-// Get current credits balance from Outseta
-const getOutsetaCredits = async (
-  accountId: string,
-  apiKey: string,
-  apiSecret: string
+// Get or create user credits from Supabase
+const getOrCreateUserCredits = async (
+  supabase: SupabaseClient,
+  userId: string,
+  email: string
 ): Promise<{ success: boolean; balance?: number; error?: string }> => {
   try {
-    const domain = process.env.OUTSETA_DOMAIN || 'data-canvas-tech.outseta.com';
-    const url = `https://${domain}/api/v1/crm/accounts/${accountId}`;
+    // Try to get existing record
+    const { data, error: fetchError } = await supabase
+      .from('user_credits')
+      .select('credit_balance')
+      .eq('user_id', userId)
+      .single();
 
-    const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[Outseta API] Get account error:', response.status, errorText);
-      return { success: false, error: `Failed to get account: ${response.status}` };
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      // PGRST116 = no rows returned (expected for new users)
+      console.error('[User Credits] Fetch error:', fetchError);
+      return { success: false, error: fetchError.message };
     }
 
-    const data = await response.json();
-    const balance = data.CreditsBalance ?? 0;
+    if (data) {
+      console.log('[User Credits] Found existing balance:', data.credit_balance);
+      return { success: true, balance: data.credit_balance };
+    }
 
-    console.log('[Outseta API] Current credits balance:', balance);
-    return { success: true, balance };
-  } catch (error: any) {
-    console.error('[Outseta API] Exception:', error);
-    return { success: false, error: error.message };
+    // User doesn't exist, create with 0 credits (will add plan credits next)
+    console.log('[User Credits] New user, creating record');
+    const { error: insertError } = await supabase
+      .from('user_credits')
+      .insert({
+        user_id: userId,
+        email: email,
+        credit_balance: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
+    if (insertError) {
+      console.error('[User Credits] Insert error:', insertError);
+      return { success: false, error: insertError.message };
+    }
+
+    return { success: true, balance: 0 };
+  } catch (err: any) {
+    console.error('[User Credits] Exception:', err);
+    return { success: false, error: err.message };
   }
 };
 
-// Update credits balance in Outseta
-const updateOutsetaCredits = async (
-  accountId: string,
-  newBalance: number,
-  apiKey: string,
-  apiSecret: string
-): Promise<{ success: boolean; error?: string }> => {
+// Add credits to user's balance in Supabase
+const addCreditsToUser = async (
+  supabase: SupabaseClient,
+  userId: string,
+  email: string,
+  creditsToAdd: number
+): Promise<{ success: boolean; newBalance?: number; previousBalance?: number; error?: string }> => {
   try {
-    const domain = process.env.OUTSETA_DOMAIN || 'data-canvas-tech.outseta.com';
-    const url = `https://${domain}/api/v1/crm/accounts/${accountId}`;
+    // First get or create user record
+    const currentResult = await getOrCreateUserCredits(supabase, userId, email);
 
-    const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
-
-    console.log('[Outseta API] Updating credits to:', newBalance);
-
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        CreditsBalance: newBalance,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[Outseta API] Update error:', response.status, errorText);
-      return { success: false, error: `Failed to update credits: ${response.status}` };
+    if (!currentResult.success) {
+      return { success: false, error: currentResult.error };
     }
 
-    console.log('[Outseta API] Credits updated successfully to:', newBalance);
-    return { success: true };
-  } catch (error: any) {
-    console.error('[Outseta API] Exception:', error);
-    return { success: false, error: error.message };
+    const currentBalance = currentResult.balance || 0;
+    const newBalance = currentBalance + creditsToAdd;
+
+    console.log('[User Credits] Adding credits:', {
+      current: currentBalance,
+      adding: creditsToAdd,
+      new: newBalance,
+    });
+
+    // Update the balance
+    const { error: updateError } = await supabase
+      .from('user_credits')
+      .update({
+        credit_balance: newBalance,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId);
+
+    if (updateError) {
+      console.error('[User Credits] Update error:', updateError);
+      return { success: false, error: updateError.message };
+    }
+
+    console.log('[User Credits] Credits added successfully. New balance:', newBalance);
+    return { success: true, newBalance, previousBalance: currentBalance };
+  } catch (err: any) {
+    console.error('[User Credits] Exception:', err);
+    return { success: false, error: err.message };
   }
 };
 
@@ -144,7 +162,7 @@ const logPayment = async (
   supabase: SupabaseClient,
   data: {
     user_email: string;
-    outseta_account_id: string;
+    user_id: string;
     razorpay_payment_id: string;
     razorpay_order_id?: string;
     plan_id: string;
@@ -160,7 +178,7 @@ const logPayment = async (
   try {
     const { error } = await supabase.from('payment_logs').insert({
       user_email: data.user_email,
-      outseta_account_id: data.outseta_account_id,
+      user_id: data.user_id,
       razorpay_payment_id: data.razorpay_payment_id,
       razorpay_order_id: data.razorpay_order_id || null,
       plan_id: data.plan_id,
@@ -206,14 +224,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       razorpay_payment_id,
       razorpay_signature,
       plan_id,
-      outseta_account_id,
+      outseta_account_id, // This is used as user_id in Supabase
       user_email,
       amount,
     } = req.body as VerifyPaymentRequest;
 
     console.log('[Verify Payment] Request received:', {
       plan_id,
-      outseta_account_id,
+      user_id: outseta_account_id,
       user_email,
       amount,
       has_payment_id: !!razorpay_payment_id,
@@ -240,15 +258,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Get environment variables
     const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
-    const outsetaApiKey = process.env.OUTSETA_API_KEY;
-    const outsetaApiSecret = process.env.OUTSETA_API_SECRET;
 
-    // Initialize Supabase (for logging only)
-    let supabase: SupabaseClient | null = null;
+    // Initialize Supabase
+    let supabase: SupabaseClient;
     try {
       supabase = getSupabaseClient();
     } catch (e) {
-      console.warn('[Verify Payment] Supabase not configured, skipping logging');
+      console.error('[Verify Payment] Supabase not configured');
+      return res.status(500).json({
+        success: false,
+        error: 'Database not configured',
+      });
     }
 
     // For paid plans, verify the Razorpay signature
@@ -280,22 +300,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.error('[Verify Payment] Invalid signature');
 
         // Log failed payment
-        if (supabase) {
-          await logPayment(supabase, {
-            user_email,
-            outseta_account_id,
-            razorpay_payment_id,
-            razorpay_order_id,
-            plan_id,
-            plan_name: PLAN_NAMES[plan_id],
-            amount_inr: amount || PLAN_PRICES[plan_id],
-            credits_added: 0,
-            credits_before: 0,
-            credits_after: 0,
-            status: 'failed',
-            error_message: 'Invalid signature',
-          });
-        }
+        await logPayment(supabase, {
+          user_email,
+          user_id: outseta_account_id,
+          razorpay_payment_id,
+          razorpay_order_id,
+          plan_id,
+          plan_name: PLAN_NAMES[plan_id],
+          amount_inr: amount || PLAN_PRICES[plan_id],
+          credits_added: 0,
+          credits_before: 0,
+          credits_after: 0,
+          status: 'failed',
+          error_message: 'Invalid signature',
+        });
 
         return res.status(400).json({
           success: false,
@@ -306,146 +324,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('[Verify Payment] Razorpay signature verified successfully');
     }
 
-    // Signature is valid (or free trial) - now add credits to Outseta
-    console.log('[Verify Payment] Adding credits:', creditsToAdd);
+    // Signature is valid (or free trial) - add credits to Supabase
+    console.log('[Verify Payment] Adding credits to Supabase:', creditsToAdd);
 
-    // Check if Outseta credentials are configured
-    if (!outsetaApiKey || !outsetaApiSecret) {
-      console.error('[Verify Payment] Outseta API credentials not configured');
-
-      // Log the issue but still return success (payment was verified)
-      // The frontend should handle this by refreshing user data
-      if (supabase) {
-        await logPayment(supabase, {
-          user_email,
-          outseta_account_id,
-          razorpay_payment_id,
-          razorpay_order_id,
-          plan_id,
-          plan_name: PLAN_NAMES[plan_id],
-          amount_inr: amount || PLAN_PRICES[plan_id],
-          credits_added: creditsToAdd,
-          credits_before: 0,
-          credits_after: creditsToAdd,
-          status: 'pending',
-          error_message: 'Outseta API not configured - credits need manual addition',
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        message: 'Payment verified. Credits will be added shortly.',
-        credits_added: creditsToAdd,
-        pending_outseta_update: true,
-      });
-    }
-
-    // Get current balance from Outseta
-    const currentBalanceResult = await getOutsetaCredits(
+    const addResult = await addCreditsToUser(
+      supabase,
       outseta_account_id,
-      outsetaApiKey,
-      outsetaApiSecret
+      user_email,
+      creditsToAdd
     );
 
-    if (!currentBalanceResult.success) {
-      console.error('[Verify Payment] Failed to get current balance:', currentBalanceResult.error);
+    if (!addResult.success) {
+      console.error('[Verify Payment] Failed to add credits:', addResult.error);
 
-      // Log but don't fail - payment was verified
-      if (supabase) {
-        await logPayment(supabase, {
-          user_email,
-          outseta_account_id,
-          razorpay_payment_id,
-          razorpay_order_id,
-          plan_id,
-          plan_name: PLAN_NAMES[plan_id],
-          amount_inr: amount || PLAN_PRICES[plan_id],
-          credits_added: creditsToAdd,
-          credits_before: 0,
-          credits_after: creditsToAdd,
-          status: 'pending',
-          error_message: `Failed to get balance: ${currentBalanceResult.error}`,
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        message: 'Payment verified. Credits will be added shortly.',
-        credits_added: creditsToAdd,
-        pending_outseta_update: true,
-      });
-    }
-
-    const currentBalance = currentBalanceResult.balance || 0;
-    const newBalance = currentBalance + creditsToAdd;
-
-    console.log('[Verify Payment] Updating Outseta balance:', {
-      current: currentBalance,
-      adding: creditsToAdd,
-      new: newBalance,
-    });
-
-    // Update credits in Outseta
-    const updateResult = await updateOutsetaCredits(
-      outseta_account_id,
-      newBalance,
-      outsetaApiKey,
-      outsetaApiSecret
-    );
-
-    if (!updateResult.success) {
-      console.error('[Verify Payment] Failed to update Outseta:', updateResult.error);
-
-      // Log the partial success
-      if (supabase) {
-        await logPayment(supabase, {
-          user_email,
-          outseta_account_id,
-          razorpay_payment_id,
-          razorpay_order_id,
-          plan_id,
-          plan_name: PLAN_NAMES[plan_id],
-          amount_inr: amount || PLAN_PRICES[plan_id],
-          credits_added: creditsToAdd,
-          credits_before: currentBalance,
-          credits_after: currentBalance, // Not updated
-          status: 'pending',
-          error_message: `Failed to update Outseta: ${updateResult.error}`,
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        message: 'Payment verified. Credits will be added shortly.',
-        credits_added: creditsToAdd,
-        pending_outseta_update: true,
-      });
-    }
-
-    // Success! Log the payment
-    if (supabase) {
+      // Log failed payment
       await logPayment(supabase, {
         user_email,
-        outseta_account_id,
+        user_id: outseta_account_id,
         razorpay_payment_id,
         razorpay_order_id,
         plan_id,
         plan_name: PLAN_NAMES[plan_id],
         amount_inr: amount || PLAN_PRICES[plan_id],
-        credits_added: creditsToAdd,
-        credits_before: currentBalance,
-        credits_after: newBalance,
-        status: 'success',
+        credits_added: 0,
+        credits_before: 0,
+        credits_after: 0,
+        status: 'failed',
+        error_message: addResult.error,
+      });
+
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to add credits to account',
       });
     }
 
-    console.log('[Verify Payment] Success! New balance:', newBalance);
+    // Success! Log the payment
+    await logPayment(supabase, {
+      user_email,
+      user_id: outseta_account_id,
+      razorpay_payment_id,
+      razorpay_order_id,
+      plan_id,
+      plan_name: PLAN_NAMES[plan_id],
+      amount_inr: amount || PLAN_PRICES[plan_id],
+      credits_added: creditsToAdd,
+      credits_before: addResult.previousBalance || 0,
+      credits_after: addResult.newBalance || creditsToAdd,
+      status: 'success',
+    });
+
+    console.log('[Verify Payment] Success! New balance:', addResult.newBalance);
 
     return res.status(200).json({
       success: true,
       message: 'Payment verified and credits added',
       credits_added: creditsToAdd,
-      new_balance: newBalance,
+      new_balance: addResult.newBalance,
     });
   } catch (error: any) {
     console.error('[Verify Payment] Unexpected error:', error);

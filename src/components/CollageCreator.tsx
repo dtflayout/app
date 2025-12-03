@@ -10,6 +10,7 @@ import { generateLayout, ImageDimension, PositionedImage } from "@/utils/layoutA
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useOutseta } from "@/contexts/OutsetaContext";
+import { useCredits } from "@/contexts/CreditsContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertTriangle } from "lucide-react";
 import { ConfirmLayoutDialog } from "./ConfirmLayoutDialog";
@@ -68,6 +69,7 @@ export const CollageCreator = ({
   mode = "standard"
 }: CollageCreatorProps) => {
   const { user, refreshUser } = useOutseta();
+  const { credits, deductCredits, refreshCredits } = useCredits();
   const [images, setImages] = useState<ImageObject[]>([]);
   const [imageDimensions, setImageDimensions] = useState<ImageDimension[]>([]);
   const [layout, setLayout] = useState<PositionedImage[]>([]);
@@ -144,16 +146,9 @@ export const CollageCreator = ({
     };
   }, []); // Empty deps - only runs on mount/unmount
 
-  // Helper function to get user's credit balance
+  // Helper function to get user's credit balance (now from Supabase via context)
   const getUserCredits = (): number => {
-    if (!user) return 0;
-    return (
-      user.Account?.credits_balance ??
-      user.Account?.creditsBalance ??
-      user.Account?.CreditsBalance ??
-      user.credits_balance ??
-      0
-    );
+    return credits;
   };
 
   // CRITICAL: Reset state to prevent corrupted state after errors
@@ -486,10 +481,10 @@ export const CollageCreator = ({
     }
 
     const currentCredits = getUserCredits();
-    const newBalance = currentCredits - pendingLayout.sqInches;
+    const sqInchesToDeduct = pendingLayout.sqInches;
 
-    // Get account UID
-    const accountUid = user.Account?.Uid;
+    // Get account UID for logging
+    const accountUid = user.Account?.Uid || user.Uid;
     if (!accountUid) {
       setErrorDialogData({
         title: "Error",
@@ -501,44 +496,30 @@ export const CollageCreator = ({
     }
 
     console.log("[Credit Deduction] Starting transaction...");
-    console.log(`[Credit Deduction] Current: ${currentCredits}, New: ${newBalance}, Used: ${pendingLayout.sqInches}`);
+    console.log(`[Credit Deduction] Current: ${currentCredits}, To Deduct: ${sqInchesToDeduct}`);
 
-    // Step 1: Update credits in Outseta using SDK's user.update() method
-    try {
-      console.log("[Credit Deduction] Getting fresh user object...");
-      const freshUser = await window.Outseta.getUser();
+    // Step 1: Deduct credits from Supabase
+    const deductResult = await deductCredits(sqInchesToDeduct);
 
-      if (!freshUser || !freshUser.Account) {
-        throw new Error("Unable to get user account");
-      }
-
-      console.log("[Credit Deduction] Updating credits via user.update()...");
-      console.log(`[Credit Deduction] Setting CreditsBalance from ${freshUser.Account.CreditsBalance} to ${newBalance}`);
-
-      // Use the SDK method that we confirmed works: user.update({ Account: { CreditsBalance } })
-      await freshUser.update({
-        Account: {
-          CreditsBalance: newBalance,
-        },
-      });
-
-      console.log("[Credit Deduction] ✅ Outseta update successful!");
-    } catch (err) {
-      console.error("[Credit Deduction] ❌ Failed to update credits in Outseta:", err);
+    if (!deductResult.success) {
+      console.error("[Credit Deduction] ❌ Failed to deduct credits:", deductResult.error);
       setErrorDialogData({
         title: "Credit Update Failed",
-        message: "We couldn't update your credits in Outseta. Please try again or contact support if the problem persists.",
+        message: deductResult.error || "We couldn't update your credits. Please try again or contact support if the problem persists.",
       });
       setShowErrorDialog(true);
       setShowConfirmDialog(false);
       return; // Stop the flow - don't generate layout if we can't deduct credits
     }
 
+    const newBalance = deductResult.newBalance ?? (currentCredits - sqInchesToDeduct);
+    console.log("[Credit Deduction] ✅ Supabase credit deduction successful! New balance:", newBalance);
+
     // Step 2: Log to Supabase for usage tracking
     const logResult = await logSheetGeneration({
       user_email: user.Email,
       outseta_account_id: accountUid,
-      sq_inches_used: pendingLayout.sqInches,
+      sq_inches_used: sqInchesToDeduct,
       sheet_width: canvasWidthInches,
       sheet_height: pendingLayout.totalHeightInches,
       image_count: images.length,
@@ -547,14 +528,11 @@ export const CollageCreator = ({
     });
 
     if (!logResult.success) {
-      console.warn("[Credit Deduction] Supabase logging failed:", logResult.error);
+      console.warn("[Credit Deduction] Usage logging failed:", logResult.error);
       // We continue anyway - logging is non-critical
     } else {
-      console.log("[Credit Deduction] ✅ Supabase logging successful");
+      console.log("[Credit Deduction] ✅ Usage logging successful");
     }
-
-    // Step 3: Refresh user data from Outseta to update navbar
-    await refreshUser();
 
     // Step 4: Convert images to base64 to avoid blob URL issues
     console.log('🔄 Converting images to base64 for canvas generation...');

@@ -8,6 +8,7 @@ import { Highlighter } from "@/components/ui/highlighter";
 import { MobileTooltip } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { useOutseta } from "@/contexts/OutsetaContext";
+import { useCredits } from "@/contexts/CreditsContext";
 import {
   initiateRazorpayCheckout,
   verifyPaymentAndAddCredits,
@@ -95,6 +96,7 @@ const PLANS = [
 const Pricing3 = () => {
   const navigate = useNavigate();
   const { user, refreshUser } = useOutseta();
+  const { refreshCredits } = useCredits();
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
 
   // Handle plan purchase
@@ -144,7 +146,7 @@ const Pricing3 = () => {
 
         if (verifyResult.success) {
           toast.success(`Free trial activated! ${plan.credits} added to your account.`);
-          await refreshUser();
+          await refreshCredits(); // Refresh credits from Supabase
           navigate("/app");
         } else {
           toast.error(verifyResult.error || "Failed to activate free trial");
@@ -175,7 +177,7 @@ const Pricing3 = () => {
 
         if (verifyResult.success) {
           toast.success(`Payment successful! ${verifyResult.credits_added?.toLocaleString()} sq.inch added to your account.`);
-          await refreshUser();
+          await refreshCredits(); // Refresh credits from Supabase
           navigate("/app");
         } else {
           toast.error(verifyResult.error || "Payment verification failed. Please contact support.");

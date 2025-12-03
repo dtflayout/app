@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { OutsetaProvider } from "./contexts/OutsetaContext";
+import { CreditsProvider } from "./contexts/CreditsContext";
 import Landing from "./pages/Landing";
 import AuthPage from "./pages/AuthPage";
 import LoginPage from "./pages/LoginPage";
@@ -30,7 +31,8 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <OutsetaProvider>
-      <TooltipProvider>
+      <CreditsProvider>
+        <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -106,7 +108,8 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </TooltipProvider>
+        </TooltipProvider>
+      </CreditsProvider>
     </OutsetaProvider>
   </QueryClientProvider>
 );
