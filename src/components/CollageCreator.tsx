@@ -442,7 +442,7 @@ export const CollageCreator = ({
     resetGenerationState();
 
     if (imageDimensions.length === 0) {
-      toast.error("No images with dimensions available");
+      toast.error("Please set dimensions for at least one image before generating. Update the width/height for your uploaded images.");
       return;
     }
 
