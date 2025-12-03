@@ -17,6 +17,7 @@ import {
   X,
   User,
   Sparkles,
+  PlusCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -55,6 +56,11 @@ const menuItems: MenuItem[] = [
     label: "Billing",
     icon: <CreditCard className="w-5 h-5 flex-shrink-0" />,
     path: "/billing",
+  },
+  {
+    label: "Buy Credits",
+    icon: <PlusCircle className="w-5 h-5 flex-shrink-0" />,
+    path: "/pricing",
   },
   {
     label: "Help & Support",
