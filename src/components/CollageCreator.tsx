@@ -394,7 +394,8 @@ export const CollageCreator = ({
           );
         }
 
-        // Check for overlaps and show appropriate message
+        // CRITICAL: Verify no overlaps exist (the layout algorithm should guarantee this)
+        // If overlaps are detected here, it's a bug in the layout algorithm
         const hasOverlaps = result.positionedImages.some((img1, i) =>
           result.positionedImages.some((img2, j) =>
             i !== j &&
@@ -406,7 +407,16 @@ export const CollageCreator = ({
         );
 
         if (hasOverlaps) {
-          toast.warning("Warning: Some images may overlap in the generated layout.");
+          // This should NEVER happen - the layout algorithm guarantees no overlaps
+          console.error("CRITICAL BUG: Layout algorithm produced overlapping images!");
+          console.error("Overlapping positions:", result.positionedImages);
+          setErrorDialogData({
+            title: "Layout Error",
+            message: "An unexpected error occurred while generating the layout. Please try again or contact support if the issue persists.",
+          });
+          setShowErrorDialog(true);
+          setIsGenerating(false);
+          return;
         }
 
         // Validate canvas size against browser limits (with actual calculated height)

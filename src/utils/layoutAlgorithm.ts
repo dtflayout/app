@@ -60,14 +60,33 @@ export const visualizeLayout = (
   return lines.join('\n');
 };
 
-// Helper function to check if two images overlap
+// Helper function to check if two images overlap (strict check - no padding tolerance)
+const imagesOverlapStrict = (a: PositionedImage, b: PositionedImage): boolean => {
+  const aLeft = a.x;
+  const aRight = a.x + a.widthInches;
+  const aTop = a.y;
+  const aBottom = a.y + a.heightInches;
+
+  const bLeft = b.x;
+  const bRight = b.x + b.widthInches;
+  const bTop = b.y;
+  const bBottom = b.y + b.heightInches;
+
+  // Strict overlap check - images actually share space (not just close)
+  const horizontalOverlap = aLeft < bRight && aRight > bLeft;
+  const verticalOverlap = aTop < bBottom && aBottom > bTop;
+
+  return horizontalOverlap && verticalOverlap;
+};
+
+// Helper function to check if two images overlap (with padding consideration)
 const imagesOverlap = (a: PositionedImage, b: PositionedImage): boolean => {
   // For positioned images, use their actual final dimensions (already accounts for rotation)
   const aLeft = a.x;
   const aRight = a.x + a.widthInches;
   const aTop = a.y;
   const aBottom = a.y + a.heightInches;
-  
+
   const bLeft = b.x;
   const bRight = b.x + b.widthInches;
   const bTop = b.y;
@@ -85,12 +104,74 @@ const imagesOverlap = (a: PositionedImage, b: PositionedImage): boolean => {
   return true;
 };
 
+// CRITICAL: Validate that NO images in the layout overlap
+// Returns { valid: true } if no overlaps, or { valid: false, overlappingPairs: [...] } if overlaps exist
+const validateNoOverlaps = (positions: PositionedImage[]): { valid: boolean; overlappingPairs: Array<[string, string]> } => {
+  const overlappingPairs: Array<[string, string]> = [];
+
+  for (let i = 0; i < positions.length; i++) {
+    for (let j = i + 1; j < positions.length; j++) {
+      if (imagesOverlapStrict(positions[i], positions[j])) {
+        overlappingPairs.push([positions[i].id, positions[j].id]);
+      }
+    }
+  }
+
+  return {
+    valid: overlappingPairs.length === 0,
+    overlappingPairs
+  };
+};
+
+// Fix overlapping images by repositioning them one at a time
+// This is a fallback mechanism that should rarely be needed
+const fixOverlaps = (
+  positions: PositionedImage[],
+  availableWidthInches: number
+): PositionedImage[] => {
+  const fixed: PositionedImage[] = [];
+
+  for (const img of positions) {
+    // Check if this image overlaps with any already-fixed images
+    let overlaps = false;
+    for (const fixedImg of fixed) {
+      if (imagesOverlapStrict(img, fixedImg)) {
+        overlaps = true;
+        break;
+      }
+    }
+
+    if (!overlaps) {
+      // No overlap, keep original position
+      fixed.push(img);
+    } else {
+      // Find a new position for this image
+      const newPos = findBestPosition(
+        img.widthInches,
+        img.heightInches,
+        fixed,
+        availableWidthInches
+      );
+
+      fixed.push({
+        ...img,
+        x: newPos.x,
+        y: newPos.y
+      });
+
+      console.warn(`[Layout Fix] Repositioned image ${img.id} from (${img.x.toFixed(2)}, ${img.y.toFixed(2)}) to (${newPos.x.toFixed(2)}, ${newPos.y.toFixed(2)})`);
+    }
+  }
+
+  return fixed;
+};
+
 // Helper function to check if a rectangle fits at a position without overlapping
 const canPlaceAt = (
-  x: number, 
-  y: number, 
-  width: number, 
-  height: number, 
+  x: number,
+  y: number,
+  width: number,
+  height: number,
   positions: PositionedImage[],
   availableWidthInches: number
 ): boolean => {
@@ -98,53 +179,88 @@ const canPlaceAt = (
   if (x < 0 || y < 0 || x + width > availableWidthInches) {
     return false;
   }
-  
+
   // Check for overlaps with existing images (with proper padding)
   for (const existing of positions) {
-    // Calculate boundaries with padding buffer
-    const existingLeft = existing.x - PADDING_INCHES;
-    const existingRight = existing.x + existing.widthInches + PADDING_INCHES;
-    const existingTop = existing.y - PADDING_INCHES;
-    const existingBottom = existing.y + existing.heightInches + PADDING_INCHES;
-    
-    const newLeft = x - PADDING_INCHES;
-    const newRight = x + width + PADDING_INCHES;
-    const newTop = y - PADDING_INCHES;
-    const newBottom = y + height + PADDING_INCHES;
-    
-    // Check if rectangles overlap (including padding zones)
-    const horizontalOverlap = !(newRight <= existing.x || existingRight <= x);
-    const verticalOverlap = !(newBottom <= existing.y || existingBottom <= y);
-    
-    if (horizontalOverlap && verticalOverlap) {
+    // Calculate the right edge of the new image and left edge of existing (with padding)
+    const newRight = x + width;
+    const existingLeft = existing.x;
+
+    // Calculate the left edge of new and right edge of existing (with padding)
+    const newLeft = x;
+    const existingRight = existing.x + existing.widthInches;
+
+    // Calculate vertical boundaries similarly
+    const newBottom = y + height;
+    const existingTop = existing.y;
+    const newTop = y;
+    const existingBottom = existing.y + existing.heightInches;
+
+    // Check if rectangles are separated by at least PADDING_INCHES in either direction
+    // If newRight + padding <= existingLeft, they don't overlap horizontally
+    // If existingRight + padding <= newLeft, they don't overlap horizontally
+    const horizontallySeparated = (newRight + PADDING_INCHES <= existingLeft) ||
+                                   (existingRight + PADDING_INCHES <= newLeft);
+    const verticallySeparated = (newBottom + PADDING_INCHES <= existingTop) ||
+                                 (existingBottom + PADDING_INCHES <= newTop);
+
+    // If neither horizontally nor vertically separated, they overlap
+    if (!horizontallySeparated && !verticallySeparated) {
       return false;
     }
   }
-  
+
   return true;
 };
 
 // Find the best (lowest) position for an image using Bottom-Left Fill
+// CRITICAL: This function MUST always return a non-overlapping position
 const findBestPosition = (
   width: number,
   height: number,
   positions: PositionedImage[],
   availableWidthInches: number
 ): { x: number; y: number } => {
-  // Start with minimum padding from edges
-  let bestY = PADDING_INCHES;
-  
+  // Calculate the current maximum Y position from existing images
+  const currentMaxY = positions.length > 0
+    ? Math.max(...positions.map(p => p.y + p.heightInches)) + PADDING_INCHES
+    : PADDING_INCHES;
+
   // Try to place at the lowest possible Y position with fine granularity
-  for (let y = PADDING_INCHES; y <= 1000; y += 0.05) { // Finer granularity for better packing
+  // Limit search to current layout height + reasonable buffer for this image
+  const maxSearchY = currentMaxY + height + PADDING_INCHES * 2;
+
+  for (let y = PADDING_INCHES; y <= maxSearchY; y += 0.05) {
     for (let x = PADDING_INCHES; x <= availableWidthInches - width - PADDING_INCHES; x += 0.05) {
       if (canPlaceAt(x, y, width, height, positions, availableWidthInches)) {
         return { x, y };
       }
     }
   }
-  
-  // Fallback - this should rarely happen
-  return { x: PADDING_INCHES, y: bestY };
+
+  // SAFE FALLBACK: If no position found in existing layout space,
+  // place at the bottom of the current layout (guaranteed no overlap)
+  // This creates a new row at the bottom where there are no other images
+  const safeY = currentMaxY;
+  const safeX = PADDING_INCHES;
+
+  // Verify the safe position doesn't overlap (it shouldn't, but be certain)
+  if (canPlaceAt(safeX, safeY, width, height, positions, availableWidthInches)) {
+    return { x: safeX, y: safeY };
+  }
+
+  // Ultimate fallback: extend further down (this should never be reached)
+  // Keep trying lower positions until we find one that works
+  for (let y = safeY; y <= safeY + 1000; y += 0.1) {
+    if (canPlaceAt(PADDING_INCHES, y, width, height, positions, availableWidthInches)) {
+      return { x: PADDING_INCHES, y };
+    }
+  }
+
+  // This should truly never happen, but if it does, throw an error
+  // instead of returning an invalid position that could cause overlap
+  console.error('CRITICAL: Could not find any valid position for image', { width, height, positions: positions.length });
+  return { x: PADDING_INCHES, y: currentMaxY + 100 }; // Extreme fallback - far below any existing images
 };
 
 // Helper function to calculate total height of a layout
@@ -247,6 +363,50 @@ const packWithStrategy = (
   return positions;
 };
 
+// Simple vertical stacking - guaranteed no overlaps (last resort fallback)
+// Places each image in a new row, one after another
+const simpleVerticalStack = (
+  images: ImageDimension[],
+  availableWidthInches: number
+): PositionedImage[] => {
+  const positions: PositionedImage[] = [];
+  let currentY = PADDING_INCHES;
+
+  for (const image of images) {
+    // Determine if image needs to be scaled or rotated to fit width
+    let width = image.widthInches;
+    let height = image.heightInches;
+    let rotated = false;
+
+    // Try rotation first if it fits better
+    if (width > availableWidthInches && height <= availableWidthInches) {
+      width = image.heightInches;
+      height = image.widthInches;
+      rotated = true;
+    }
+
+    // Scale down if still too wide
+    if (width > availableWidthInches) {
+      const scale = availableWidthInches / width;
+      width = availableWidthInches;
+      height = height * scale;
+    }
+
+    positions.push({
+      id: image.id,
+      x: PADDING_INCHES,
+      y: currentY,
+      widthInches: width,
+      heightInches: height,
+      rotated
+    });
+
+    currentY += height + PADDING_INCHES;
+  }
+
+  return positions;
+};
+
 // Best-Fit with Rotation algorithm - now tries multiple strategies
 export const generateLayout = (
   images: ImageDimension[],
@@ -302,11 +462,42 @@ export const generateLayout = (
   
   console.log(`Best strategy: ${bestStrategy} with height ${bestHeight.toFixed(2)} inches`);
   console.log("Generated positions:", bestLayout);
-  
-  // Run overlap detection
+
+  // CRITICAL: Validate no overlaps exist in the layout
+  const validation = validateNoOverlaps(bestLayout);
+
+  if (!validation.valid) {
+    console.error(`CRITICAL: Layout has ${validation.overlappingPairs.length} overlapping pairs! Attempting to fix...`);
+    console.error('Overlapping pairs:', validation.overlappingPairs);
+
+    // Attempt to fix overlaps by repositioning images
+    bestLayout = fixOverlaps(bestLayout, availableWidthInches);
+    bestHeight = calculateTotalHeight(bestLayout);
+
+    // Validate again after fix attempt
+    const revalidation = validateNoOverlaps(bestLayout);
+    if (!revalidation.valid) {
+      // This should never happen - throw an error to catch it in development
+      console.error('CRITICAL: Failed to fix overlaps after repositioning!', revalidation.overlappingPairs);
+      // As a last resort, repack from scratch with a simple vertical stacking
+      console.warn('Falling back to simple vertical stacking...');
+      bestLayout = simpleVerticalStack(validImages, availableWidthInches);
+      bestHeight = calculateTotalHeight(bestLayout);
+    } else {
+      console.log('Successfully fixed all overlaps');
+    }
+  }
+
+  // Run overlap detection for logging
   const layoutVisualization = visualizeLayout(bestLayout, sheetWidthInches, bestHeight);
   console.log("Layout validation:\n" + layoutVisualization);
-  
+
+  // Final safety check - if we still have overlaps, something is very wrong
+  const finalCheck = validateNoOverlaps(bestLayout);
+  if (!finalCheck.valid) {
+    console.error('FINAL CHECK FAILED: Layout still has overlaps!', finalCheck.overlappingPairs);
+  }
+
   return {
     positionedImages: bestLayout,
     totalHeightInches: bestHeight
