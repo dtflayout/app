@@ -186,6 +186,59 @@ export const ImageManager = ({
         tempUrlsRef.current.delete(id);
       }
     });
+
+    // CRITICAL FIX: Clean up internal imageDimensions Map for removed images
+    // This prevents stale dimension data from being synced to parent
+    const currentImageIds = new Set(images.map(img => img.id));
+    let dimensionsNeedCleanup = false;
+    imageDimensions.forEach((_, id) => {
+      if (!currentImageIds.has(id)) {
+        dimensionsNeedCleanup = true;
+      }
+    });
+
+    if (dimensionsNeedCleanup) {
+      setImageDimensions(prev => {
+        const updated = new Map(prev);
+        prev.forEach((_, id) => {
+          if (!currentImageIds.has(id)) {
+            updated.delete(id);
+          }
+        });
+        return updated;
+      });
+
+      // Also clean up related state maps
+      setAspectRatioLocked(prev => {
+        const updated = new Map(prev);
+        prev.forEach((_, id) => {
+          if (!currentImageIds.has(id)) {
+            updated.delete(id);
+          }
+        });
+        return updated;
+      });
+
+      setInputValues(prev => {
+        const updated = new Map(prev);
+        prev.forEach((_, id) => {
+          if (!currentImageIds.has(id)) {
+            updated.delete(id);
+          }
+        });
+        return updated;
+      });
+
+      setDimensionErrors(prev => {
+        const updated = new Map(prev);
+        prev.forEach((_, id) => {
+          if (!currentImageIds.has(id)) {
+            updated.delete(id);
+          }
+        });
+        return updated;
+      });
+    }
   }, [images]);
 
   // Sync dimensions to parent whenever all images have dimensions calculated

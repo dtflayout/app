@@ -411,10 +411,33 @@ export const CollageCreator = ({
     // Use setTimeout to allow UI to update before heavy computation
     setTimeout(() => {
       try {
-        debugLog("🔧 Generating layout with dimensions:", imageDimensions);
+        // CRITICAL FIX: Filter imageDimensions to only include dimensions for images that currently exist
+        // This prevents stale dimensions from deleted images being used in layout generation
+        const currentImageIds = new Set(images.map(img => img.id));
+        const validDimensions = imageDimensions.filter(dim => currentImageIds.has(dim.id));
+
+        debugLog('🔍 Dimension validation:');
+        debugLog('  - Current image IDs:', Array.from(currentImageIds));
+        debugLog('  - Original dimensions count:', imageDimensions.length);
+        debugLog('  - Valid dimensions count:', validDimensions.length);
+
+        // Check if we're missing dimensions for any current images
+        if (validDimensions.length !== images.length) {
+          debugLog('⚠️ Dimension mismatch: validDimensions.length !== images.length');
+          debugLog('  - Missing dimensions for:', images.filter(img => !validDimensions.some(d => d.id === img.id)).map(img => img.id));
+
+          // If we have fewer valid dimensions than images, some images haven't been processed yet
+          if (validDimensions.length < images.length) {
+            toast.error("Please wait for all images to load before generating layout.");
+            setIsGenerating(false);
+            return;
+          }
+        }
+
+        debugLog("🔧 Generating layout with validated dimensions:", validDimensions);
 
         // Generate layout using our algorithm with selected width and spacing
-        const result = generateLayout(imageDimensions, canvasWidthInches, spacingInches);
+        const result = generateLayout(validDimensions, canvasWidthInches, spacingInches);
         debugLog("Layout result:", result);
 
         if (result.positionedImages.length === 0) {
