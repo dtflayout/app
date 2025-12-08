@@ -43,6 +43,18 @@ export const ImageManager = ({
   const [thumbnailBg, setThumbnailBg] = useState<'transparent' | 'grey' | 'black'>('transparent');
   // Use ref to track image URLs (avoids stale closure issues)
   const imageUrlsRef = useRef<Map<string, string>>(new Map());
+  // Track temporary URLs created from File objects (for cleanup)
+  const tempUrlsRef = useRef<Map<string, string>>(new Map());
+
+  // Cleanup temporary URLs on unmount
+  useEffect(() => {
+    return () => {
+      tempUrlsRef.current.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+      tempUrlsRef.current.clear();
+    };
+  }, []);
 
   useEffect(() => {
     images.forEach(img => {
@@ -50,10 +62,26 @@ export const ImageManager = ({
       const isNewImage = !imageDimensions.has(img.id);
       const urlChanged = previousUrl !== undefined && previousUrl !== img.url;
 
+      // MEMORY OPTIMIZATION FIX: If url is empty (cleared after layout generation),
+      // regenerate it from the File object for dimension calculation
+      let effectiveUrl = img.url;
+      if (!effectiveUrl || effectiveUrl === '') {
+        // Check if we already have a temp URL for this image
+        const existingTempUrl = tempUrlsRef.current.get(img.id);
+        if (existingTempUrl) {
+          effectiveUrl = existingTempUrl;
+        } else {
+          // Create new temporary URL from File
+          effectiveUrl = URL.createObjectURL(img.file);
+          tempUrlsRef.current.set(img.id, effectiveUrl);
+          console.log(`[ImageManager] Regenerated URL from File for ${img.id}: ${effectiveUrl.substring(0, 50)}`);
+        }
+      }
+
       // Need to recalculate if it's a new image OR if the URL changed (e.g., after trimming/bg removal)
       if (isNewImage || urlChanged) {
-        // Update the ref immediately
-        imageUrlsRef.current.set(img.id, img.url);
+        // Update the ref immediately with the effective URL
+        imageUrlsRef.current.set(img.id, effectiveUrl);
 
         // IMPORTANT: Clear old cached dimensions immediately when URL changes
         // This forces recalculation and prevents stale dimensions from being used
@@ -136,10 +164,11 @@ export const ImageManager = ({
             onImageDimensionsChanged(dimensionsArray);
           }
         };
-        imageEl.src = img.url;
+        // Use effectiveUrl (regenerated from File if original was empty)
+        imageEl.src = effectiveUrl;
       } else if (!imageUrlsRef.current.has(img.id)) {
         // Track URL for existing images that weren't tracked before
-        imageUrlsRef.current.set(img.id, img.url);
+        imageUrlsRef.current.set(img.id, effectiveUrl);
       }
     });
 
@@ -147,6 +176,14 @@ export const ImageManager = ({
     imageUrlsRef.current.forEach((_, id) => {
       if (!images.find(img => img.id === id)) {
         imageUrlsRef.current.delete(id);
+      }
+    });
+
+    // Clean up temporary URLs for removed images
+    tempUrlsRef.current.forEach((url, id) => {
+      if (!images.find(img => img.id === id)) {
+        URL.revokeObjectURL(url);
+        tempUrlsRef.current.delete(id);
       }
     });
   }, [images]);
