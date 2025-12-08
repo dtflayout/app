@@ -573,46 +573,43 @@ export const CollageCreator = ({
 
     console.log(`[Layout] Confirming layout: ${pendingLayout.sqInches.toFixed(2)} sq.in (credits will be charged on download)`);
 
-    // Convert images to base64 and generate preview images for canvas display
-    // Base64 URLs are used for the full-resolution export
-    // Preview URLs (800px max) are used for canvas display to reduce memory on low-RAM devices
-    console.log('🔄 Preparing images for canvas (base64 + previews)...');
+    // MEMORY OPTIMIZATION: Generate only preview images for canvas display
+    // Full-resolution URLs are NOT stored in state - they're regenerated from File objects at export time
+    // This dramatically reduces memory usage on low-RAM devices (4GB)
+    console.log('🔄 Preparing images for canvas (previews only - full-res generated on export)...');
     try {
-      const imagesWithBase64AndPreview = await Promise.all(
+      const imagesWithPreview = await Promise.all(
         images.map(async (img) => {
-          // Convert to base64 for full-resolution export
-          const base64 = await fileToBase64(img.file);
-
-          // Generate preview image (800px max) for canvas display
-          // This dramatically reduces memory usage on low-RAM devices
+          // Generate preview image (400px max) for canvas display
           let previewUrl: string;
           try {
-            previewUrl = await generatePreviewImage(img.file, 800);
-            debugLog(`[Preview] Generated 800px preview for ${img.file.name}`);
+            previewUrl = await generatePreviewImage(img.file, 400);
+            debugLog(`[Preview] Generated 400px preview for ${img.file.name}`);
           } catch (error) {
             console.error(`Failed to generate preview for ${img.file.name}:`, error);
-            // Fallback: use base64 if preview generation fails
-            previewUrl = base64;
+            // Fallback: create a blob URL from the file (will use more memory but at least works)
+            previewUrl = URL.createObjectURL(img.file);
           }
 
           return {
             ...img,
-            url: base64,       // Full resolution for export (print quality)
-            previewUrl,        // 800px preview for canvas display (memory optimization)
+            // MEMORY OPTIMIZATION: Don't store full-res URL in state
+            // Set url to empty - full-res will be regenerated from File at export time
+            url: '',
+            previewUrl,        // 400px preview for canvas display (memory optimization)
             // Keep thumbnailUrl unchanged for gallery
           };
         })
       );
 
-      console.log('✅ All images prepared (base64 + previews)');
-      console.log('📸 Images ready:', imagesWithBase64AndPreview.length);
+      console.log('✅ All preview images generated');
+      console.log('📸 Images ready:', imagesWithPreview.length);
 
       // CRITICAL: Revoke old blob URLs to prevent memory leak
-      // Note: We revoke the original blob URLs but NOT the new previewUrls
-      debugLog('[Memory] Revoking old blob URLs after base64 conversion');
+      debugLog('[Memory] Revoking old blob URLs after preview generation');
       images.forEach(img => {
         if (img.url && img.url.startsWith('blob:')) {
-          debugLog('[Memory]   - Revoking blob:', img.url.substring(0, 50) + '...');
+          debugLog('[Memory]   - Revoking full-res blob:', img.url.substring(0, 50) + '...');
           URL.revokeObjectURL(img.url);
           if (blobUrlsRef && blobUrlsRef.current) {
             blobUrlsRef.current.delete(img.url);
@@ -627,10 +624,10 @@ export const CollageCreator = ({
           }
         }
       });
-      debugLog('[Memory] ✅ Old blob URLs revoked');
+      debugLog('[Memory] ✅ Old blob URLs revoked - full-res URLs NOT stored in state');
 
-      // Now update images state with base64 URLs and preview URLs
-      setImages(imagesWithBase64AndPreview);
+      // Update images state with preview URLs only (no full-res URLs stored)
+      setImages(imagesWithPreview);
 
       // Step 5: Show the layout
       setLayout(pendingLayout.positionedImages);

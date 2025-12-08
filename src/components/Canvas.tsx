@@ -16,19 +16,21 @@ const debugLog = (...args: any[]) => {
 };
 
 /**
- * CANVAS DISPLAY OPTIMIZATION
+ * CANVAS DISPLAY OPTIMIZATION - AGGRESSIVE MEMORY MANAGEMENT
  *
- * This canvas uses a two-tier image strategy for performance on low-RAM devices:
+ * This canvas uses a two-tier image strategy for performance on low-RAM devices (4GB):
  *
  * 1. PREVIEW MODE (default display):
- *    - Uses previewUrl (800px max) for on-screen rendering
- *    - Dramatically reduces memory usage for 20+ images
- *    - Acceptable quality for layout preview and positioning
+ *    - Uses previewUrl (400px max) for on-screen rendering
+ *    - Full-resolution URLs are NOT stored in state after layout generation
+ *    - Fabric.js object caching is DISABLED to prevent duplicate copies
+ *    - Target: <400MB memory for 20-image layouts
  *
  * 2. EXPORT MODE (during download):
- *    - Temporarily loads full-resolution original images (url)
+ *    - Regenerates full-resolution blob URLs from original File objects
  *    - Renders at print quality (150 DPI)
- *    - Immediately restores preview images after export to free memory
+ *    - Immediately revokes full-res URLs after export to free memory
+ *    - Restores preview images on canvas
  *
  * IMPORTANT: The final exported PNG MUST use original full-resolution images.
  * Preview optimization is ONLY for on-screen display.
@@ -104,10 +106,13 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
 
   /**
    * Loads images onto the canvas with the given layout.
-   * @param useFullResolution - If true, uses full-resolution URLs for export. If false, uses preview URLs for display.
+   * @param useFullResolution - If true, regenerates full-resolution URLs from File objects. If false, uses preview URLs.
+   * @returns Map of image IDs to their temporary full-res blob URLs (only populated when useFullResolution=true)
    */
-  const loadImagesToCanvas = async (useFullResolution: boolean = false) => {
-    if (!fabricCanvasRef.current || !layout || layout.length === 0) return;
+  const loadImagesToCanvas = async (useFullResolution: boolean = false): Promise<Map<string, string>> => {
+    const tempFullResUrls = new Map<string, string>();
+
+    if (!fabricCanvasRef.current || !layout || layout.length === 0) return tempFullResUrls;
 
     const mode = useFullResolution ? 'FULL RESOLUTION (export)' : 'PREVIEW (display)';
     debugLog(`🎨 Canvas: loadImagesToCanvas - ${mode}`);
@@ -123,13 +128,19 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
       const img = imageMap.get(item.id);
       if (!img) continue;
 
-      // IMPORTANT: Use previewUrl for display, full url for export
-      // This dramatically reduces memory usage on low-RAM devices
-      const imageUrl = useFullResolution
-        ? img.url  // Full resolution for final export (print quality)
-        : (img.previewUrl || img.url);  // Preview for display (fallback to full if no preview)
+      let imageUrl: string;
 
-      debugLog(`  - Loading ${item.id}: ${useFullResolution ? 'FULL' : 'PREVIEW'} - ${imageUrl?.substring(0, 50)}`);
+      if (useFullResolution) {
+        // EXPORT MODE: Regenerate full-resolution blob URL from the original File object
+        // This is only done during export - we don't store full-res URLs in state
+        imageUrl = URL.createObjectURL(img.file);
+        tempFullResUrls.set(item.id, imageUrl); // Track for cleanup after export
+        debugLog(`  - Loading ${item.id}: FULL-RES (regenerated from File) - ${imageUrl.substring(0, 50)}`);
+      } else {
+        // PREVIEW MODE: Use the small preview URL (400px max) for display
+        imageUrl = img.previewUrl || URL.createObjectURL(img.file);
+        debugLog(`  - Loading ${item.id}: PREVIEW - ${imageUrl?.substring(0, 50)}`);
+      }
 
       await new Promise<void>((resolve) => {
         FabricImage.fromURL(imageUrl).then((fabricImg) => {
@@ -183,6 +194,8 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
             cornerColor: "#2563eb",
             transparentCorners: false,
             selectable: false, // Make non-selectable in the final layout
+            // MEMORY OPTIMIZATION: Disable Fabric.js object caching to prevent duplicate copies
+            objectCaching: false,
           });
 
           // Add custom property to identify image
@@ -198,6 +211,7 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
     }
 
     fabricCanvasRef.current.renderAll();
+    return tempFullResUrls;
   };
 
   // Apply layout when it changes (uses preview images for display)
@@ -245,21 +259,27 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
         throw new Error("Canvas not initialized");
       }
 
+      let tempFullResUrls: Map<string, string> = new Map();
+
       try {
         /**
-         * EXPORT WORKFLOW:
-         * 1. Load full-resolution original images (NOT previews)
-         * 2. Render and export at print quality
-         * 3. Restore preview images to free memory
+         * EXPORT WORKFLOW - AGGRESSIVE MEMORY MANAGEMENT:
+         * 1. Regenerate full-resolution blob URLs from original File objects
+         * 2. Load them onto canvas and export at print quality
+         * 3. IMMEDIATELY revoke full-res URLs to free memory
+         * 4. Restore preview images on canvas
          *
          * This ensures the exported PNG has full print quality while
-         * keeping memory usage low during normal canvas display.
+         * keeping memory usage minimal on low-RAM devices.
          */
 
-        console.log('🔄 Export: Loading full-resolution images...');
+        console.log('🔄 Export: Regenerating full-resolution images from File objects...');
 
-        // Step 1: Load full-resolution images for export
-        await loadImagesToCanvas(true);  // true = use full resolution
+        // Step 1: Load full-resolution images for export (regenerated from File objects)
+        // This returns a map of temporary blob URLs that we MUST revoke after export
+        tempFullResUrls = await loadImagesToCanvas(true);  // true = regenerate full resolution
+
+        console.log(`   Created ${tempFullResUrls.size} temporary full-res blob URLs`);
 
         // Optimize for export
         fabricCanvasRef.current.discardActiveObject();
@@ -281,17 +301,34 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
           enableRetinaScaling: false,
         });
 
-        console.log('✅ Export complete, restoring preview images...');
+        console.log('✅ Export complete!');
 
-        // Step 3: Restore preview images to free memory from full-resolution images
-        // This is critical for low-RAM devices - don't keep full-res images in memory
+        // Step 3: CRITICAL - Revoke temporary full-res blob URLs IMMEDIATELY to free memory
+        console.log(`🧹 Revoking ${tempFullResUrls.size} temporary full-res blob URLs...`);
+        tempFullResUrls.forEach((url, id) => {
+          URL.revokeObjectURL(url);
+          debugLog(`   - Revoked full-res URL for ${id}`);
+        });
+        tempFullResUrls.clear();
+
+        // Step 4: Restore preview images on canvas (much smaller memory footprint)
+        console.log('🔄 Restoring preview images on canvas...');
         await loadImagesToCanvas(false);  // false = use preview images
 
-        console.log('🧹 Memory restored to preview mode');
+        console.log('✅ Memory restored to preview mode');
 
         return dataUrl;
       } catch (error) {
         console.error("Export error:", error);
+
+        // CRITICAL: Always revoke temporary full-res URLs even on error
+        if (tempFullResUrls.size > 0) {
+          console.log(`🧹 Cleaning up ${tempFullResUrls.size} temporary URLs after error...`);
+          tempFullResUrls.forEach((url) => {
+            URL.revokeObjectURL(url);
+          });
+          tempFullResUrls.clear();
+        }
 
         // Try to restore preview images even on error
         try {
