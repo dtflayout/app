@@ -42,6 +42,8 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
   const [zoomLevel, setZoomLevel] = useState(75); // Zoom percentage (50-400), default 75%
   const [isPanning, setIsPanning] = useState(false); // Track if user is panning
   const [padding, setPadding] = useState(0); // Padding in pixels (0-50)
+  // Working URL for the current image - either from image.url or regenerated from File
+  const [workingUrl, setWorkingUrl] = useState<string>('');
 
   // Undo/Redo history
   const [boundsHistory, setBoundsHistory] = useState<CropBounds[]>([]);
@@ -53,6 +55,8 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const dragStartRef = useRef<{ x: number; y: number; bounds: CropBounds } | null>(null);
   const panStartRef = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
+  // Track temporary URL created from File (for memory optimization cleanup)
+  const tempUrlRef = useRef<string | null>(null);
 
   const currentImage = images[currentIndex];
 
@@ -76,11 +80,25 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
   useEffect(() => {
     if (!isOpen || !currentImage) return;
 
+    // MEMORY OPTIMIZATION: If url is empty (cleared after layout generation),
+    // regenerate it from the File object temporarily for modal use
+    let imageUrl = currentImage.url;
+    if (!imageUrl || imageUrl === '') {
+      // Revoke any previous temporary URL
+      if (tempUrlRef.current) {
+        URL.revokeObjectURL(tempUrlRef.current);
+      }
+      imageUrl = URL.createObjectURL(currentImage.file);
+      tempUrlRef.current = imageUrl; // Track for cleanup
+      console.log(`[ImageTrimModal] Regenerated URL from File: ${imageUrl.substring(0, 50)}`);
+    }
+    setWorkingUrl(imageUrl);
+
     const detect = async () => {
       setIsLoading(true);
       try {
         const result = await detectContentBounds(
-          currentImage.url,
+          imageUrl,
           DETECTION_TOLERANCE,
           detectTransparent
         );
@@ -100,6 +118,14 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
     };
 
     detect();
+
+    // Cleanup temporary URL when image changes or modal closes
+    return () => {
+      if (tempUrlRef.current) {
+        URL.revokeObjectURL(tempUrlRef.current);
+        tempUrlRef.current = null;
+      }
+    };
   }, [isOpen, currentImage, detectTransparent]);
 
   // Calculate bounds with padding applied (clamped to image bounds)
@@ -226,8 +252,9 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
         edgeHandleWidth
       );
     };
-    img.src = currentImage.url;
-  }, [currentImage, cropBounds, detectionResult, getDisplayScale, zoomLevel, padding, getBoundsWithPadding]);
+    // Use workingUrl instead of currentImage.url (which may be empty after layout generation)
+    img.src = workingUrl;
+  }, [workingUrl, cropBounds, detectionResult, getDisplayScale, zoomLevel, padding, getBoundsWithPadding]);
 
   // Handle mouse events for dragging
   const getHandleAtPosition = (x: number, y: number): DragHandle => {
@@ -482,12 +509,13 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
 
   // Download current preview as PNG
   const handleDownload = async () => {
-    if (!currentImage || !cropBounds || !detectionResult) return;
+    if (!currentImage || !cropBounds || !detectionResult || !workingUrl) return;
 
     try {
       // Use effective bounds (with padding)
       const boundsToUse = getBoundsWithPadding(cropBounds, padding);
-      const result = await cropImage(currentImage.url, boundsToUse, currentImage.file.name);
+      // Use workingUrl instead of currentImage.url (which may be empty after layout generation)
+      const result = await cropImage(workingUrl, boundsToUse, currentImage.file.name);
 
       // Create download filename
       const originalName = currentImage.file.name;
@@ -513,7 +541,7 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
 
   // Apply trim to current image
   const handleApplyTrim = async () => {
-    if (!currentImage || !cropBounds || !detectionResult) {
+    if (!currentImage || !cropBounds || !detectionResult || !workingUrl) {
       return;
     }
 
@@ -522,7 +550,8 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
 
     setIsLoading(true);
     try {
-      const result = await cropImage(currentImage.url, boundsToUse, currentImage.file.name);
+      // Use workingUrl instead of currentImage.url (which may be empty after layout generation)
+      const result = await cropImage(workingUrl, boundsToUse, currentImage.file.name);
 
       // Generate thumbnail for the trimmed image (for gallery display)
       let thumbnailUrl: string;

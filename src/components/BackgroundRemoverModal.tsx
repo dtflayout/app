@@ -39,6 +39,8 @@ export const BackgroundRemoverModal = ({
   const [isPanning, setIsPanning] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
   const [previewCanvas, setPreviewCanvas] = useState<HTMLCanvasElement | null>(null);
+  // Working URL for the image - either from image.url or regenerated from File
+  const [workingUrl, setWorkingUrl] = useState<string>('');
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -64,6 +66,9 @@ export const BackgroundRemoverModal = ({
     return baseScale * (zoomLevel / 100);
   }, [getBaseScale, zoomLevel]);
 
+  // Track temporary URL created from File (for memory optimization cleanup)
+  const tempUrlRef = useRef<string | null>(null);
+
   // Load image when modal opens
   useEffect(() => {
     if (!isOpen || !image) return;
@@ -72,6 +77,17 @@ export const BackgroundRemoverModal = ({
     setSelectedColors([]);
     setShowOriginal(false);
     setPreviewCanvas(null);
+
+    // MEMORY OPTIMIZATION: If url is empty (cleared after layout generation),
+    // regenerate it from the File object temporarily for modal use
+    let imageUrl = image.url;
+    if (!imageUrl || imageUrl === '') {
+      imageUrl = URL.createObjectURL(image.file);
+      tempUrlRef.current = imageUrl; // Track for cleanup
+      console.log(`[BackgroundRemover] Regenerated URL from File: ${imageUrl.substring(0, 50)}`);
+    }
+    // Store the working URL for use throughout the modal
+    setWorkingUrl(imageUrl);
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -95,11 +111,17 @@ export const BackgroundRemoverModal = ({
       toast.error("Failed to load image");
       setIsLoading(false);
     };
-    img.src = image.url;
+    img.src = imageUrl;
 
     return () => {
       originalImageDataRef.current = null;
       imageRef.current = null;
+      setWorkingUrl('');
+      // MEMORY OPTIMIZATION: Revoke temporary URL when modal closes
+      if (tempUrlRef.current) {
+        URL.revokeObjectURL(tempUrlRef.current);
+        tempUrlRef.current = null;
+      }
     };
   }, [isOpen, image]);
 
@@ -152,7 +174,8 @@ export const BackgroundRemoverModal = ({
     debounceTimeoutRef.current = setTimeout(async () => {
       setIsProcessing(true);
       try {
-        const preview = await generateRemovalPreviewMultiple(image.url, selectedColors);
+        // Use workingUrl instead of image.url (which may be empty after layout generation)
+        const preview = await generateRemovalPreviewMultiple(workingUrl, selectedColors);
         setPreviewCanvas(preview);
       } catch (error) {
         console.error("Failed to generate preview:", error);
@@ -166,7 +189,7 @@ export const BackgroundRemoverModal = ({
         clearTimeout(debounceTimeoutRef.current);
       }
     };
-  }, [selectedColors, image]);
+  }, [selectedColors, workingUrl]);
 
   // Check if a color is already in the selected list (within a small tolerance)
   const isColorAlreadySelected = (newColor: RGBColor): boolean => {
@@ -320,12 +343,13 @@ export const BackgroundRemoverModal = ({
 
   // Apply removal
   const handleApply = async () => {
-    if (!image || selectedColors.length === 0) return;
+    if (!image || selectedColors.length === 0 || !workingUrl) return;
 
     setIsLoading(true);
     try {
+      // Use workingUrl instead of image.url (which may be empty after layout generation)
       const result = await removeColorsFromImage(
-        image.url,
+        workingUrl,
         selectedColors,
         image.file.name
       );

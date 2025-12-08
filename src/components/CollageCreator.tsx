@@ -584,12 +584,21 @@ export const CollageCreator = ({
           let previewUrl: string;
           try {
             previewUrl = await generatePreviewImage(img.file, 400);
-            debugLog(`[Preview] Generated 400px preview for ${img.file.name}`);
+            console.log(`[MEMORY DEBUG] Generated preview for ${img.file.name}`);
           } catch (error) {
             console.error(`Failed to generate preview for ${img.file.name}:`, error);
             // Fallback: create a blob URL from the file (will use more memory but at least works)
             previewUrl = URL.createObjectURL(img.file);
           }
+
+          // MEMORY DEBUG: Log what we're storing
+          console.log(`[MEMORY DEBUG] Image ${img.id}:`);
+          console.log(`  - File size: ${(img.file.size / 1024 / 1024).toFixed(2)} MB`);
+          console.log(`  - Old url length: ${img.url?.length || 0} chars`);
+          console.log(`  - Old url type: ${img.url?.substring(0, 30) || 'none'}`);
+          console.log(`  - thumbnailUrl: ${img.thumbnailUrl?.substring(0, 30) || 'none'}`);
+          console.log(`  - New previewUrl: ${previewUrl?.substring(0, 30) || 'none'}`);
+          console.log(`  - Setting url to: '' (empty)`);
 
           return {
             ...img,
@@ -604,6 +613,12 @@ export const CollageCreator = ({
 
       console.log('✅ All preview images generated');
       console.log('📸 Images ready:', imagesWithPreview.length);
+
+      // MEMORY DEBUG: Verify URLs are cleared
+      console.log('[MEMORY DEBUG] Verifying state after generation:');
+      imagesWithPreview.forEach(img => {
+        console.log(`  - ${img.id}: url='${img.url}', previewUrl=${img.previewUrl?.substring(0, 30)}, thumbnailUrl=${img.thumbnailUrl?.substring(0, 30)}`);
+      });
 
       // CRITICAL: Revoke old blob URLs to prevent memory leak
       debugLog('[Memory] Revoking old blob URLs after preview generation');

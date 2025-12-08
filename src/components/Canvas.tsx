@@ -144,6 +144,12 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
 
       await new Promise<void>((resolve) => {
         FabricImage.fromURL(imageUrl).then((fabricImg) => {
+          // MEMORY DEBUG: Log actual image dimensions loaded
+          console.log(`[CANVAS DEBUG] Loaded image ${item.id}:`);
+          console.log(`  - Source URL type: ${imageUrl?.substring(0, 30)}`);
+          console.log(`  - Original dimensions: ${fabricImg.width}x${fabricImg.height}`);
+          console.log(`  - Mode: ${useFullResolution ? 'FULL-RES' : 'PREVIEW'}`);
+
           // Determine final width/height in pixels from layout
           const layoutWidthPx = item.widthInches * DPI;
           const layoutHeightPx = item.heightInches * DPI;

@@ -181,8 +181,15 @@ export async function generatePreviewImage(
           targetWidth = Math.round((targetHeight / originalHeight) * originalWidth);
         }
 
+        // MEMORY DEBUG: Log preview generation dimensions
+        console.log(`[PREVIEW DEBUG] ${file.name}:`);
+        console.log(`  - Original: ${originalWidth}x${originalHeight}`);
+        console.log(`  - Target: ${targetWidth}x${targetHeight}`);
+        console.log(`  - Max dimension: ${maxDimension}`);
+
         // If the image is already small enough, just create a blob URL from the file
         if (originalWidth <= maxDimension && originalHeight <= maxDimension) {
+          console.log(`  - Image already small, using original`);
           URL.revokeObjectURL(objectUrl);
           resolve(URL.createObjectURL(file));
           return;
