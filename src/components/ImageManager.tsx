@@ -199,11 +199,14 @@ export const ImageManager = ({
 
     const newId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const newFile = new File([imageToCopy.file], newFileName, { type: imageToCopy.file.type });
-    
+
+    // Reuse the same thumbnail URL since it's the same image content
+    // The full-resolution url is also reused for consistency
     const newImageObject: ImageObject = {
       id: newId,
       file: newFile,
-      url: imageToCopy.url
+      url: imageToCopy.url,
+      thumbnailUrl: imageToCopy.thumbnailUrl
     };
     
     const newDimensions = new Map(imageDimensions);
@@ -452,8 +455,11 @@ export const ImageManager = ({
                       className="w-20 h-20 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden border border-slate-200"
                       style={getThumbnailBgStyle()}
                     >
+                      {/* Use thumbnailUrl for gallery display to reduce memory usage on low-RAM devices.
+                          The full-resolution image.url is preserved for layout generation, trimming,
+                          background removal, and export operations. */}
                       <img
-                        src={image.url}
+                        src={image.thumbnailUrl}
                         alt={image.file.name}
                         className="max-w-full max-h-full object-contain"
                       />

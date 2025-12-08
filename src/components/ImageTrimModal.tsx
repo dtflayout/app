@@ -13,6 +13,7 @@ import {
   CropBounds,
   TrimDetectionResult,
 } from "@/utils/imageTrimUtils";
+import { generateThumbnail } from "@/utils/thumbnailUtils";
 import { toast } from "sonner";
 import { Scissors, ChevronLeft, ChevronRight, RotateCcw, ZoomIn, ZoomOut, Maximize2, Download, Undo2, Redo2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -523,11 +524,22 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
     try {
       const result = await cropImage(currentImage.url, boundsToUse, currentImage.file.name);
 
+      // Generate thumbnail for the trimmed image (for gallery display)
+      let thumbnailUrl: string;
+      try {
+        thumbnailUrl = await generateThumbnail(result.file, 300);
+      } catch (error) {
+        console.error('Failed to generate thumbnail for trimmed image:', error);
+        // Fallback to full URL if thumbnail generation fails
+        thumbnailUrl = result.url;
+      }
+
       const newTrimmedImages = new Map(trimmedImages);
       newTrimmedImages.set(currentImage.id, {
         id: currentImage.id,
         file: result.file,
         url: result.url,
+        thumbnailUrl,
         // Store original dimensions so we can show the savings
         originalWidth: detectionResult.originalWidth,
         originalHeight: detectionResult.originalHeight,
@@ -599,6 +611,10 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
       trimmedImages.forEach((trimmed) => {
         if (trimmed.url.startsWith('blob:')) {
           URL.revokeObjectURL(trimmed.url);
+        }
+        // Also revoke thumbnail URLs
+        if (trimmed.thumbnailUrl && trimmed.thumbnailUrl.startsWith('blob:') && trimmed.thumbnailUrl !== trimmed.url) {
+          URL.revokeObjectURL(trimmed.thumbnailUrl);
         }
       });
     }

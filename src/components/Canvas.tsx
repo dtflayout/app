@@ -15,6 +15,25 @@ const debugLog = (...args: any[]) => {
   if (DEBUG) console.log(...args);
 };
 
+/**
+ * CANVAS DISPLAY OPTIMIZATION
+ *
+ * This canvas uses a two-tier image strategy for performance on low-RAM devices:
+ *
+ * 1. PREVIEW MODE (default display):
+ *    - Uses previewUrl (800px max) for on-screen rendering
+ *    - Dramatically reduces memory usage for 20+ images
+ *    - Acceptable quality for layout preview and positioning
+ *
+ * 2. EXPORT MODE (during download):
+ *    - Temporarily loads full-resolution original images (url)
+ *    - Renders at print quality (150 DPI)
+ *    - Immediately restores preview images after export to free memory
+ *
+ * IMPORTANT: The final exported PNG MUST use original full-resolution images.
+ * Preview optimization is ONLY for on-screen display.
+ */
+
 interface CanvasProps {
   images: ImageObject[];
   layout: PositionedImage[];
@@ -83,99 +102,121 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
     }
   }, [canvasHeightInches, canvasWidthPx]);
 
-  // Apply layout when it changes
+  /**
+   * Loads images onto the canvas with the given layout.
+   * @param useFullResolution - If true, uses full-resolution URLs for export. If false, uses preview URLs for display.
+   */
+  const loadImagesToCanvas = async (useFullResolution: boolean = false) => {
+    if (!fabricCanvasRef.current || !layout || layout.length === 0) return;
+
+    const mode = useFullResolution ? 'FULL RESOLUTION (export)' : 'PREVIEW (display)';
+    debugLog(`🎨 Canvas: loadImagesToCanvas - ${mode}`);
+    debugLog('  - layout.length:', layout.length);
+    debugLog('  - imageMap.size:', imageMap.size);
+
+    // Clear existing canvas
+    fabricCanvasRef.current.clear();
+    fabricCanvasRef.current.backgroundColor = "transparent";
+
+    // Load each image according to its position in the layout
+    for (const item of layout) {
+      const img = imageMap.get(item.id);
+      if (!img) continue;
+
+      // IMPORTANT: Use previewUrl for display, full url for export
+      // This dramatically reduces memory usage on low-RAM devices
+      const imageUrl = useFullResolution
+        ? img.url  // Full resolution for final export (print quality)
+        : (img.previewUrl || img.url);  // Preview for display (fallback to full if no preview)
+
+      debugLog(`  - Loading ${item.id}: ${useFullResolution ? 'FULL' : 'PREVIEW'} - ${imageUrl?.substring(0, 50)}`);
+
+      await new Promise<void>((resolve) => {
+        FabricImage.fromURL(imageUrl).then((fabricImg) => {
+          // Determine final width/height in pixels from layout
+          const layoutWidthPx = item.widthInches * DPI;
+          const layoutHeightPx = item.heightInches * DPI;
+
+          // Calculate scale factors based on original image dimensions
+          let scaleX: number;
+          let scaleY: number;
+          let finalWidth: number;
+
+          if (item.rotated) {
+            // For rotated images: layout width corresponds to original height, layout height to original width
+            scaleX = layoutWidthPx / (fabricImg.height || 1);
+            scaleY = layoutHeightPx / (fabricImg.width || 1);
+            finalWidth = (fabricImg.height || 0) * Math.min(scaleX, scaleY);
+          } else {
+            // For non-rotated images: straightforward scaling
+            scaleX = layoutWidthPx / (fabricImg.width || 1);
+            scaleY = layoutHeightPx / (fabricImg.height || 1);
+            finalWidth = (fabricImg.width || 0) * Math.min(scaleX, scaleY);
+          }
+
+          // Use the smaller scale factor to ensure image fits within allocated bounds
+          const scaleFactor = Math.min(scaleX, scaleY);
+          fabricImg.scale(scaleFactor);
+
+          // Set position and rotation
+          if (item.rotated) {
+            fabricImg.set({
+              angle: 90,
+              originX: 'left',
+              originY: 'top',
+              left: (item.x * DPI) + canvasPaddingPx + finalWidth,
+              top: item.y * DPI,
+            });
+          } else {
+            fabricImg.set({
+              angle: 0,
+              originX: 'left',
+              originY: 'top',
+              left: (item.x * DPI) + canvasPaddingPx,
+              top: item.y * DPI,
+            });
+          }
+
+          fabricImg.set({
+            cornerSize: 8,
+            borderColor: "#2563eb",
+            cornerColor: "#2563eb",
+            transparentCorners: false,
+            selectable: false, // Make non-selectable in the final layout
+          });
+
+          // Add custom property to identify image
+          fabricImg.set("id", item.id);
+
+          fabricCanvasRef.current?.add(fabricImg);
+          resolve();
+        }).catch(error => {
+          console.error("Error loading image:", error);
+          resolve(); // Resolve anyway to continue with other images
+        });
+      });
+    }
+
+    fabricCanvasRef.current.renderAll();
+  };
+
+  // Apply layout when it changes (uses preview images for display)
   useEffect(() => {
     const applyLayout = async () => {
       if (!fabricCanvasRef.current || !layout || layout.length === 0) return;
 
       debugLog('🎨 Canvas: applyLayout called');
-      debugLog('  - layout.length:', layout.length);
-      debugLog('  - imageMap.size:', imageMap.size);
       debugLog('  - Layout IDs:', layout.map(l => l.id));
 
       setIsLoading(true);
       setLayoutApplied(false);
 
       try {
-        // Clear existing canvas
-        fabricCanvasRef.current.clear();
-        fabricCanvasRef.current.backgroundColor = "transparent";
+        // Load preview images for display (NOT full resolution)
+        await loadImagesToCanvas(false);
 
-        // Load each image according to its position in the layout
-        for (const item of layout) {
-          const img = imageMap.get(item.id);
-          debugLog(`  - Loading image ${item.id}:`, img ? { name: img.file?.name, hasUrl: !!img.url, url: img.url?.substring(0, 50) } : 'NOT FOUND IN MAP');
-          if (!img) continue;
-          
-          await new Promise<void>((resolve) => {
-            FabricImage.fromURL(img.url).then((fabricImg) => {
-              // Determine final width/height in pixels from layout
-              const layoutWidthPx = item.widthInches * DPI;
-              const layoutHeightPx = item.heightInches * DPI;
-              
-              // Calculate scale factors based on original image dimensions
-              let scaleX, scaleY, finalWidth, finalHeight;
-              
-              if (item.rotated) {
-                // For rotated images: layout width corresponds to original height, layout height to original width
-                scaleX = layoutWidthPx / (fabricImg.height || 1);
-                scaleY = layoutHeightPx / (fabricImg.width || 1);
-                finalWidth = fabricImg.height * Math.min(scaleX, scaleY);
-                finalHeight = fabricImg.width * Math.min(scaleX, scaleY);
-              } else {
-                // For non-rotated images: straightforward scaling
-                scaleX = layoutWidthPx / (fabricImg.width || 1);
-                scaleY = layoutHeightPx / (fabricImg.height || 1);
-                finalWidth = fabricImg.width * Math.min(scaleX, scaleY);
-                finalHeight = fabricImg.height * Math.min(scaleX, scaleY);
-              }
-              
-              // Use the smaller scale factor to ensure image fits within allocated bounds
-              const scaleFactor = Math.min(scaleX, scaleY);
-              fabricImg.scale(scaleFactor);
-              
-              // Set position and rotation
-              if (item.rotated) {
-                fabricImg.set({
-                  angle: 90,
-                  originX: 'left',
-                  originY: 'top',
-                  left: (item.x * DPI) + canvasPaddingPx + finalWidth,
-                  top: item.y * DPI,
-                });
-              } else {
-                fabricImg.set({
-                  angle: 0,
-                  originX: 'left',
-                  originY: 'top',
-                  left: (item.x * DPI) + canvasPaddingPx,
-                  top: item.y * DPI,
-                });
-              }
-              
-              fabricImg.set({
-                cornerSize: 8,
-                borderColor: "#2563eb",
-                cornerColor: "#2563eb",
-                transparentCorners: false,
-                selectable: false, // Make non-selectable in the final layout
-              });
-              
-              // Add custom property to identify image
-              fabricImg.set("id", item.id);
-              
-              fabricCanvasRef.current?.add(fabricImg);
-              resolve();
-            }).catch(error => {
-              console.error("Error loading image:", error);
-              resolve(); // Resolve anyway to continue with other images
-            });
-          });
-        }
-        
-        fabricCanvasRef.current.renderAll();
         setLayoutApplied(true);
-        
+
         // Auto-fit zoom to width after layout is applied
         setTimeout(() => {
           if (containerRef.current && fabricCanvasRef.current) {
@@ -185,7 +226,7 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
             setZoom(Math.max(Math.min(fitZoom, 100), 10)); // Between 10% and 100%
           }
         }, 100);
-        
+
       } catch (error) {
         console.error("Error applying layout:", error);
         toast.error("Failed to apply layout");
@@ -193,7 +234,7 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
         setIsLoading(false);
       }
     };
-    
+
     applyLayout();
   }, [layout, imageMap]);
 
@@ -203,8 +244,23 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
       if (!fabricCanvasRef.current) {
         throw new Error("Canvas not initialized");
       }
-      
+
       try {
+        /**
+         * EXPORT WORKFLOW:
+         * 1. Load full-resolution original images (NOT previews)
+         * 2. Render and export at print quality
+         * 3. Restore preview images to free memory
+         *
+         * This ensures the exported PNG has full print quality while
+         * keeping memory usage low during normal canvas display.
+         */
+
+        console.log('🔄 Export: Loading full-resolution images...');
+
+        // Step 1: Load full-resolution images for export
+        await loadImagesToCanvas(true);  // true = use full resolution
+
         // Optimize for export
         fabricCanvasRef.current.discardActiveObject();
         fabricCanvasRef.current.renderAll();
@@ -214,9 +270,10 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
         const expectedWidthPx = Math.round(canvasWidthInches * DPI_PRINT);
         const expectedHeightPx = Math.round(canvasHeightInches * DPI_PRINT);
 
-        console.log(`Exporting ${imageCount} images at ${DPI_PRINT} DPI (${EXPORT_MULTIPLIER.toFixed(2)}x multiplier)`);
-        console.log(`Expected output: ${expectedWidthPx}px × ${expectedHeightPx}px`);
+        console.log(`📤 Exporting ${imageCount} images at ${DPI_PRINT} DPI (${EXPORT_MULTIPLIER.toFixed(2)}x multiplier)`);
+        console.log(`   Expected output: ${expectedWidthPx}px × ${expectedHeightPx}px`);
 
+        // Step 2: Export at full resolution
         const dataUrl = fabricCanvasRef.current.toDataURL({
           format: 'png',
           quality: 1.0,
@@ -224,9 +281,25 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
           enableRetinaScaling: false,
         });
 
+        console.log('✅ Export complete, restoring preview images...');
+
+        // Step 3: Restore preview images to free memory from full-resolution images
+        // This is critical for low-RAM devices - don't keep full-res images in memory
+        await loadImagesToCanvas(false);  // false = use preview images
+
+        console.log('🧹 Memory restored to preview mode');
+
         return dataUrl;
       } catch (error) {
         console.error("Export error:", error);
+
+        // Try to restore preview images even on error
+        try {
+          await loadImagesToCanvas(false);
+        } catch {
+          // Ignore restoration errors
+        }
+
         toast.error("Canvas too large. Try reducing the number of images or their sizes.");
         throw error;
       }

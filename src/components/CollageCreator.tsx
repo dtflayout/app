@@ -24,6 +24,7 @@ import { MemoryWarningModal } from "./MemoryWarningModal";
 import { ImageTrimModal } from "./ImageTrimModal";
 import { BackgroundRemoverModal } from "./BackgroundRemoverModal";
 import { quickPaddingCheck } from "@/utils/imageTrimUtils";
+import { generatePreviewImage } from "@/utils/thumbnailUtils";
 
 // Debug flag - set to true to enable debug logging
 const DEBUG = false;
@@ -52,7 +53,19 @@ const formatNumber = (num: number): string => {
 export type ImageObject = {
   id: string;
   file: File;
+  /** Full-resolution blob URL - use this for layout generation, trimming, background removal, and EXPORT */
   url: string;
+  /**
+   * Low-resolution thumbnail blob URL (max 300px) - ONLY for gallery display in ImageManager.
+   * NEVER use this for any image processing or final output.
+   */
+  thumbnailUrl: string;
+  /**
+   * Medium-resolution preview blob URL (max 800px) - ONLY for Fabric.js canvas display.
+   * Generated when layout is created. Optional because it's only needed after layout generation.
+   * NEVER use this for final export - always use the full-resolution `url` for print quality.
+   */
+  previewUrl?: string;
   // Original dimensions before trimming (only set if image was trimmed)
   originalWidth?: number;
   originalHeight?: number;
@@ -121,10 +134,16 @@ export const CollageCreator = ({
   const isUnmountingRef = useRef(false);
 
   useEffect(() => {
-    // Track all current blob URLs
+    // Track all current blob URLs (full-resolution, thumbnails, and previews)
     images.forEach(img => {
       if (img.url && img.url.startsWith('blob:')) {
         blobUrlsRef.current.add(img.url);
+      }
+      if (img.thumbnailUrl && img.thumbnailUrl.startsWith('blob:')) {
+        blobUrlsRef.current.add(img.thumbnailUrl);
+      }
+      if (img.previewUrl && img.previewUrl.startsWith('blob:')) {
+        blobUrlsRef.current.add(img.previewUrl);
       }
     });
   }, [images]);
@@ -240,16 +259,28 @@ export const CollageCreator = ({
       return prevImages.map(img => {
         const trimmed = trimmedImages.find(t => t.id === img.id);
         if (trimmed && trimmed.url !== img.url) {
-          // Clean up old blob URL
+          // Clean up old blob URLs (full-resolution, thumbnail, and preview)
           if (img.url.startsWith('blob:')) {
             URL.revokeObjectURL(img.url);
             blobUrlsRef.current.delete(img.url);
           }
-          // Track new blob URL
+          if (img.thumbnailUrl && img.thumbnailUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(img.thumbnailUrl);
+            blobUrlsRef.current.delete(img.thumbnailUrl);
+          }
+          if (img.previewUrl && img.previewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(img.previewUrl);
+            blobUrlsRef.current.delete(img.previewUrl);
+          }
+          // Track new blob URLs (preview will be regenerated when layout is created)
           if (trimmed.url.startsWith('blob:')) {
             blobUrlsRef.current.add(trimmed.url);
           }
-          return trimmed;
+          if (trimmed.thumbnailUrl && trimmed.thumbnailUrl.startsWith('blob:')) {
+            blobUrlsRef.current.add(trimmed.thumbnailUrl);
+          }
+          // Note: previewUrl is not set here - it will be generated when layout is created
+          return { ...trimmed, previewUrl: undefined };
         }
         return img;
       });
@@ -286,16 +317,28 @@ export const CollageCreator = ({
     setImages(prevImages => {
       return prevImages.map(img => {
         if (img.id === newImage.id) {
-          // Clean up old blob URL
+          // Clean up old blob URLs (full-resolution, thumbnail, and preview)
           if (img.url.startsWith('blob:')) {
             URL.revokeObjectURL(img.url);
             blobUrlsRef.current.delete(img.url);
           }
-          // Track new blob URL
+          if (img.thumbnailUrl && img.thumbnailUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(img.thumbnailUrl);
+            blobUrlsRef.current.delete(img.thumbnailUrl);
+          }
+          if (img.previewUrl && img.previewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(img.previewUrl);
+            blobUrlsRef.current.delete(img.previewUrl);
+          }
+          // Track new blob URLs (preview will be regenerated when layout is created)
           if (newImage.url.startsWith('blob:')) {
             blobUrlsRef.current.add(newImage.url);
           }
-          return newImage;
+          if (newImage.thumbnailUrl && newImage.thumbnailUrl.startsWith('blob:')) {
+            blobUrlsRef.current.add(newImage.thumbnailUrl);
+          }
+          // Note: previewUrl is not set here - it will be generated when layout is created
+          return { ...newImage, previewUrl: undefined };
         }
         return img;
       });
@@ -319,11 +362,19 @@ export const CollageCreator = ({
     const imagesToRemove = images.filter(img => imageIds.includes(img.id));
     const imagesToKeep = images.filter(img => !imageIds.includes(img.id));
 
-    // Revoke ONLY the deleted images' URLs
+    // Revoke ONLY the deleted images' URLs (full-resolution, thumbnails, and previews)
     imagesToRemove.forEach(img => {
       if (img.url && img.url.startsWith('blob:')) {
         URL.revokeObjectURL(img.url);
         blobUrlsRef.current.delete(img.url);
+      }
+      if (img.thumbnailUrl && img.thumbnailUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(img.thumbnailUrl);
+        blobUrlsRef.current.delete(img.thumbnailUrl);
+      }
+      if (img.previewUrl && img.previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(img.previewUrl);
+        blobUrlsRef.current.delete(img.previewUrl);
       }
     });
 
@@ -593,23 +644,42 @@ export const CollageCreator = ({
       console.log("[Credit Deduction] ✅ Usage logging successful");
     }
 
-    // Step 4: Convert images to base64 to avoid blob URL issues
-    console.log('🔄 Converting images to base64 for canvas generation...');
+    // Step 4: Convert images to base64 and generate preview images for canvas display
+    // Base64 URLs are used for the full-resolution export
+    // Preview URLs (800px max) are used for canvas display to reduce memory on low-RAM devices
+    console.log('🔄 Preparing images for canvas (base64 + previews)...');
     try {
-      const imagesWithBase64 = await Promise.all(
+      const imagesWithBase64AndPreview = await Promise.all(
         images.map(async (img) => {
+          // Convert to base64 for full-resolution export
           const base64 = await fileToBase64(img.file);
+
+          // Generate preview image (800px max) for canvas display
+          // This dramatically reduces memory usage on low-RAM devices
+          let previewUrl: string;
+          try {
+            previewUrl = await generatePreviewImage(img.file, 800);
+            debugLog(`[Preview] Generated 800px preview for ${img.file.name}`);
+          } catch (error) {
+            console.error(`Failed to generate preview for ${img.file.name}:`, error);
+            // Fallback: use base64 if preview generation fails
+            previewUrl = base64;
+          }
+
           return {
             ...img,
-            url: base64, // Replace blob URL with base64
+            url: base64,       // Full resolution for export (print quality)
+            previewUrl,        // 800px preview for canvas display (memory optimization)
+            // Keep thumbnailUrl unchanged for gallery
           };
         })
       );
 
-      console.log('✅ All images converted to base64');
-      console.log('📸 Images with base64:', imagesWithBase64.length);
+      console.log('✅ All images prepared (base64 + previews)');
+      console.log('📸 Images ready:', imagesWithBase64AndPreview.length);
 
       // CRITICAL: Revoke old blob URLs to prevent memory leak
+      // Note: We revoke the original blob URLs but NOT the new previewUrls
       debugLog('[Memory] Revoking old blob URLs after base64 conversion');
       images.forEach(img => {
         if (img.url && img.url.startsWith('blob:')) {
@@ -619,11 +689,19 @@ export const CollageCreator = ({
             blobUrlsRef.current.delete(img.url);
           }
         }
+        // Also revoke old preview URLs if they exist (they'll be replaced with new ones)
+        if (img.previewUrl && img.previewUrl.startsWith('blob:')) {
+          debugLog('[Memory]   - Revoking old preview:', img.previewUrl.substring(0, 50) + '...');
+          URL.revokeObjectURL(img.previewUrl);
+          if (blobUrlsRef && blobUrlsRef.current) {
+            blobUrlsRef.current.delete(img.previewUrl);
+          }
+        }
       });
       debugLog('[Memory] ✅ Old blob URLs revoked');
 
-      // Now update images state with base64 URLs
-      setImages(imagesWithBase64);
+      // Now update images state with base64 URLs and preview URLs
+      setImages(imagesWithBase64AndPreview);
 
       // Step 5: Show the layout
       setLayout(pendingLayout.positionedImages);

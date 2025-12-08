@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { ImagePlus, X, Image as ImageIcon } from "lucide-react";
 import { ImageObject } from "./CollageCreator";
 import { toast } from "sonner";
+import { generateThumbnail } from "@/utils/thumbnailUtils";
 
 // File and count limits to prevent memory issues
 const MAX_FILE_SIZE_MB = 25; // Maximum size per file
@@ -19,7 +20,7 @@ export const ImageUploader = ({ onImagesAdded, currentImageCount = 0 }: ImageUpl
   const [isDragging, setIsDragging] = useState(false);
 
   const handleFiles = useCallback(
-    (files: FileList) => {
+    async (files: FileList) => {
       const fileArray = Array.from(files);
       const imageFiles = fileArray.filter((file) => file.type.startsWith("image/"));
 
@@ -50,11 +51,27 @@ export const ImageUploader = ({ onImagesAdded, currentImageCount = 0 }: ImageUpl
         return;
       }
 
-      const imageObjects: ImageObject[] = imageFiles.map((file) => ({
-        id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        file,
-        url: URL.createObjectURL(file),
-      }));
+      // Generate thumbnails in parallel for gallery display (max 300px, JPEG 0.7 quality)
+      // This dramatically reduces memory usage for 20+ images on low-RAM devices
+      const imageObjects: ImageObject[] = await Promise.all(
+        imageFiles.map(async (file) => {
+          const id = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          // Full-resolution URL for layout generation, trimming, bg removal, and export
+          const url = URL.createObjectURL(file);
+
+          // Generate low-res thumbnail for gallery display only
+          let thumbnailUrl: string;
+          try {
+            thumbnailUrl = await generateThumbnail(file, 300);
+          } catch (error) {
+            console.error(`Failed to generate thumbnail for ${file.name}:`, error);
+            // Fallback to full URL if thumbnail generation fails
+            thumbnailUrl = url;
+          }
+
+          return { id, file, url, thumbnailUrl };
+        })
+      );
 
       onImagesAdded(imageObjects);
     },

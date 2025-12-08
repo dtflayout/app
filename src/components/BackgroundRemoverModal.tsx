@@ -11,6 +11,7 @@ import {
   generateRemovalPreviewMultiple,
   rgbToHex,
 } from "@/utils/backgroundRemovalUtils";
+import { generateThumbnail } from "@/utils/thumbnailUtils";
 import { toast } from "sonner";
 import { Eraser, ZoomIn, ZoomOut, Maximize2, RotateCcw, Eye, EyeOff, X, Trash2, Download } from "lucide-react";
 
@@ -329,10 +330,21 @@ export const BackgroundRemoverModal = ({
         image.file.name
       );
 
+      // Generate thumbnail for the processed image (for gallery display)
+      let thumbnailUrl: string;
+      try {
+        thumbnailUrl = await generateThumbnail(result.file, 300);
+      } catch (error) {
+        console.error('Failed to generate thumbnail for processed image:', error);
+        // Fallback to full URL if thumbnail generation fails
+        thumbnailUrl = result.url;
+      }
+
       const newImage: ImageObject = {
         id: image.id,
         file: result.file,
         url: result.url,
+        thumbnailUrl,
         originalWidth: image.originalWidth || imageSize.width,
         originalHeight: image.originalHeight || imageSize.height,
       };
