@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X, ZoomIn, ZoomOut, Download, RotateCcw } from "lucide-react";
+import { ZoomIn, ZoomOut, Download, RotateCcw } from "lucide-react";
 import { ImageObject } from "./CollageCreator";
 import { PositionedImage } from "@/utils/layoutAlgorithm";
 
@@ -20,7 +20,7 @@ interface PreviewModalProps {
 const PREVIEW_WIDTH_PX = 1200;
 
 // Ruler dimensions
-const RULER_WIDTH = 40; // pixels
+const RULER_SIZE = 24; // pixels - smaller for cleaner look
 
 export const PreviewModal: React.FC<PreviewModalProps> = ({
   isOpen,
@@ -34,7 +34,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
 }) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [zoom, setZoom] = useState(10);
+  const [zoom, setZoom] = useState(25);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Calculate preview dimensions maintaining aspect ratio
@@ -188,7 +188,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
   };
 
   const handleResetZoom = () => {
-    setZoom(10);
+    setZoom(25);
   };
 
   // Handle close and cleanup
@@ -197,7 +197,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
     }
-    setZoom(100);
+    setZoom(25);
     onClose();
   };
 
@@ -219,14 +219,30 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
       marks.push(
         <div
           key={`h-${i}`}
-          className="absolute flex flex-col items-center"
-          style={{ left: position }}
+          className="absolute"
+          style={{ left: position, bottom: 0 }}
         >
           <div
-            className={`bg-slate-500 ${isMajor ? 'w-px h-3' : 'w-px h-2'}`}
+            style={{
+              width: '1px',
+              height: isMajor ? '10px' : '6px',
+              backgroundColor: isMajor ? '#888' : '#bbb',
+            }}
           />
           {showLabel && (
-            <span className="text-[10px] text-slate-600 mt-0.5">{i}"</span>
+            <span
+              style={{
+                position: 'absolute',
+                left: '2px',
+                bottom: '10px',
+                fontSize: '10px',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                color: '#666',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {i}
+            </span>
           )}
         </div>
       );
@@ -250,14 +266,30 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
       marks.push(
         <div
           key={`v-${i}`}
-          className="absolute flex items-center"
-          style={{ top: position }}
+          className="absolute"
+          style={{ top: position, right: 0 }}
         >
           <div
-            className={`bg-slate-500 ${isMajor ? 'h-px w-3' : 'h-px w-2'}`}
+            style={{
+              height: '1px',
+              width: isMajor ? '10px' : '6px',
+              backgroundColor: isMajor ? '#888' : '#bbb',
+            }}
           />
           {showLabel && (
-            <span className="text-[10px] text-slate-600 ml-1">{i}"</span>
+            <span
+              style={{
+                position: 'absolute',
+                right: '12px',
+                top: '-5px',
+                fontSize: '10px',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                color: '#666',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {i}
+            </span>
           )}
         </div>
       );
@@ -270,7 +302,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
       <DialogContent className="w-[95vw] h-[95vh] max-w-none max-h-none p-0 gap-0 flex flex-col overflow-hidden">
         {/* Header - Fixed at top */}
         <DialogHeader className="px-6 py-3 border-b bg-white flex-shrink-0">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pr-8">
             <DialogTitle className="text-xl font-bold">Sheet Preview</DialogTitle>
             <div className="flex items-center gap-4">
               {/* Sheet dimensions */}
@@ -311,16 +343,6 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                   <RotateCcw className="h-4 w-4" />
                 </Button>
               </div>
-
-              {/* Close button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={handleClose}
-              >
-                <X className="h-5 w-5" />
-              </Button>
             </div>
           </div>
         </DialogHeader>
@@ -329,7 +351,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
         <div
           ref={containerRef}
           className="flex-1 overflow-auto"
-          style={{ backgroundColor: '#f5f5f5' }}
+          style={{ backgroundColor: '#f0f0f0' }}
         >
           {isGenerating ? (
             <div className="flex items-center justify-center h-full min-h-[400px]">
@@ -342,8 +364,8 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
               </div>
             </div>
           ) : previewUrl ? (
-            <div className="p-6">
-              {/* Container for rulers and sheet */}
+            <div className="p-6 flex justify-center">
+              {/* Container for rulers and sheet - centered */}
               <div className="inline-flex flex-col">
                 {/* Top row: corner + horizontal ruler */}
                 <div className="flex">
@@ -351,11 +373,11 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                   <div
                     className="flex-shrink-0"
                     style={{
-                      width: RULER_WIDTH,
-                      height: RULER_WIDTH,
-                      backgroundColor: '#e5e5e5',
-                      borderRight: '1px solid #d4d4d4',
-                      borderBottom: '1px solid #d4d4d4',
+                      width: RULER_SIZE,
+                      height: RULER_SIZE,
+                      backgroundColor: '#fafafa',
+                      borderRight: '1px solid #e0e0e0',
+                      borderBottom: '1px solid #e0e0e0',
                     }}
                   />
                   {/* Horizontal ruler */}
@@ -363,14 +385,12 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                     className="relative flex-shrink-0"
                     style={{
                       width: scaledWidth,
-                      height: RULER_WIDTH,
-                      backgroundColor: '#e5e5e5',
-                      borderBottom: '1px solid #d4d4d4',
+                      height: RULER_SIZE,
+                      backgroundColor: '#fafafa',
+                      borderBottom: '1px solid #e0e0e0',
                     }}
                   >
-                    <div className="absolute bottom-0 left-0 right-0 h-full">
-                      {horizontalRulerMarks}
-                    </div>
+                    {horizontalRulerMarks}
                   </div>
                 </div>
 
@@ -380,15 +400,13 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                   <div
                     className="relative flex-shrink-0"
                     style={{
-                      width: RULER_WIDTH,
+                      width: RULER_SIZE,
                       height: scaledHeight,
-                      backgroundColor: '#e5e5e5',
-                      borderRight: '1px solid #d4d4d4',
+                      backgroundColor: '#fafafa',
+                      borderRight: '1px solid #e0e0e0',
                     }}
                   >
-                    <div className="absolute top-0 right-0 bottom-0 w-full">
-                      {verticalRulerMarks}
-                    </div>
+                    {verticalRulerMarks}
                   </div>
 
                   {/* Sheet with checkered background */}
@@ -403,7 +421,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                       backgroundSize: "16px 16px",
                       backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0px",
                       backgroundColor: '#ffffff',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
                     }}
                   >
                     <img
