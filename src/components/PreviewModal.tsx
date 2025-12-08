@@ -16,8 +16,8 @@ interface PreviewModalProps {
   isExporting: boolean;
 }
 
-// Max preview dimension (longest side)
-const MAX_PREVIEW_SIZE = 1200;
+// Preview resolution - width in pixels (height scales with aspect ratio)
+const PREVIEW_WIDTH_PX = 1200;
 
 export const PreviewModal: React.FC<PreviewModalProps> = ({
   isOpen,
@@ -32,26 +32,13 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [zoom, setZoom] = useState(100);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
 
   // Calculate preview dimensions maintaining aspect ratio
+  // Width is fixed, height scales proportionally
   const aspectRatio = canvasWidthInches / canvasHeightInches;
-  let previewWidth: number;
-  let previewHeight: number;
-
-  if (aspectRatio > 1) {
-    // Wider than tall
-    previewWidth = MAX_PREVIEW_SIZE;
-    previewHeight = MAX_PREVIEW_SIZE / aspectRatio;
-  } else {
-    // Taller than wide
-    previewHeight = MAX_PREVIEW_SIZE;
-    previewWidth = MAX_PREVIEW_SIZE * aspectRatio;
-  }
+  const previewWidth = PREVIEW_WIDTH_PX;
+  const previewHeight = PREVIEW_WIDTH_PX / aspectRatio;
 
   // Generate low-res preview when modal opens
   useEffect(() => {
@@ -76,6 +63,22 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
       }
     };
   }, []);
+
+  // Calculate initial zoom to fit width in viewport
+  const calculateFitZoom = useCallback(() => {
+    if (!containerRef.current) return 100;
+    const containerWidth = containerRef.current.clientWidth - 48; // Account for padding
+    const fitZoom = Math.floor((containerWidth / previewWidth) * 100);
+    return Math.max(Math.min(fitZoom, 100), 10); // Between 10% and 100%
+  }, [previewWidth]);
+
+  // Set initial zoom when preview loads
+  useEffect(() => {
+    if (previewUrl && containerRef.current) {
+      const fitZoom = calculateFitZoom();
+      setZoom(fitZoom);
+    }
+  }, [previewUrl, calculateFitZoom]);
 
   const generatePreview = async () => {
     if (layout.length === 0 || images.length === 0) return;
@@ -179,8 +182,6 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
       }
 
       setPreviewUrl(url);
-      setZoom(100);
-      setPan({ x: 0, y: 0 });
     } catch (error) {
       console.error("Failed to generate preview:", error);
     } finally {
@@ -193,44 +194,13 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
   };
 
   const handleZoomOut = () => {
-    setZoom((prev) => Math.max(prev - 25, 25));
+    setZoom((prev) => Math.max(prev - 25, 10));
   };
 
   const handleResetZoom = () => {
-    setZoom(100);
-    setPan({ x: 0, y: 0 });
+    const fitZoom = calculateFitZoom();
+    setZoom(fitZoom);
   };
-
-  // Mouse drag handlers for panning
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      if (zoom > 100) {
-        setIsDragging(true);
-        setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-      }
-    },
-    [zoom, pan]
-  );
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (isDragging) {
-        setPan({
-          x: e.clientX - dragStart.x,
-          y: e.clientY - dragStart.y,
-        });
-      }
-    },
-    [isDragging, dragStart]
-  );
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    setIsDragging(false);
-  }, []);
 
   // Handle close and cleanup
   const handleClose = () => {
@@ -239,36 +209,18 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
       setPreviewUrl(null);
     }
     setZoom(100);
-    setPan({ x: 0, y: 0 });
     onClose();
   };
 
-  // Calculate the display size based on container and zoom
-  const getDisplayDimensions = () => {
-    const maxContainerWidth = Math.min(window.innerWidth - 100, 1400);
-    const maxContainerHeight = window.innerHeight - 250;
-
-    let displayWidth = previewWidth;
-    let displayHeight = previewHeight;
-
-    // Scale down if preview is larger than container at 100% zoom
-    const widthScale = maxContainerWidth / previewWidth;
-    const heightScale = maxContainerHeight / previewHeight;
-    const fitScale = Math.min(widthScale, heightScale, 1);
-
-    displayWidth = previewWidth * fitScale;
-    displayHeight = previewHeight * fitScale;
-
-    return { displayWidth, displayHeight, fitScale };
-  };
-
-  const { displayWidth, displayHeight, fitScale } = getDisplayDimensions();
+  // Calculate scaled dimensions for display
+  const scaledWidth = previewWidth * (zoom / 100);
+  const scaledHeight = previewHeight * (zoom / 100);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto p-0 gap-0 overflow-hidden">
-        {/* Header */}
-        <DialogHeader className="px-6 py-4 border-b bg-white">
+      <DialogContent className="w-[95vw] h-[95vh] max-w-none max-h-none p-0 gap-0 flex flex-col overflow-hidden">
+        {/* Header - Fixed at top */}
+        <DialogHeader className="px-6 py-3 border-b bg-white flex-shrink-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold">Sheet Preview</DialogTitle>
             <div className="flex items-center gap-4">
@@ -284,7 +236,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                   size="icon"
                   className="h-8 w-8"
                   onClick={handleZoomOut}
-                  disabled={zoom <= 25}
+                  disabled={zoom <= 10}
                 >
                   <ZoomOut className="h-4 w-4" />
                 </Button>
@@ -305,6 +257,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                   size="sm"
                   className="h-8 px-2"
                   onClick={handleResetZoom}
+                  title="Fit to width"
                 >
                   <RotateCcw className="h-4 w-4" />
                 </Button>
@@ -323,22 +276,20 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
           </div>
         </DialogHeader>
 
-        {/* Preview content */}
+        {/* Preview content - Scrollable area taking remaining height */}
         <div
           ref={containerRef}
-          className="flex-1 overflow-hidden bg-slate-100 relative"
+          className="flex-1 overflow-auto bg-slate-200"
           style={{
-            minHeight: "400px",
-            maxHeight: "calc(95vh - 140px)",
-            cursor: zoom > 100 ? (isDragging ? "grabbing" : "grab") : "default",
+            // Checkerboard background for transparency
+            backgroundImage:
+              "linear-gradient(45deg, #cbd5e1 25%, transparent 25%), linear-gradient(-45deg, #cbd5e1 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #cbd5e1 75%), linear-gradient(-45deg, transparent 75%, #cbd5e1 75%)",
+            backgroundSize: "20px 20px",
+            backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0px",
           }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseLeave}
         >
           {isGenerating ? (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex items-center justify-center h-full min-h-[400px]">
               <div className="flex flex-col items-center gap-4">
                 <div className="relative w-12 h-12">
                   <div className="absolute inset-0 rounded-full border-4 border-emerald-100"></div>
@@ -348,55 +299,30 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
               </div>
             </div>
           ) : previewUrl ? (
-            <div
-              className="absolute inset-0 flex items-center justify-center overflow-hidden"
-              style={{
-                // Checkerboard background for transparency
-                backgroundImage:
-                  "linear-gradient(45deg, #e5e7eb 25%, transparent 25%), linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e5e7eb 75%), linear-gradient(-45deg, transparent 75%, #e5e7eb 75%)",
-                backgroundSize: "20px 20px",
-                backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0px",
-              }}
-            >
-              <div
+            <div className="p-6 flex justify-center">
+              <img
+                src={previewUrl}
+                alt="Sheet preview"
                 style={{
-                  transform: `scale(${(zoom / 100) * fitScale}) translate(${pan.x / ((zoom / 100) * fitScale)}px, ${pan.y / ((zoom / 100) * fitScale)}px)`,
-                  transformOrigin: "center center",
-                  transition: isDragging ? "none" : "transform 0.1s ease-out",
+                  width: scaledWidth,
+                  height: scaledHeight,
+                  maxWidth: "none",
+                  imageRendering: zoom > 100 ? "pixelated" : "auto",
                 }}
-              >
-                <img
-                  ref={imageRef}
-                  src={previewUrl}
-                  alt="Sheet preview"
-                  style={{
-                    width: previewWidth,
-                    height: previewHeight,
-                    maxWidth: "none",
-                    imageRendering: "crisp-edges",
-                  }}
-                  draggable={false}
-                />
-              </div>
+                draggable={false}
+              />
             </div>
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex items-center justify-center h-full min-h-[400px]">
               <p className="text-slate-500">No preview available</p>
-            </div>
-          )}
-
-          {/* Zoom hint */}
-          {zoom > 100 && !isDragging && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1.5 rounded-full text-sm">
-              Click and drag to pan
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t bg-white flex items-center justify-between">
+        {/* Footer - Fixed at bottom */}
+        <div className="px-6 py-3 border-t bg-white flex-shrink-0 flex items-center justify-between">
           <p className="text-sm text-slate-500">
-            This is a low-resolution preview. Download for full print quality.
+            This is a low-resolution preview. Download for full print quality ({canvasHeightInches > 100 ? "very long sheet - scroll to see full preview" : "scroll to see full sheet"}).
           </p>
           <Button
             onClick={onExport}
