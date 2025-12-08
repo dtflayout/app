@@ -21,10 +21,8 @@ interface ConfirmLayoutDialogProps {
 }
 
 /**
- * CREDIT FLOW NOTE:
- * Credits are NOT deducted when confirming layout generation.
- * Credits are only deducted when the user downloads the sheet.
- * This dialog shows a preview of what will be charged on download.
+ * Confirmation dialog for layout generation.
+ * Credits are deducted when user confirms and generates the layout.
  */
 export const ConfirmLayoutDialog: React.FC<ConfirmLayoutDialogProps> = ({
   open,
@@ -75,13 +73,6 @@ export const ConfirmLayoutDialog: React.FC<ConfirmLayoutDialogProps> = ({
                   </span>
                 </p>
 
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                  <p className="text-sm text-amber-800">
-                    <span className="font-semibold">Note:</span> Credits will be charged when you download the sheet, not now.
-                    You can regenerate layouts freely until you're satisfied.
-                  </p>
-                </div>
-
                 <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                   <div className="flex justify-between">
                     <span className="text-base text-gray-600">Your current balance:</span>
@@ -90,9 +81,9 @@ export const ConfirmLayoutDialog: React.FC<ConfirmLayoutDialogProps> = ({
                     </span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
-                    <span className="text-base text-gray-600">Cost on download:</span>
+                    <span className="text-base text-gray-600">After generation:</span>
                     <span className="text-lg font-semibold text-blue-700">
-                      {formatNumber(sqInchesUsed)} sq.in
+                      {formatNumber(currentCredits - sqInchesUsed)} sq.in
                     </span>
                   </div>
                 </div>
@@ -120,7 +111,7 @@ export const ConfirmLayoutDialog: React.FC<ConfirmLayoutDialogProps> = ({
                 Processing...
               </>
             ) : (
-              "Generate Layout"
+              "Confirm & Generate"
             )}
           </Button>
         </DialogFooter>
