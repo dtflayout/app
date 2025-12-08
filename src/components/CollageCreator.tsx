@@ -488,34 +488,15 @@ export const CollageCreator = ({
         }
 
         // Calculate total square inches needed for this layout
+        // Note: Credits are NOT checked here - they are deducted on download, not generation
+        // This allows users to regenerate layouts freely without using credits
         const sqInches = canvasWidthInches * result.totalHeightInches;
 
-        // Get user's current credit balance
-        const currentCredits = getUserCredits();
-
-        console.log(`[Credit Check] Layout requires ${sqInches.toFixed(2)} sq.in, user has ${currentCredits} credits`);
-
-        // Check if user has enough credits
-        if (currentCredits < sqInches) {
-          debugLog("❌ Validation failed: Insufficient credits");
-          setInsufficientCreditsData({
-            needed: sqInches,
-            available: currentCredits
-          });
-          setShowInsufficientCreditsModal(true);
-          setIsGenerating(false);
-          logGenerationError(`Insufficient credits: needed ${sqInches.toFixed(2)}, available ${currentCredits}`, {
-            sqInches,
-            sheetWidth: canvasWidthInches,
-            sheetHeight: result.totalHeightInches,
-            creditsBalance: currentCredits,
-          });
-          return;
-        }
+        console.log(`[Layout] Sheet requires ${sqInches.toFixed(2)} sq.in (credits checked on download)`);
 
         debugLog("✅ All validations passed! Layout is ready for confirmation.");
 
-        // Credits are sufficient - show confirmation dialog
+        // Show confirmation dialog (no credit check - that happens on download)
         setPendingLayout({
           positionedImages: result.positionedImages,
           totalHeightInches: result.totalHeightInches,
@@ -579,72 +560,20 @@ export const CollageCreator = ({
     proceedWithGeneration();
   };
 
+  /**
+   * CREDIT FLOW NOTE:
+   * Credits are deducted on DOWNLOAD, not on layout generation.
+   * This allows users to generate and regenerate layouts freely.
+   * Credit check and deduction happens in handleExport().
+   */
   const handleConfirmLayout = async () => {
     if (!pendingLayout || !user) {
       return;
     }
 
-    const currentCredits = getUserCredits();
-    const sqInchesToDeduct = pendingLayout.sqInches;
+    console.log(`[Layout] Confirming layout: ${pendingLayout.sqInches.toFixed(2)} sq.in (credits will be charged on download)`);
 
-    // Get account UID for logging
-    const accountUid = user.Account?.Uid || user.Uid;
-    if (!accountUid) {
-      setErrorDialogData({
-        title: "Error",
-        message: "Unable to find your account information. Please refresh the page and try again.",
-      });
-      setShowErrorDialog(true);
-      setShowConfirmDialog(false);
-      return;
-    }
-
-    console.log("[Credit Deduction] Starting transaction...");
-    console.log(`[Credit Deduction] Current: ${currentCredits}, To Deduct: ${sqInchesToDeduct}`);
-
-    // Step 1: Deduct credits from Supabase
-    const deductResult = await deductCredits(sqInchesToDeduct);
-
-    if (!deductResult.success) {
-      console.error("[Credit Deduction] ❌ Failed to deduct credits:", deductResult.error);
-      setErrorDialogData({
-        title: "Credit Update Failed",
-        message: deductResult.error || "We couldn't update your credits. Please try again or contact support if the problem persists.",
-      });
-      setShowErrorDialog(true);
-      setShowConfirmDialog(false);
-      logGenerationError(`Credit deduction failed: ${deductResult.error}`, {
-        sqInches: sqInchesToDeduct,
-        sheetWidth: canvasWidthInches,
-        sheetHeight: pendingLayout.totalHeightInches,
-        creditsBalance: currentCredits,
-      });
-      return; // Stop the flow - don't generate layout if we can't deduct credits
-    }
-
-    const newBalance = deductResult.newBalance ?? (currentCredits - sqInchesToDeduct);
-    console.log("[Credit Deduction] ✅ Supabase credit deduction successful! New balance:", newBalance);
-
-    // Step 2: Log to Supabase for usage tracking
-    const logResult = await logSheetGeneration({
-      user_email: user.Email,
-      outseta_account_id: accountUid,
-      sq_inches_used: sqInchesToDeduct,
-      sheet_width: canvasWidthInches,
-      sheet_height: pendingLayout.totalHeightInches,
-      image_count: images.length,
-      credits_before: currentCredits,
-      credits_after: newBalance,
-    });
-
-    if (!logResult.success) {
-      console.warn("[Credit Deduction] Usage logging failed:", logResult.error);
-      // We continue anyway - logging is non-critical
-    } else {
-      console.log("[Credit Deduction] ✅ Usage logging successful");
-    }
-
-    // Step 4: Convert images to base64 and generate preview images for canvas display
+    // Convert images to base64 and generate preview images for canvas display
     // Base64 URLs are used for the full-resolution export
     // Preview URLs (800px max) are used for canvas display to reduce memory on low-RAM devices
     console.log('🔄 Preparing images for canvas (base64 + previews)...');
@@ -718,27 +647,58 @@ export const CollageCreator = ({
       return;
     }
 
-    // Step 6: Close dialog and show success
+    // Close dialog and show success
     setShowConfirmDialog(false);
     setPendingLayout(null);
 
-    // Show success message
-    toast.success(`Layout generated! ${formatNumber(pendingLayout.sqInches)} sq.in deducted from your balance.`);
+    // Show success message (no credit mention - credits are charged on download)
+    toast.success(`Layout generated! Click "Download Sheet" when ready.`);
 
-    // Step 7: Scroll to the canvas after it renders
+    // Scroll to the canvas after it renders
     setTimeout(() => {
       if (canvasContainerRef.current) {
         canvasContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }, 100);
 
-    console.log("[Credit Deduction] ✅ Transaction complete!");
+    console.log("[Layout] ✅ Layout generation complete! Credits will be charged on download.");
   };
 
+  /**
+   * CREDIT DEDUCTION HAPPENS HERE - ON DOWNLOAD, NOT ON GENERATION
+   * This allows users to generate and regenerate layouts freely without using credits.
+   * Credits are only charged when the user actually downloads the final sheet.
+   */
   const handleExport = async () => {
     if (!canvasRef.current || layout.length === 0) {
       toast.error("No layout to export");
       return;
+    }
+
+    if (!user) {
+      toast.error("Please log in to download");
+      return;
+    }
+
+    // Calculate credits needed based on canvas area
+    // totalSqInchesUsed is set during layout generation
+    const sqInchesNeeded = totalSqInchesUsed ?? (canvasWidthInches * canvasHeightInches);
+
+    // FRESH credit check - user's balance may have changed since layout was generated
+    // (e.g., credits used in another tab, credits expired, etc.)
+    const currentCredits = getUserCredits();
+
+    console.log(`[Credit Check] Download requires ${sqInchesNeeded.toFixed(2)} sq.in, user has ${currentCredits} credits`);
+
+    // Check if user has enough credits BEFORE starting export
+    if (currentCredits < sqInchesNeeded) {
+      console.log("❌ Insufficient credits for download");
+      setInsufficientCreditsData({
+        needed: sqInchesNeeded,
+        available: currentCredits
+      });
+      setShowInsufficientCreditsModal(true);
+      return; // Don't start export if insufficient credits
     }
 
     // Check memory estimate before export (this is the heavy operation)
@@ -760,7 +720,57 @@ export const CollageCreator = ({
       const filename = `print-sheet-${dpi}dpi-${new Date().toISOString().slice(0, 10)}.png`;
       downloadBlob(pngBlob, filename);
 
-      toast.success(`Print sheet exported at ${dpi} DPI!`);
+      // DEDUCT CREDITS AFTER SUCCESSFUL DOWNLOAD
+      console.log("[Credit Deduction] Starting transaction after successful download...");
+      console.log(`[Credit Deduction] Current: ${currentCredits}, To Deduct: ${sqInchesNeeded}`);
+
+      const deductResult = await deductCredits(sqInchesNeeded);
+
+      if (!deductResult.success) {
+        // Download succeeded but credit deduction failed
+        // This is a rare edge case - log it but don't show error to user
+        // The download already happened, so we can't take it back
+        console.error("[Credit Deduction] ❌ Failed to deduct credits after download:", deductResult.error);
+        logGenerationError(`Credit deduction failed after successful download: ${deductResult.error}`, {
+          sqInches: sqInchesNeeded,
+          sheetWidth: canvasWidthInches,
+          sheetHeight: canvasHeightInches,
+          creditsBalance: currentCredits,
+        });
+        // Still show success for the download
+        toast.success(`Print sheet exported at ${dpi} DPI!`);
+      } else {
+        const newBalance = deductResult.newBalance ?? (currentCredits - sqInchesNeeded);
+        console.log("[Credit Deduction] ✅ Credits deducted successfully! New balance:", newBalance);
+
+        // Log the transaction to Supabase
+        const accountUid = user.Account?.Uid || user.Uid;
+        if (accountUid) {
+          const logResult = await logSheetGeneration({
+            user_email: user.Email,
+            outseta_account_id: accountUid,
+            sq_inches_used: sqInchesNeeded,
+            sheet_width: canvasWidthInches,
+            sheet_height: canvasHeightInches,
+            image_count: images.length,
+            credits_before: currentCredits,
+            credits_after: newBalance,
+          });
+
+          if (!logResult.success) {
+            console.warn("[Credit Deduction] Usage logging failed:", logResult.error);
+          } else {
+            console.log("[Credit Deduction] ✅ Usage logging successful");
+          }
+        }
+
+        // Refresh credits to update UI
+        await refreshCredits();
+
+        toast.success(`Print sheet exported! ${formatNumber(sqInchesNeeded)} sq.in deducted from your balance.`);
+      }
+
+      console.log("[Credit Deduction] ✅ Download transaction complete!");
     } catch (error) {
       toast.error("Failed to export print sheet");
       console.error(error);
@@ -838,9 +848,8 @@ export const CollageCreator = ({
 
           <Button
             onClick={handleGenerateLayout}
-            disabled={images.length === 0 || getUserCredits() === 0}
+            disabled={images.length === 0}
             className="h-11 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-lg font-semibold rounded-xl shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
-            title={getUserCredits() === 0 ? "Out of credits! Purchase more to continue." : ""}
           >
             Generate Layout
           </Button>
