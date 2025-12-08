@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { X, ZoomIn, ZoomOut, Download, RotateCcw } from "lucide-react";
@@ -31,7 +31,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
 }) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [zoom, setZoom] = useState(100);
+  const [zoom, setZoom] = useState(10);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Calculate preview dimensions maintaining aspect ratio
@@ -63,22 +63,6 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
       }
     };
   }, []);
-
-  // Calculate initial zoom to fit width in viewport
-  const calculateFitZoom = useCallback(() => {
-    if (!containerRef.current) return 100;
-    const containerWidth = containerRef.current.clientWidth - 48; // Account for padding
-    const fitZoom = Math.floor((containerWidth / previewWidth) * 100);
-    return Math.max(Math.min(fitZoom, 100), 10); // Between 10% and 100%
-  }, [previewWidth]);
-
-  // Set initial zoom when preview loads
-  useEffect(() => {
-    if (previewUrl && containerRef.current) {
-      const fitZoom = calculateFitZoom();
-      setZoom(fitZoom);
-    }
-  }, [previewUrl, calculateFitZoom]);
 
   const generatePreview = async () => {
     if (layout.length === 0 || images.length === 0) return;
@@ -198,8 +182,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
   };
 
   const handleResetZoom = () => {
-    const fitZoom = calculateFitZoom();
-    setZoom(fitZoom);
+    setZoom(10);
   };
 
   // Handle close and cleanup
