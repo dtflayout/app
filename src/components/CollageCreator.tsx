@@ -2,11 +2,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ImageUploader } from "./ImageUploader";
-import { Canvas } from "./Canvas";
 import { ImageManager } from "./ImageManager";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Download, RefreshCw } from "lucide-react";
+import { Download, Eye } from "lucide-react";
 import { generateLayout, ImageDimension, PositionedImage } from "@/utils/layoutAlgorithm";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,6 +24,8 @@ import { ImageTrimModal } from "./ImageTrimModal";
 import { BackgroundRemoverModal } from "./BackgroundRemoverModal";
 import { quickPaddingCheck } from "@/utils/imageTrimUtils";
 import { generatePreviewImage } from "@/utils/thumbnailUtils";
+import { PreviewModal } from "./PreviewModal";
+import { generateExport } from "@/utils/exportUtils";
 
 // Debug flag - set to true to enable debug logging
 const DEBUG = false;
@@ -125,8 +126,7 @@ export const CollageCreator = ({
   const [imagesToTrim, setImagesToTrim] = useState<ImageObject[]>([]);
   const [backgroundRemoverModalOpen, setBackgroundRemoverModalOpen] = useState(false);
   const [imageToRemoveBackground, setImageToRemoveBackground] = useState<ImageObject | null>(null);
-  const canvasRef = useRef<any>(null);
-  const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Track blob URLs for cleanup, but DON'T auto-revoke during renders/HMR
   // Only revoke when explicitly deleting images or on true unmount
@@ -758,7 +758,7 @@ export const CollageCreator = ({
    * This only handles the export/download functionality.
    */
   const handleExport = async () => {
-    if (!canvasRef.current || layout.length === 0) {
+    if (layout.length === 0) {
       toast.error("No layout to export");
       return;
     }
@@ -780,7 +780,14 @@ export const CollageCreator = ({
     try {
       setIsExporting(true);
       toast.info("Generating high-resolution export...");
-      const dataUrl = await canvasRef.current.exportCanvas();
+
+      // Generate export using standalone utility (no Fabric.js canvas needed)
+      const dataUrl = await generateExport({
+        images,
+        layout,
+        canvasWidthInches,
+        canvasHeightInches,
+      });
 
       // Add DPI metadata to PNG for professional print quality
       const pngBlob = await addDpiToPng(dataUrl, dpi);
@@ -797,15 +804,6 @@ export const CollageCreator = ({
       });
     } finally {
       setIsExporting(false);
-    }
-  };
-
-  const handleClearCanvas = () => {
-    if (canvasRef.current) {
-      canvasRef.current.clearCanvas();
-      setLayout([]);
-      setTotalSqInchesUsed(null);
-      toast.info("Canvas cleared");
     }
   };
 
@@ -869,6 +867,16 @@ export const CollageCreator = ({
             className="h-11 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-lg font-semibold rounded-xl shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
           >
             Generate Layout
+          </Button>
+
+          <Button
+            onClick={() => setShowPreviewModal(true)}
+            disabled={layout.length === 0}
+            variant="outline"
+            className="h-11 border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-lg font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+          >
+            <Eye className="mr-2 h-5 w-5" />
+            Preview Sheet
           </Button>
 
           <Button
@@ -937,17 +945,7 @@ export const CollageCreator = ({
         </div>
       )}
 
-      {layout.length > 0 && (
-        <div ref={canvasContainerRef} className="mt-8 pb-16">
-          <Canvas
-            ref={canvasRef}
-            images={images}
-            layout={layout}
-            canvasHeightInches={canvasHeightInches}
-            canvasWidthInches={canvasWidthInches}
-          />
-        </div>
-      )}
+      {/* Canvas is rendered inside PreviewModal only when preview is opened */}
 
       {/* Insufficient Credits Modal */}
       <Dialog open={showInsufficientCreditsModal} onOpenChange={setShowInsufficientCreditsModal}>
@@ -1074,6 +1072,18 @@ export const CollageCreator = ({
         }}
         image={imageToRemoveBackground}
         onRemovalComplete={handleBackgroundRemovalComplete}
+      />
+
+      {/* Preview Modal - Lightweight preview with zoom/pan */}
+      <PreviewModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        images={images}
+        layout={layout}
+        canvasWidthInches={canvasWidthInches}
+        canvasHeightInches={canvasHeightInches}
+        onExport={handleExport}
+        isExporting={isExporting}
       />
 
       {/* Loading Overlay - Layout Generation */}
