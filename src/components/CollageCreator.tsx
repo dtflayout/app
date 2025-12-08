@@ -916,18 +916,23 @@ export const CollageCreator = ({
         </div>
       )}
 
-      {/* Upload Images - Only show when no layout is generated */}
-      {layout.length === 0 && (
-        <div className="bg-white rounded-lg shadow-sm border p-6 animate-fade-in">
-          <h2 className="text-2xl font-bold mb-4">Upload Images</h2>
-          <ImageUploader onImagesAdded={handleImagesAdded} currentImageCount={images.length} />
-          {images.length > 0 && (
-            <div className="mt-4 text-lg font-semibold text-slate-700">
-              {images.length} / 40 images uploaded
-            </div>
-          )}
-        </div>
-      )}
+      {/* Upload Images - Always visible */}
+      <div className="bg-white rounded-lg shadow-sm border p-6 animate-fade-in">
+        <h2 className="text-2xl font-bold mb-4">
+          {layout.length > 0 ? "Add More Images" : "Upload Images"}
+        </h2>
+        {layout.length > 0 && (
+          <p className="text-slate-600 mb-4">
+            Upload additional images and click "Generate Layout" to create a new layout with all images.
+          </p>
+        )}
+        <ImageUploader onImagesAdded={handleImagesAdded} currentImageCount={images.length} />
+        {images.length > 0 && (
+          <div className="mt-4 text-lg font-semibold text-slate-700">
+            {images.length} / 40 images uploaded
+          </div>
+        )}
+      </div>
       
       {images.length > 0 && (
         <div className="mb-8">
