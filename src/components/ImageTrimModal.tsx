@@ -17,6 +17,7 @@ import { generateThumbnail } from "@/utils/thumbnailUtils";
 import { toast } from "sonner";
 import { Scissors, ChevronLeft, ChevronRight, RotateCcw, ZoomIn, ZoomOut, Maximize2, Download, Undo2, Redo2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { PreviewBackgroundToggle, PreviewBackground, getPreviewBackgroundStyle } from "./PreviewBackgroundToggle";
 
 interface ImageTrimModalProps {
   isOpen: boolean;
@@ -44,6 +45,8 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
   const [padding, setPadding] = useState(0); // Padding in pixels (0-50)
   // Working URL for the current image - either from image.url or regenerated from File
   const [workingUrl, setWorkingUrl] = useState<string>('');
+  // Preview background color
+  const [previewBg, setPreviewBg] = useState<PreviewBackground>('transparent');
 
   // Undo/Redo history
   const [boundsHistory, setBoundsHistory] = useState<CropBounds[]>([]);
@@ -744,15 +747,22 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
               </Button>
             </div>
 
+            {/* Preview background toggle */}
+            <div className="absolute top-2 left-2 z-10">
+              <PreviewBackgroundToggle
+                value={previewBg}
+                onChange={setPreviewBg}
+                className="bg-white/95 backdrop-blur-sm shadow-md"
+              />
+            </div>
+
             {/* Scrollable container for zoomed image */}
             <div
               ref={scrollContainerRef}
               className="overflow-auto rounded-lg"
               style={{
                 maxHeight: '468px',
-                backgroundImage: 'linear-gradient(45deg, #e2e8f0 25%, transparent 25%), linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e2e8f0 75%), linear-gradient(-45deg, transparent 75%, #e2e8f0 75%)',
-                backgroundSize: '20px 20px',
-                backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
+                ...getPreviewBackgroundStyle(previewBg),
                 cursor: canPan ? (isPanning ? 'grabbing' : 'grab') : 'default',
               }}
               onMouseDown={handlePanStart}

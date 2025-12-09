@@ -14,6 +14,7 @@ import {
 import { generateThumbnail } from "@/utils/thumbnailUtils";
 import { toast } from "sonner";
 import { Eraser, ZoomIn, ZoomOut, Maximize2, RotateCcw, Eye, EyeOff, X, Trash2, Download } from "lucide-react";
+import { PreviewBackgroundToggle, PreviewBackground, getPreviewBackgroundStyle } from "./PreviewBackgroundToggle";
 
 // Custom eyedropper cursor as data URL
 const EYEDROPPER_CURSOR = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m2 22 1-1h3l9-9'/%3E%3Cpath d='M3 21v-3l9-9'/%3E%3Cpath d='m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z'/%3E%3C/svg%3E") 0 24, crosshair`;
@@ -41,6 +42,8 @@ export const BackgroundRemoverModal = ({
   const [previewCanvas, setPreviewCanvas] = useState<HTMLCanvasElement | null>(null);
   // Working URL for the image - either from image.url or regenerated from File
   const [workingUrl, setWorkingUrl] = useState<string>('');
+  // Preview background color
+  const [previewBg, setPreviewBg] = useState<PreviewBackground>('transparent');
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -140,13 +143,22 @@ export const BackgroundRemoverModal = ({
     canvas.width = displayWidth;
     canvas.height = displayHeight;
 
-    // Draw checkered background for transparency
-    const checkerSize = 10;
-    for (let y = 0; y < displayHeight; y += checkerSize) {
-      for (let x = 0; x < displayWidth; x += checkerSize) {
-        const isLight = ((x / checkerSize) + (y / checkerSize)) % 2 === 0;
-        ctx.fillStyle = isLight ? '#ffffff' : '#e2e8f0';
-        ctx.fillRect(x, y, checkerSize, checkerSize);
+    // Draw background based on preview mode
+    if (previewBg === 'grey') {
+      ctx.fillStyle = '#808080';
+      ctx.fillRect(0, 0, displayWidth, displayHeight);
+    } else if (previewBg === 'black') {
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, displayWidth, displayHeight);
+    } else {
+      // Draw checkered background for transparency
+      const checkerSize = 10;
+      for (let y = 0; y < displayHeight; y += checkerSize) {
+        for (let x = 0; x < displayWidth; x += checkerSize) {
+          const isLight = ((x / checkerSize) + (y / checkerSize)) % 2 === 0;
+          ctx.fillStyle = isLight ? '#ffffff' : '#e2e8f0';
+          ctx.fillRect(x, y, checkerSize, checkerSize);
+        }
       }
     }
 
@@ -156,7 +168,7 @@ export const BackgroundRemoverModal = ({
     } else {
       ctx.drawImage(previewCanvas, 0, 0, displayWidth, displayHeight);
     }
-  }, [imageSize, getDisplayScale, zoomLevel, showOriginal, previewCanvas, selectedColors.length]);
+  }, [imageSize, getDisplayScale, zoomLevel, showOriginal, previewCanvas, selectedColors.length, previewBg]);
 
   // Generate preview when colors or tolerances change (debounced)
   useEffect(() => {
@@ -466,9 +478,9 @@ export const BackgroundRemoverModal = ({
               </Button>
             </div>
 
-            {/* Before/After toggle */}
-            {selectedColors.length > 0 && (
-              <div className="absolute top-2 left-2 z-10">
+            {/* Before/After toggle and preview background */}
+            <div className="absolute top-2 left-2 z-10 flex flex-col gap-2">
+              {selectedColors.length > 0 && (
                 <Button
                   type="button"
                   variant={showOriginal ? "default" : "outline"}
@@ -479,8 +491,13 @@ export const BackgroundRemoverModal = ({
                   {showOriginal ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                   {showOriginal ? "Original" : "Preview"}
                 </Button>
-              </div>
-            )}
+              )}
+              <PreviewBackgroundToggle
+                value={previewBg}
+                onChange={setPreviewBg}
+                className="bg-white/95 backdrop-blur-sm shadow-md"
+              />
+            </div>
 
             {/* Processing indicator */}
             {isProcessing && (
