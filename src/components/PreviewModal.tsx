@@ -35,7 +35,9 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [zoom, setZoom] = useState(25);
+  const [showFloatingControls, setShowFloatingControls] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate preview dimensions maintaining aspect ratio
   // Width is fixed, height scales proportionally
@@ -190,6 +192,31 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
   const handleResetZoom = () => {
     setZoom(25);
   };
+
+  // Floating controls hover handlers
+  const handlePreviewMouseEnter = () => {
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+    setShowFloatingControls(true);
+  };
+
+  const handlePreviewMouseLeave = () => {
+    // Small delay to prevent flicker when moving between elements
+    hideTimeoutRef.current = setTimeout(() => {
+      setShowFloatingControls(false);
+    }, 300);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Handle close and cleanup
   const handleClose = () => {
@@ -350,8 +377,10 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
         {/* Preview content - Scrollable area taking remaining height */}
         <div
           ref={containerRef}
-          className="flex-1 overflow-auto"
+          className="flex-1 overflow-auto relative"
           style={{ backgroundColor: '#f0f0f0' }}
+          onMouseEnter={handlePreviewMouseEnter}
+          onMouseLeave={handlePreviewMouseLeave}
         >
           {isGenerating ? (
             <div className="flex items-center justify-center h-full min-h-[400px]">
@@ -444,6 +473,47 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
               <p className="text-slate-500">No preview available</p>
             </div>
           )}
+
+          {/* Floating zoom controls - appear on hover */}
+          <div
+            className={`fixed bottom-24 right-8 flex items-center gap-1 bg-black/70 backdrop-blur-sm rounded-lg px-2 py-1.5 shadow-lg transition-opacity duration-200 ${
+              showFloatingControls && previewUrl ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
+            onMouseEnter={handlePreviewMouseEnter}
+            onMouseLeave={handlePreviewMouseLeave}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
+              onClick={handleZoomOut}
+              disabled={zoom <= 10}
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <span className="text-sm font-medium min-w-[3.5rem] text-center text-white">
+              {zoom}%
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
+              onClick={handleZoomIn}
+              disabled={zoom >= 400}
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+            <div className="w-px h-5 bg-white/30 mx-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-white hover:bg-white/20 hover:text-white text-xs"
+              onClick={handleResetZoom}
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1" />
+              Reset
+            </Button>
+          </div>
         </div>
 
         {/* Footer - Fixed at bottom */}
