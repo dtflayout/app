@@ -12,13 +12,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       position="top-right"
       duration={4000}
+      closeButton={true}
       className="toaster group"
       style={{ '--width': '560px' } as React.CSSProperties}
       toastOptions={{
         unstyled: true,
         classNames: {
           toast:
-            "!flex !flex-row !items-center !gap-4 p-4 rounded-2xl bg-white w-[560px] transition-all duration-200 ease-in-out hover:scale-[1.03]",
+            "!flex !flex-row !items-center !gap-4 p-4 pr-10 rounded-2xl bg-white w-[560px] transition-all duration-200 ease-in-out hover:scale-[1.03] relative",
           title: "text-lg font-medium text-slate-900 !ml-2",
           description: "text-slate-600 text-sm !ml-2",
           actionButton:
@@ -26,6 +27,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
           cancelButton:
             "bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-sm font-medium",
           icon: "!flex-shrink-0 !w-10 !min-w-[40px] !mr-2",
+          closeButton:
+            "!absolute !right-2 !top-1/2 !-translate-y-1/2 !bg-slate-100 hover:!bg-slate-200 !border-0 !text-slate-500 hover:!text-slate-700 !rounded-full !p-1.5 !transition-colors",
         },
         style: {
           boxShadow: '0 4px 12px rgba(0,0,0,.1), 0 20px 40px rgba(0,0,0,.1)',
