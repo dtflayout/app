@@ -60,6 +60,8 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
   const panStartRef = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
   // Track temporary URL created from File (for memory optimization cleanup)
   const tempUrlRef = useRef<string | null>(null);
+  // Store loaded image for redrawing without reloading
+  const loadedImageRef = useRef<HTMLImageElement | null>(null);
 
   const currentImage = images[currentIndex];
 
@@ -131,141 +133,155 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
     };
   }, [isOpen, currentImage, detectTransparent]);
 
-  // Draw preview on canvas
-  useEffect(() => {
-    if (!canvasRef.current || !currentImage || !cropBounds || !detectionResult) return;
+  // Drawing function that renders the canvas - extracted to be reusable
+  const drawCanvas = useCallback((img: HTMLImageElement) => {
+    if (!canvasRef.current || !cropBounds || !detectionResult) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const scale = getDisplayScale();
-      const displayWidth = detectionResult.originalWidth * scale;
-      const displayHeight = detectionResult.originalHeight * scale;
+    const scale = getDisplayScale();
+    const displayWidth = detectionResult.originalWidth * scale;
+    const displayHeight = detectionResult.originalHeight * scale;
 
-      canvas.width = displayWidth;
-      canvas.height = displayHeight;
+    canvas.width = displayWidth;
+    canvas.height = displayHeight;
 
-      // Draw image
-      ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
+    // Draw image
+    ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
 
-      // Draw semi-transparent overlay on areas to be cropped
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    // Draw semi-transparent overlay on areas to be cropped
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
 
-      // Top region
-      ctx.fillRect(0, 0, displayWidth, cropBounds.top * scale);
-      // Bottom region
-      ctx.fillRect(0, (cropBounds.bottom + 1) * scale, displayWidth, displayHeight - (cropBounds.bottom + 1) * scale);
-      // Left region
-      ctx.fillRect(0, cropBounds.top * scale, cropBounds.left * scale, (cropBounds.bottom - cropBounds.top + 1) * scale);
-      // Right region
-      ctx.fillRect((cropBounds.right + 1) * scale, cropBounds.top * scale, displayWidth - (cropBounds.right + 1) * scale, (cropBounds.bottom - cropBounds.top + 1) * scale);
+    // Top region
+    ctx.fillRect(0, 0, displayWidth, cropBounds.top * scale);
+    // Bottom region
+    ctx.fillRect(0, (cropBounds.bottom + 1) * scale, displayWidth, displayHeight - (cropBounds.bottom + 1) * scale);
+    // Left region
+    ctx.fillRect(0, cropBounds.top * scale, cropBounds.left * scale, (cropBounds.bottom - cropBounds.top + 1) * scale);
+    // Right region
+    ctx.fillRect((cropBounds.right + 1) * scale, cropBounds.top * scale, displayWidth - (cropBounds.right + 1) * scale, (cropBounds.bottom - cropBounds.top + 1) * scale);
 
-      // Draw crop rectangle border (green - content area)
-      ctx.strokeStyle = '#22c55e';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([8, 6]);
+    // Draw crop rectangle border (green - content area)
+    ctx.strokeStyle = '#22c55e';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8, 6]);
+    ctx.strokeRect(
+      cropBounds.left * scale,
+      cropBounds.top * scale,
+      cropBounds.width * scale,
+      cropBounds.height * scale
+    );
+    ctx.setLineDash([]);
+
+    // Draw padding indicator (blue dashed outer box) if padding > 0
+    if (padding > 0) {
+      const paddingScaled = padding * scale;
+      ctx.strokeStyle = '#3b82f6'; // Blue color
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
       ctx.strokeRect(
-        cropBounds.left * scale,
-        cropBounds.top * scale,
-        cropBounds.width * scale,
-        cropBounds.height * scale
+        cropBounds.left * scale - paddingScaled,
+        cropBounds.top * scale - paddingScaled,
+        cropBounds.width * scale + paddingScaled * 2,
+        cropBounds.height * scale + paddingScaled * 2
       );
       ctx.setLineDash([]);
 
-      // Draw padding indicator (blue dashed outer box) if padding > 0
-      if (padding > 0) {
-        const paddingScaled = padding * scale;
-        ctx.strokeStyle = '#3b82f6'; // Blue color
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 4]);
-        ctx.strokeRect(
-          cropBounds.left * scale - paddingScaled,
-          cropBounds.top * scale - paddingScaled,
-          cropBounds.width * scale + paddingScaled * 2,
-          cropBounds.height * scale + paddingScaled * 2
-        );
-        ctx.setLineDash([]);
+      // Draw padding label
+      ctx.fillStyle = '#3b82f6';
+      ctx.font = 'bold 11px sans-serif';
+      const labelText = `+${padding}px padding`;
+      const labelWidth = ctx.measureText(labelText).width;
+      const labelX = cropBounds.left * scale - paddingScaled + 4;
+      const labelY = cropBounds.top * scale - paddingScaled - 4;
 
-        // Draw padding label
+      // Only draw label if it fits in the visible area
+      if (labelX > 0 && labelY > 10) {
+        // Background for label
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.fillRect(labelX - 2, labelY - 10, labelWidth + 4, 14);
+        // Label text
         ctx.fillStyle = '#3b82f6';
-        ctx.font = 'bold 11px sans-serif';
-        const labelText = `+${padding}px padding`;
-        const labelWidth = ctx.measureText(labelText).width;
-        const labelX = cropBounds.left * scale - paddingScaled + 4;
-        const labelY = cropBounds.top * scale - paddingScaled - 4;
-
-        // Only draw label if it fits in the visible area
-        if (labelX > 0 && labelY > 10) {
-          // Background for label
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-          ctx.fillRect(labelX - 2, labelY - 10, labelWidth + 4, 14);
-          // Label text
-          ctx.fillStyle = '#3b82f6';
-          ctx.fillText(labelText, labelX, labelY);
-        }
+        ctx.fillText(labelText, labelX, labelY);
       }
+    }
 
-      // Draw corner handles - larger with white fill and green border
-      const handleSize = 14;
+    // Draw corner handles - larger with white fill and green border
+    const handleSize = 14;
 
-      // Helper to draw a handle with white fill and green border
-      const drawHandle = (x: number, y: number, width: number, height: number) => {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(x, y, width, height);
-        ctx.strokeStyle = '#22c55e';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, width, height);
-      };
-
-      // Top-left
-      drawHandle(cropBounds.left * scale - handleSize / 2, cropBounds.top * scale - handleSize / 2, handleSize, handleSize);
-      // Top-right
-      drawHandle((cropBounds.right + 1) * scale - handleSize / 2, cropBounds.top * scale - handleSize / 2, handleSize, handleSize);
-      // Bottom-left
-      drawHandle(cropBounds.left * scale - handleSize / 2, (cropBounds.bottom + 1) * scale - handleSize / 2, handleSize, handleSize);
-      // Bottom-right
-      drawHandle((cropBounds.right + 1) * scale - handleSize / 2, (cropBounds.bottom + 1) * scale - handleSize / 2, handleSize, handleSize);
-
-      // Draw edge handles - larger
-      const edgeHandleWidth = 28;
-      const edgeHandleHeight = 8;
-
-      // Top edge
-      drawHandle(
-        (cropBounds.left + cropBounds.width / 2) * scale - edgeHandleWidth / 2,
-        cropBounds.top * scale - edgeHandleHeight / 2,
-        edgeHandleWidth,
-        edgeHandleHeight
-      );
-      // Bottom edge
-      drawHandle(
-        (cropBounds.left + cropBounds.width / 2) * scale - edgeHandleWidth / 2,
-        (cropBounds.bottom + 1) * scale - edgeHandleHeight / 2,
-        edgeHandleWidth,
-        edgeHandleHeight
-      );
-      // Left edge
-      drawHandle(
-        cropBounds.left * scale - edgeHandleHeight / 2,
-        (cropBounds.top + cropBounds.height / 2) * scale - edgeHandleWidth / 2,
-        edgeHandleHeight,
-        edgeHandleWidth
-      );
-      // Right edge
-      drawHandle(
-        (cropBounds.right + 1) * scale - edgeHandleHeight / 2,
-        (cropBounds.top + cropBounds.height / 2) * scale - edgeHandleWidth / 2,
-        edgeHandleHeight,
-        edgeHandleWidth
-      );
+    // Helper to draw a handle with white fill and green border
+    const drawHandle = (x: number, y: number, width: number, height: number) => {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x, y, width, height);
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, width, height);
     };
-    // Use workingUrl instead of currentImage.url (which may be empty after layout generation)
+
+    // Top-left
+    drawHandle(cropBounds.left * scale - handleSize / 2, cropBounds.top * scale - handleSize / 2, handleSize, handleSize);
+    // Top-right
+    drawHandle((cropBounds.right + 1) * scale - handleSize / 2, cropBounds.top * scale - handleSize / 2, handleSize, handleSize);
+    // Bottom-left
+    drawHandle(cropBounds.left * scale - handleSize / 2, (cropBounds.bottom + 1) * scale - handleSize / 2, handleSize, handleSize);
+    // Bottom-right
+    drawHandle((cropBounds.right + 1) * scale - handleSize / 2, (cropBounds.bottom + 1) * scale - handleSize / 2, handleSize, handleSize);
+
+    // Draw edge handles - larger
+    const edgeHandleWidth = 28;
+    const edgeHandleHeight = 8;
+
+    // Top edge
+    drawHandle(
+      (cropBounds.left + cropBounds.width / 2) * scale - edgeHandleWidth / 2,
+      cropBounds.top * scale - edgeHandleHeight / 2,
+      edgeHandleWidth,
+      edgeHandleHeight
+    );
+    // Bottom edge
+    drawHandle(
+      (cropBounds.left + cropBounds.width / 2) * scale - edgeHandleWidth / 2,
+      (cropBounds.bottom + 1) * scale - edgeHandleHeight / 2,
+      edgeHandleWidth,
+      edgeHandleHeight
+    );
+    // Left edge
+    drawHandle(
+      cropBounds.left * scale - edgeHandleHeight / 2,
+      (cropBounds.top + cropBounds.height / 2) * scale - edgeHandleWidth / 2,
+      edgeHandleHeight,
+      edgeHandleWidth
+    );
+    // Right edge
+    drawHandle(
+      (cropBounds.right + 1) * scale - edgeHandleHeight / 2,
+      (cropBounds.top + cropBounds.height / 2) * scale - edgeHandleWidth / 2,
+      edgeHandleHeight,
+      edgeHandleWidth
+    );
+  }, [cropBounds, detectionResult, getDisplayScale, padding]);
+
+  // Load image when URL changes
+  useEffect(() => {
+    if (!workingUrl || !currentImage) return;
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      loadedImageRef.current = img;
+      drawCanvas(img);
+    };
     img.src = workingUrl;
-  }, [workingUrl, cropBounds, detectionResult, getDisplayScale, zoomLevel, padding]);
+  }, [workingUrl, currentImage, drawCanvas]);
+
+  // Redraw canvas when drawing parameters change (padding, cropBounds, zoom, etc.)
+  useEffect(() => {
+    if (loadedImageRef.current && cropBounds && detectionResult) {
+      drawCanvas(loadedImageRef.current);
+    }
+  }, [cropBounds, detectionResult, getDisplayScale, zoomLevel, padding, drawCanvas]);
 
   // Handle mouse events for dragging
   const getHandleAtPosition = (x: number, y: number): DragHandle => {
