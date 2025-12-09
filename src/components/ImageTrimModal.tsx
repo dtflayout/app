@@ -180,32 +180,44 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
     // But we also want it visible, so use a minimum display size
     if (Number(padding) > 0) {
       const paddingScaled = padding * scale;
-      // Ensure minimum visible padding indicator (at least 10 display pixels)
-      const displayPadding = Math.max(paddingScaled, 10);
+      // Ensure minimum visible padding indicator (at least 15 display pixels)
+      const displayPadding = Math.max(paddingScaled, 15);
 
-      ctx.strokeStyle = '#3b82f6'; // Blue color
-      ctx.lineWidth = 2;
-      ctx.setLineDash([6, 4]);
-
-      // Calculate box coordinates - ensure they're at least slightly outside the crop box
+      // Calculate box coordinates - ensure they're outside the crop box
       const boxX = cropBounds.left * scale - displayPadding;
       const boxY = cropBounds.top * scale - displayPadding;
       const boxWidth = cropBounds.width * scale + displayPadding * 2;
       const boxHeight = cropBounds.height * scale + displayPadding * 2;
 
+      // Draw subtle fill for the padding area (light blue tint)
+      ctx.fillStyle = 'rgba(37, 99, 235, 0.15)';
+      ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+      // Cut out the center (crop area) to only show padding zone
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; // Match the overlay color
+      ctx.fillRect(
+        cropBounds.left * scale,
+        cropBounds.top * scale,
+        cropBounds.width * scale,
+        cropBounds.height * scale
+      );
+
+      // Draw the outer padding box border - bright blue, thick line
+      ctx.strokeStyle = '#2563EB'; // Bright blue
+      ctx.lineWidth = 4;
+      ctx.setLineDash([10, 5]);
       ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
       ctx.setLineDash([]);
 
       // Draw padding label - position it at top of the blue box
-      ctx.font = 'bold 11px sans-serif';
+      ctx.font = 'bold 12px sans-serif';
       const labelText = `+${padding}px padding`;
       const labelWidth = ctx.measureText(labelText).width;
       const labelX = Math.max(4, boxX + 4);
-      const labelY = Math.max(12, boxY - 4);
+      const labelY = Math.max(16, boxY - 6);
 
       // Background for label
-      ctx.fillStyle = 'rgba(59, 130, 246, 0.9)'; // Blue background
-      ctx.fillRect(labelX - 2, labelY - 10, labelWidth + 4, 14);
+      ctx.fillStyle = 'rgba(37, 99, 235, 0.95)'; // Blue background
+      ctx.fillRect(labelX - 4, labelY - 12, labelWidth + 8, 18);
       // Label text
       ctx.fillStyle = '#ffffff'; // White text for contrast
       ctx.fillText(labelText, labelX, labelY);
