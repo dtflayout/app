@@ -54,32 +54,24 @@ const isBackgroundPixel = (
   a: number,
   tolerance: number,
   detectTransparent: boolean,
-  backgroundColor?: { r: number; g: number; b: number }
+  backgroundColor?: { r: number; g: number; b: number },
+  isTransparentBackground?: boolean
 ): boolean => {
-  // Check for transparency first - use a low threshold to catch truly transparent pixels
-  // but not anti-aliased edges which may have alpha > 5
-  if (detectTransparent && a < 5) {
+  // For transparent backgrounds, ONLY use alpha to determine content
+  // Any pixel with alpha > 0 is considered content (catches semi-transparent text, anti-aliased edges, etc.)
+  if (isTransparentBackground && detectTransparent) {
+    // alpha = 0 is fully transparent (background)
+    // alpha > 0 is content (even semi-transparent content like faded text)
+    return a === 0;
+  }
+
+  // For non-transparent backgrounds, check for fully transparent pixels first
+  if (detectTransparent && a === 0) {
     return true;
   }
 
   // If a specific background color is provided, check against it
   if (backgroundColor) {
-    // For semi-transparent pixels blending with background, factor in alpha
-    // A pixel with low alpha that matches background color is still background
-    if (detectTransparent && a < 128) {
-      // Semi-transparent pixel - be more lenient with color matching
-      const colorTolerance = tolerance * 3; // More tolerant for semi-transparent
-      const colorMatch = (
-        Math.abs(r - backgroundColor.r) <= colorTolerance &&
-        Math.abs(g - backgroundColor.g) <= colorTolerance &&
-        Math.abs(b - backgroundColor.b) <= colorTolerance
-      );
-      // If very transparent and somewhat matches background, treat as background
-      if (a < 30 && colorMatch) {
-        return true;
-      }
-    }
-
     // Fully opaque or semi-opaque pixel - use standard tolerance
     const colorTolerance = tolerance * 2.55; // Convert 0-50 to 0-127.5 range
     return (
@@ -135,43 +127,48 @@ export const detectContentBounds = async (
     };
   };
 
-  // Auto-detect background color from corners if not provided
-  // Sample multiple corner pixels and find the most common color
+  // Auto-detect background type from corners if not provided
+  // Sample multiple corner pixels to determine if background is transparent or solid color
   let detectedBgColor = backgroundColor;
-  if (!detectedBgColor) {
-    const cornerSamples = [
-      getPixel(0, 0),
-      getPixel(width - 1, 0),
-      getPixel(0, height - 1),
-      getPixel(width - 1, height - 1),
-      // Also sample a few pixels inward from corners for more accuracy
-      getPixel(Math.min(5, width - 1), Math.min(5, height - 1)),
-      getPixel(Math.max(0, width - 6), Math.min(5, height - 1)),
-      getPixel(Math.min(5, width - 1), Math.max(0, height - 6)),
-      getPixel(Math.max(0, width - 6), Math.max(0, height - 6)),
-    ];
+  let isTransparentBg = false;
 
-    // Check if corners are mostly transparent
-    const transparentCorners = cornerSamples.filter(p => p.a < 10).length;
-    const isTransparentBackground = transparentCorners >= 4;
+  const cornerSamples = [
+    getPixel(0, 0),
+    getPixel(width - 1, 0),
+    getPixel(0, height - 1),
+    getPixel(width - 1, height - 1),
+    // Also sample a few pixels inward from corners for more accuracy
+    getPixel(Math.min(5, width - 1), Math.min(5, height - 1)),
+    getPixel(Math.max(0, width - 6), Math.min(5, height - 1)),
+    getPixel(Math.min(5, width - 1), Math.max(0, height - 6)),
+    getPixel(Math.max(0, width - 6), Math.max(0, height - 6)),
+  ];
 
-    if (!isTransparentBackground) {
-      // Find the most common corner color (for solid backgrounds)
-      // Average the non-transparent corner pixels
-      const opaqueCorners = cornerSamples.filter(p => p.a >= 10);
-      if (opaqueCorners.length > 0) {
-        const avgR = Math.round(opaqueCorners.reduce((sum, p) => sum + p.r, 0) / opaqueCorners.length);
-        const avgG = Math.round(opaqueCorners.reduce((sum, p) => sum + p.g, 0) / opaqueCorners.length);
-        const avgB = Math.round(opaqueCorners.reduce((sum, p) => sum + p.b, 0) / opaqueCorners.length);
-        detectedBgColor = { r: avgR, g: avgG, b: avgB };
-      }
+  // Check if corners are mostly transparent (alpha < 10)
+  const transparentCorners = cornerSamples.filter(p => p.a < 10).length;
+  isTransparentBg = transparentCorners >= 4;
+
+  console.log('[Trim Detection] Image size:', width, 'x', height);
+  console.log('[Trim Detection] Transparent corners:', transparentCorners, '/ 8');
+  console.log('[Trim Detection] Is transparent background:', isTransparentBg);
+
+  if (!isTransparentBg && !detectedBgColor) {
+    // Find the most common corner color (for solid backgrounds)
+    // Average the non-transparent corner pixels
+    const opaqueCorners = cornerSamples.filter(p => p.a >= 10);
+    if (opaqueCorners.length > 0) {
+      const avgR = Math.round(opaqueCorners.reduce((sum, p) => sum + p.r, 0) / opaqueCorners.length);
+      const avgG = Math.round(opaqueCorners.reduce((sum, p) => sum + p.g, 0) / opaqueCorners.length);
+      const avgB = Math.round(opaqueCorners.reduce((sum, p) => sum + p.b, 0) / opaqueCorners.length);
+      detectedBgColor = { r: avgR, g: avgG, b: avgB };
+      console.log('[Trim Detection] Detected background color:', detectedBgColor);
     }
   }
 
   // Helper to check if pixel is background
   const isBg = (x: number, y: number) => {
     const { r, g, b, a } = getPixel(x, y);
-    return isBackgroundPixel(r, g, b, a, tolerance, detectTransparent, detectedBgColor);
+    return isBackgroundPixel(r, g, b, a, tolerance, detectTransparent, detectedBgColor, isTransparentBg);
   };
 
   // Scan from top
@@ -222,8 +219,12 @@ export const detectContentBounds = async (
     right = x - 1;
   }
 
+  console.log('[Trim Detection] Detected bounds:', { top, right, bottom, left });
+  console.log('[Trim Detection] Content area:', right - left + 1, 'x', bottom - top + 1);
+
   // Ensure valid bounds (handle case where entire image is background)
   if (top > bottom || left > right) {
+    console.log('[Trim Detection] No content found, returning full image bounds');
     // No content found, return full image bounds
     return {
       bounds: {
