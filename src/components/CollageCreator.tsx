@@ -815,8 +815,10 @@ export const CollageCreator = ({
       {/* Layout Settings */}
       <div className="bg-white rounded-lg shadow-sm border px-6 py-8 animate-fade-in">
         <h2 className="text-2xl font-bold mb-4">Layout Settings</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-          <div className="flex flex-col gap-2">
+
+        {/* Row 1: Configuration inputs */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-4">
+          <div className="flex flex-col gap-2 sm:w-48">
             <Label htmlFor="sheet-width" className="text-base font-medium text-slate-700">Sheet Width</Label>
             <Select
               value={canvasWidthInches.toString()}
@@ -838,7 +840,7 @@ export const CollageCreator = ({
             </Select>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 sm:w-48">
             <Label htmlFor="spacing" className="text-base font-medium text-slate-700">Spacing (inches)</Label>
             <input
               id="spacing"
@@ -860,11 +862,14 @@ export const CollageCreator = ({
               className="h-11 px-4 rounded-lg border border-gray-300 bg-background text-base shadow-sm hover:border-gray-400 transition-colors focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
           </div>
+        </div>
 
+        {/* Row 2: Action buttons */}
+        <div className="flex flex-col sm:flex-row gap-3">
           <Button
             onClick={handleGenerateLayout}
             disabled={images.length === 0 || getUserCredits() === 0}
-            className="h-11 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-lg font-semibold rounded-xl shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+            className="h-11 flex-1 sm:flex-[3] bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-lg font-semibold rounded-xl shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
           >
             Generate Layout
           </Button>
@@ -873,7 +878,7 @@ export const CollageCreator = ({
             onClick={() => setShowPreviewModal(true)}
             disabled={layout.length === 0}
             variant="outline"
-            className="h-11 border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-lg font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+            className="h-11 sm:flex-1 border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-lg font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Eye className="mr-2 h-5 w-5" />
             Preview Sheet
@@ -882,7 +887,8 @@ export const CollageCreator = ({
           <Button
             onClick={handleExport}
             disabled={layout.length === 0 || isExporting}
-            className="h-11 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-lg font-semibold rounded-xl shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+            variant="outline"
+            className="h-11 sm:flex-1 border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-lg font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="mr-2 h-5 w-5" />
             {isExporting ? "Exporting..." : "Download Sheet"}
