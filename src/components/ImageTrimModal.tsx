@@ -142,93 +142,129 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
     if (!ctx) return;
 
     const scale = getDisplayScale();
-    const displayWidth = detectionResult.originalWidth * scale;
-    const displayHeight = detectionResult.originalHeight * scale;
+    const imageDisplayWidth = detectionResult.originalWidth * scale;
+    const imageDisplayHeight = detectionResult.originalHeight * scale;
 
-    canvas.width = displayWidth;
-    canvas.height = displayHeight;
-
-    // Draw image
-    ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
-
-    // Calculate padding values first (needed for overlay calculation)
+    // Calculate padding values
     const currentPadding = Number(padding) || 0;
     const paddingScaled = currentPadding * scale;
     const displayPadding = currentPadding > 0 ? Math.max(paddingScaled, 15) : 0;
 
-    // Calculate crop coordinates
+    // Calculate how much the padding extends beyond the image on each side
+    // This happens when crop bounds are at or near the image edges
     const cropX = cropBounds.left * scale;
     const cropY = cropBounds.top * scale;
     const cropW = cropBounds.width * scale;
     const cropH = cropBounds.height * scale;
 
+    // Calculate padding overflow on each side
+    const paddingOverflowLeft = Math.max(0, displayPadding - cropX);
+    const paddingOverflowTop = Math.max(0, displayPadding - cropY);
+    const paddingOverflowRight = Math.max(0, (cropX + cropW + displayPadding) - imageDisplayWidth);
+    const paddingOverflowBottom = Math.max(0, (cropY + cropH + displayPadding) - imageDisplayHeight);
+
+    // Extend canvas to accommodate padding preview
+    const canvasWidth = imageDisplayWidth + paddingOverflowLeft + paddingOverflowRight;
+    const canvasHeight = imageDisplayHeight + paddingOverflowTop + paddingOverflowBottom;
+
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+
+    // Offset for drawing the image (shifted by left/top padding overflow)
+    const imageOffsetX = paddingOverflowLeft;
+    const imageOffsetY = paddingOverflowTop;
+
+    // Fill extended areas with transparent checkered pattern to show padding zone
+    if (currentPadding > 0 && (paddingOverflowLeft > 0 || paddingOverflowTop > 0 || paddingOverflowRight > 0 || paddingOverflowBottom > 0)) {
+      // Draw a subtle checkered pattern for the extended area (padding preview zone)
+      const patternSize = 10;
+      ctx.fillStyle = '#f0f4f8';
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      ctx.fillStyle = '#e2e8f0';
+      for (let y = 0; y < canvasHeight; y += patternSize) {
+        for (let x = 0; x < canvasWidth; x += patternSize) {
+          if ((Math.floor(x / patternSize) + Math.floor(y / patternSize)) % 2 === 0) {
+            ctx.fillRect(x, y, patternSize, patternSize);
+          }
+        }
+      }
+    }
+
+    // Draw image at offset position
+    ctx.drawImage(img, imageOffsetX, imageOffsetY, imageDisplayWidth, imageDisplayHeight);
+
+    // Adjusted crop coordinates (shifted by image offset)
+    const adjCropX = cropX + imageOffsetX;
+    const adjCropY = cropY + imageOffsetY;
+
     // Calculate the effective "keep" area (crop area + padding)
-    // Everything outside this area will have dark overlay
-    const keepX = cropX - displayPadding;
-    const keepY = cropY - displayPadding;
+    const keepX = adjCropX - displayPadding;
+    const keepY = adjCropY - displayPadding;
     const keepW = cropW + displayPadding * 2;
     const keepH = cropH + displayPadding * 2;
 
     // Draw semi-transparent overlay on areas that will be trimmed away
-    // This is everything OUTSIDE the keep area (crop + padding)
+    // This covers the original image area that's outside the keep area
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
 
-    // Top region (above keep area)
-    if (keepY > 0) {
-      ctx.fillRect(0, 0, displayWidth, keepY);
+    // We need to cover areas of the IMAGE that are outside the keep area
+    // (not the extended canvas area - that shows the padding preview)
+    const imgLeft = imageOffsetX;
+    const imgTop = imageOffsetY;
+    const imgRight = imageOffsetX + imageDisplayWidth;
+    const imgBottom = imageOffsetY + imageDisplayHeight;
+
+    // Top region of image (above keep area, within image bounds)
+    if (keepY > imgTop) {
+      ctx.fillRect(imgLeft, imgTop, imageDisplayWidth, keepY - imgTop);
     }
-    // Bottom region (below keep area)
+    // Bottom region of image (below keep area, within image bounds)
     const keepBottom = keepY + keepH;
-    if (keepBottom < displayHeight) {
-      ctx.fillRect(0, keepBottom, displayWidth, displayHeight - keepBottom);
+    if (keepBottom < imgBottom) {
+      ctx.fillRect(imgLeft, keepBottom, imageDisplayWidth, imgBottom - keepBottom);
     }
-    // Left region (left of keep area, between top and bottom)
-    if (keepX > 0) {
-      ctx.fillRect(0, Math.max(0, keepY), keepX, keepH);
+    // Left region of image (left of keep area, between top and bottom overlays)
+    const overlayTop = Math.max(imgTop, keepY);
+    const overlayBottom = Math.min(imgBottom, keepBottom);
+    const overlayHeight = overlayBottom - overlayTop;
+    if (keepX > imgLeft && overlayHeight > 0) {
+      ctx.fillRect(imgLeft, overlayTop, keepX - imgLeft, overlayHeight);
     }
-    // Right region (right of keep area, between top and bottom)
+    // Right region of image (right of keep area, between top and bottom overlays)
     const keepRight = keepX + keepW;
-    if (keepRight < displayWidth) {
-      ctx.fillRect(keepRight, Math.max(0, keepY), displayWidth - keepRight, keepH);
+    if (keepRight < imgRight && overlayHeight > 0) {
+      ctx.fillRect(keepRight, overlayTop, imgRight - keepRight, overlayHeight);
     }
 
     // Draw crop rectangle border (green - content area)
     ctx.strokeStyle = '#22c55e';
     ctx.lineWidth = 3;
     ctx.setLineDash([8, 6]);
-    ctx.strokeRect(cropX, cropY, cropW, cropH);
+    ctx.strokeRect(adjCropX, adjCropY, cropW, cropH);
     ctx.setLineDash([]);
 
     // Draw padding indicator (blue dashed outer box) if padding > 0
     if (currentPadding > 0) {
-      const boxX = keepX;
-      const boxY = keepY;
-      const boxWidth = keepW;
-      const boxHeight = keepH;
-
       // Draw the outer padding box border - bright blue, thick line
       ctx.strokeStyle = '#2563EB'; // Bright blue
       ctx.lineWidth = 4;
       ctx.setLineDash([10, 5]);
-      ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+      ctx.strokeRect(keepX, keepY, keepW, keepH);
       ctx.setLineDash([]);
 
       // Draw padding label - position at bottom-right of padding box
       ctx.font = 'bold 12px sans-serif';
       const labelText = `+${currentPadding}px padding`;
       const labelWidth = ctx.measureText(labelText).width;
-      const labelX = Math.min(boxX + boxWidth - labelWidth - 8, displayWidth - labelWidth - 8);
-      const labelY = boxY + boxHeight - 6;
+      const labelX = Math.max(8, keepX + keepW - labelWidth - 8);
+      const labelY = keepY + keepH - 6;
 
-      // Only draw label if it fits
-      if (labelX > 0 && labelY > 0 && labelY < displayHeight) {
-        // Background for label
-        ctx.fillStyle = 'rgba(37, 99, 235, 0.95)'; // Blue background
-        ctx.fillRect(labelX - 4, labelY - 12, labelWidth + 8, 18);
-        // Label text
-        ctx.fillStyle = '#ffffff'; // White text for contrast
-        ctx.fillText(labelText, labelX, labelY);
-      }
+      // Background for label
+      ctx.fillStyle = 'rgba(37, 99, 235, 0.95)'; // Blue background
+      ctx.fillRect(labelX - 4, labelY - 12, labelWidth + 8, 18);
+      // Label text
+      ctx.fillStyle = '#ffffff'; // White text for contrast
+      ctx.fillText(labelText, labelX, labelY);
     }
 
     // Draw corner handles - larger with white fill and green border
@@ -244,13 +280,13 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
     };
 
     // Top-left
-    drawHandle(cropBounds.left * scale - handleSize / 2, cropBounds.top * scale - handleSize / 2, handleSize, handleSize);
+    drawHandle(adjCropX - handleSize / 2, adjCropY - handleSize / 2, handleSize, handleSize);
     // Top-right
-    drawHandle((cropBounds.right + 1) * scale - handleSize / 2, cropBounds.top * scale - handleSize / 2, handleSize, handleSize);
+    drawHandle(adjCropX + cropW - handleSize / 2, adjCropY - handleSize / 2, handleSize, handleSize);
     // Bottom-left
-    drawHandle(cropBounds.left * scale - handleSize / 2, (cropBounds.bottom + 1) * scale - handleSize / 2, handleSize, handleSize);
+    drawHandle(adjCropX - handleSize / 2, adjCropY + cropH - handleSize / 2, handleSize, handleSize);
     // Bottom-right
-    drawHandle((cropBounds.right + 1) * scale - handleSize / 2, (cropBounds.bottom + 1) * scale - handleSize / 2, handleSize, handleSize);
+    drawHandle(adjCropX + cropW - handleSize / 2, adjCropY + cropH - handleSize / 2, handleSize, handleSize);
 
     // Draw edge handles - larger
     const edgeHandleWidth = 28;
@@ -258,29 +294,29 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
 
     // Top edge
     drawHandle(
-      (cropBounds.left + cropBounds.width / 2) * scale - edgeHandleWidth / 2,
-      cropBounds.top * scale - edgeHandleHeight / 2,
+      adjCropX + cropW / 2 - edgeHandleWidth / 2,
+      adjCropY - edgeHandleHeight / 2,
       edgeHandleWidth,
       edgeHandleHeight
     );
     // Bottom edge
     drawHandle(
-      (cropBounds.left + cropBounds.width / 2) * scale - edgeHandleWidth / 2,
-      (cropBounds.bottom + 1) * scale - edgeHandleHeight / 2,
+      adjCropX + cropW / 2 - edgeHandleWidth / 2,
+      adjCropY + cropH - edgeHandleHeight / 2,
       edgeHandleWidth,
       edgeHandleHeight
     );
     // Left edge
     drawHandle(
-      cropBounds.left * scale - edgeHandleHeight / 2,
-      (cropBounds.top + cropBounds.height / 2) * scale - edgeHandleWidth / 2,
+      adjCropX - edgeHandleHeight / 2,
+      adjCropY + cropH / 2 - edgeHandleWidth / 2,
       edgeHandleHeight,
       edgeHandleWidth
     );
     // Right edge
     drawHandle(
-      (cropBounds.right + 1) * scale - edgeHandleHeight / 2,
-      (cropBounds.top + cropBounds.height / 2) * scale - edgeHandleWidth / 2,
+      adjCropX + cropW - edgeHandleHeight / 2,
+      adjCropY + cropH / 2 - edgeHandleWidth / 2,
       edgeHandleHeight,
       edgeHandleWidth
     );
@@ -306,6 +342,25 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
     }
   }, [cropBounds, detectionResult, getDisplayScale, zoomLevel, padding, drawCanvas]);
 
+  // Calculate canvas offset due to padding overflow (needed for mouse handling)
+  const getCanvasOffset = useCallback(() => {
+    if (!cropBounds || !detectionResult) return { x: 0, y: 0 };
+
+    const scale = getDisplayScale();
+    const currentPadding = Number(padding) || 0;
+    const paddingScaled = currentPadding * scale;
+    const displayPadding = currentPadding > 0 ? Math.max(paddingScaled, 15) : 0;
+
+    const cropX = cropBounds.left * scale;
+    const cropY = cropBounds.top * scale;
+
+    // Calculate padding overflow on left/top
+    const paddingOverflowLeft = Math.max(0, displayPadding - cropX);
+    const paddingOverflowTop = Math.max(0, displayPadding - cropY);
+
+    return { x: paddingOverflowLeft, y: paddingOverflowTop };
+  }, [cropBounds, detectionResult, getDisplayScale, padding]);
+
   // Handle mouse events for dragging
   const getHandleAtPosition = (x: number, y: number): DragHandle => {
     if (!cropBounds || !detectionResult) return null;
@@ -313,11 +368,14 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
     const scale = getDisplayScale();
     const handleSize = 18; // Hit area size (slightly larger than visual handle for easier grabbing)
 
-    // Use cropBounds for handle positions
-    const left = cropBounds.left * scale;
-    const right = (cropBounds.right + 1) * scale;
-    const top = cropBounds.top * scale;
-    const bottom = (cropBounds.bottom + 1) * scale;
+    // Account for canvas offset due to padding overflow
+    const offset = getCanvasOffset();
+
+    // Use cropBounds for handle positions, adjusted by offset
+    const left = cropBounds.left * scale + offset.x;
+    const right = (cropBounds.left + cropBounds.width) * scale + offset.x;
+    const top = cropBounds.top * scale + offset.y;
+    const bottom = (cropBounds.top + cropBounds.height) * scale + offset.y;
 
     // Check corners first
     if (Math.abs(x - left) < handleSize && Math.abs(y - top) < handleSize) return 'topLeft';
@@ -722,9 +780,35 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
 
   if (!currentImage) return null;
 
-  const scale = getDisplayScale();
-  const displayWidth = detectionResult ? detectionResult.originalWidth * scale : 0;
-  const displayHeight = detectionResult ? detectionResult.originalHeight * scale : 0;
+  // Calculate canvas dimensions including padding overflow
+  const getCanvasDimensions = () => {
+    if (!detectionResult || !cropBounds) return { width: 0, height: 0 };
+
+    const scale = getDisplayScale();
+    const imageDisplayWidth = detectionResult.originalWidth * scale;
+    const imageDisplayHeight = detectionResult.originalHeight * scale;
+
+    const currentPadding = Number(padding) || 0;
+    const paddingScaled = currentPadding * scale;
+    const displayPadding = currentPadding > 0 ? Math.max(paddingScaled, 15) : 0;
+
+    const cropX = cropBounds.left * scale;
+    const cropY = cropBounds.top * scale;
+    const cropW = cropBounds.width * scale;
+    const cropH = cropBounds.height * scale;
+
+    const paddingOverflowLeft = Math.max(0, displayPadding - cropX);
+    const paddingOverflowTop = Math.max(0, displayPadding - cropY);
+    const paddingOverflowRight = Math.max(0, (cropX + cropW + displayPadding) - imageDisplayWidth);
+    const paddingOverflowBottom = Math.max(0, (cropY + cropH + displayPadding) - imageDisplayHeight);
+
+    return {
+      width: imageDisplayWidth + paddingOverflowLeft + paddingOverflowRight,
+      height: imageDisplayHeight + paddingOverflowTop + paddingOverflowBottom
+    };
+  };
+
+  const canvasDimensions = getCanvasDimensions();
 
   // Check if there's no reduction (0% - nothing to trim)
   const hasNoReduction = detectionResult && cropBounds
@@ -842,8 +926,8 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
                       handlePanEnd();
                     }}
                     style={{
-                      width: displayWidth,
-                      height: displayHeight,
+                      width: canvasDimensions.width,
+                      height: canvasDimensions.height,
                       cursor: activeHandle
                         ? undefined
                         : canPan
