@@ -5,7 +5,7 @@
  *
  * 1. thumbnailUrl (300px max) - ONLY for gallery display in ImageManager
  *    - Smallest size for minimal memory usage when browsing many images
- *    - Uses JPEG compression at 0.7 quality
+ *    - Uses PNG to preserve transparency (important for DTF printing)
  *
  * 2. previewUrl (400px max) - ONLY for Fabric.js canvas display during layout preview
  *    - Small size optimized for 72 DPI canvas display
@@ -79,9 +79,8 @@ export async function generateThumbnail(
 
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Convert to blob with JPEG compression for smaller file size
-        // PNG files with transparency will lose transparency but that's acceptable
-        // for gallery thumbnails where we just need a quick preview
+        // Use PNG to preserve transparency (required for DTF printing where
+        // users need to see if their images have transparent backgrounds)
         canvas.toBlob(
           (blob) => {
             URL.revokeObjectURL(objectUrl);
@@ -94,8 +93,7 @@ export async function generateThumbnail(
             const thumbnailUrl = URL.createObjectURL(blob);
             resolve(thumbnailUrl);
           },
-          'image/jpeg',
-          0.7 // Quality 0.7 for good balance of size and quality
+          'image/png'
         );
       } catch (error) {
         URL.revokeObjectURL(objectUrl);
