@@ -13,25 +13,27 @@ export interface PositionedImage extends ImageDimension {
   rotated: boolean;
 }
 
-// Default padding constant (can be overridden)
-let PADDING_INCHES = 0.3; // Default padding between images
+// Spacing between images (set by generateLayout)
+let SPACING_INCHES = 0.3;
+// Edge margin from sheet edges (fixed small margin)
+const EDGE_MARGIN = 0;
 
 // Debug function to visualize layout
 export const visualizeLayout = (
-  positionedImages: PositionedImage[], 
+  positionedImages: PositionedImage[],
   sheetWidthInches: number,
   totalHeightInches: number
 ): string => {
   const lines: string[] = [];
   lines.push(`Sheet size: ${sheetWidthInches.toFixed(2)}×${totalHeightInches.toFixed(2)} inches`);
   lines.push(`Total images: ${positionedImages.length}`);
-  
+
   // Sort by Y position then X position for readable output
   const sortedImages = [...positionedImages].sort((a, b) => {
     if (a.y === b.y) return a.x - b.x;
     return a.y - b.y;
   });
-  
+
   // Add image details
   sortedImages.forEach((img, index) => {
     lines.push(
@@ -41,7 +43,7 @@ export const visualizeLayout = (
       `${img.rotated ? '[Rotated]' : ''}`
     );
   });
-  
+
   // Check for overlaps
   let hasOverlaps = false;
   for (let i = 0; i < sortedImages.length; i++) {
@@ -52,15 +54,15 @@ export const visualizeLayout = (
       }
     }
   }
-  
+
   if (!hasOverlaps) {
     lines.push("✅ No overlaps detected");
   }
-  
+
   return lines.join('\n');
 };
 
-// Helper function to check if two images overlap (strict check - no padding tolerance)
+// Helper function to check if two images overlap (strict check - no spacing tolerance)
 const imagesOverlapStrict = (a: PositionedImage, b: PositionedImage): boolean => {
   const aLeft = a.x;
   const aRight = a.x + a.widthInches;
@@ -79,7 +81,7 @@ const imagesOverlapStrict = (a: PositionedImage, b: PositionedImage): boolean =>
   return horizontalOverlap && verticalOverlap;
 };
 
-// Helper function to check if two images overlap (with padding consideration)
+// Helper function to check if two images overlap (with spacing consideration)
 const imagesOverlap = (a: PositionedImage, b: PositionedImage): boolean => {
   // For positioned images, use their actual final dimensions (already accounts for rotation)
   const aLeft = a.x;
@@ -92,11 +94,11 @@ const imagesOverlap = (a: PositionedImage, b: PositionedImage): boolean => {
   const bTop = b.y;
   const bBottom = b.y + b.heightInches;
 
-  // Check if rectangles are separated by at least PADDING_INCHES
-  if (aRight + PADDING_INCHES <= bLeft || bRight + PADDING_INCHES <= aLeft) {
+  // Check if rectangles are separated by at least SPACING_INCHES
+  if (aRight + SPACING_INCHES <= bLeft || bRight + SPACING_INCHES <= aLeft) {
     return false; // No horizontal overlap
   }
-  if (aBottom + PADDING_INCHES <= bTop || bBottom + PADDING_INCHES <= aTop) {
+  if (aBottom + SPACING_INCHES <= bTop || bBottom + SPACING_INCHES <= aTop) {
     return false; // No vertical overlap
   }
 
@@ -127,7 +129,7 @@ const validateNoOverlaps = (positions: PositionedImage[]): { valid: boolean; ove
 // This is a fallback mechanism that should rarely be needed
 const fixOverlaps = (
   positions: PositionedImage[],
-  availableWidthInches: number
+  sheetWidthInches: number
 ): PositionedImage[] => {
   const fixed: PositionedImage[] = [];
 
@@ -150,7 +152,7 @@ const fixOverlaps = (
         img.widthInches,
         img.heightInches,
         fixed,
-        availableWidthInches
+        sheetWidthInches
       );
 
       fixed.push({
@@ -173,38 +175,32 @@ const canPlaceAt = (
   width: number,
   height: number,
   positions: PositionedImage[],
-  availableWidthInches: number
+  sheetWidthInches: number
 ): boolean => {
-  // Check if it fits within sheet bounds (including padding)
-  if (x < 0 || y < 0 || x + width > availableWidthInches) {
+  // Check if it fits within sheet bounds
+  if (x < EDGE_MARGIN || y < EDGE_MARGIN || x + width > sheetWidthInches - EDGE_MARGIN) {
     return false;
   }
 
-  // Check for overlaps with existing images (with proper padding)
+  // Check for overlaps with existing images (with proper spacing)
   for (const existing of positions) {
-    // Calculate the right edge of the new image and left edge of existing (with padding)
     const newRight = x + width;
-    const existingLeft = existing.x;
-
-    // Calculate the left edge of new and right edge of existing (with padding)
     const newLeft = x;
-    const existingRight = existing.x + existing.widthInches;
-
-    // Calculate vertical boundaries similarly
     const newBottom = y + height;
-    const existingTop = existing.y;
     const newTop = y;
+
+    const existingLeft = existing.x;
+    const existingRight = existing.x + existing.widthInches;
+    const existingTop = existing.y;
     const existingBottom = existing.y + existing.heightInches;
 
-    // Check if rectangles are separated by at least PADDING_INCHES in either direction
-    // If newRight + padding <= existingLeft, they don't overlap horizontally
-    // If existingRight + padding <= newLeft, they don't overlap horizontally
-    const horizontallySeparated = (newRight + PADDING_INCHES <= existingLeft) ||
-                                   (existingRight + PADDING_INCHES <= newLeft);
-    const verticallySeparated = (newBottom + PADDING_INCHES <= existingTop) ||
-                                 (existingBottom + PADDING_INCHES <= newTop);
+    // Check if rectangles are separated by at least SPACING_INCHES in either direction
+    const horizontallySeparated = (newRight + SPACING_INCHES <= existingLeft) ||
+                                   (existingRight + SPACING_INCHES <= newLeft);
+    const verticallySeparated = (newBottom + SPACING_INCHES <= existingTop) ||
+                                 (existingBottom + SPACING_INCHES <= newTop);
 
-    // If neither horizontally nor vertically separated, they overlap
+    // If neither horizontally nor vertically separated, they overlap/violate spacing
     if (!horizontallySeparated && !verticallySeparated) {
       return false;
     }
@@ -213,70 +209,183 @@ const canPlaceAt = (
   return true;
 };
 
-// Find the best (lowest) position for an image using Bottom-Left Fill
-// CRITICAL: This function MUST always return a non-overlapping position
-const findBestPosition = (
+// Generate candidate positions based on existing image corners
+// This creates a smarter set of positions to try instead of grid search
+const generateCandidatePositions = (
   width: number,
   height: number,
   positions: PositionedImage[],
-  availableWidthInches: number
-): { x: number; y: number } => {
-  // Calculate the current maximum Y position from existing images
-  const currentMaxY = positions.length > 0
-    ? Math.max(...positions.map(p => p.y + p.heightInches)) + PADDING_INCHES
-    : PADDING_INCHES;
+  sheetWidthInches: number
+): Array<{ x: number; y: number }> => {
+  const candidates: Array<{ x: number; y: number }> = [];
 
-  // Try to place at the lowest possible Y position with fine granularity
-  // Limit search to current layout height + reasonable buffer for this image
-  const maxSearchY = currentMaxY + height + PADDING_INCHES * 2;
+  // Always try top-left corner (for first image or if it fits)
+  candidates.push({ x: EDGE_MARGIN, y: EDGE_MARGIN });
 
-  for (let y = PADDING_INCHES; y <= maxSearchY; y += 0.05) {
-    for (let x = PADDING_INCHES; x <= availableWidthInches - width - PADDING_INCHES; x += 0.05) {
-      if (canPlaceAt(x, y, width, height, positions, availableWidthInches)) {
-        return { x, y };
+  if (positions.length === 0) {
+    return candidates;
+  }
+
+  // For each existing image, generate candidate positions:
+  // - Right of the image (same Y)
+  // - Below the image (same X)
+  // - Below the image (X = 0, new row)
+  for (const existing of positions) {
+    // Right of existing image
+    const rightX = existing.x + existing.widthInches + SPACING_INCHES;
+    if (rightX + width <= sheetWidthInches - EDGE_MARGIN) {
+      candidates.push({ x: rightX, y: existing.y });
+      // Also try aligning to top of existing
+      candidates.push({ x: rightX, y: existing.y });
+    }
+
+    // Below existing image, same X
+    const belowY = existing.y + existing.heightInches + SPACING_INCHES;
+    candidates.push({ x: existing.x, y: belowY });
+
+    // Below existing image, starting from left edge
+    candidates.push({ x: EDGE_MARGIN, y: belowY });
+
+    // Try aligning with bottom of existing (for filling gaps)
+    const alignBottomY = existing.y + existing.heightInches - height;
+    if (alignBottomY >= EDGE_MARGIN) {
+      const rightOfExisting = existing.x + existing.widthInches + SPACING_INCHES;
+      if (rightOfExisting + width <= sheetWidthInches - EDGE_MARGIN) {
+        candidates.push({ x: rightOfExisting, y: alignBottomY });
       }
     }
   }
 
-  // SAFE FALLBACK: If no position found in existing layout space,
-  // place at the bottom of the current layout (guaranteed no overlap)
-  // This creates a new row at the bottom where there are no other images
-  const safeY = currentMaxY;
-  const safeX = PADDING_INCHES;
+  // Also try positions at the bottom of the current layout
+  const maxBottom = Math.max(...positions.map(p => p.y + p.heightInches));
+  candidates.push({ x: EDGE_MARGIN, y: maxBottom + SPACING_INCHES });
 
-  // Verify the safe position doesn't overlap (it shouldn't, but be certain)
-  if (canPlaceAt(safeX, safeY, width, height, positions, availableWidthInches)) {
-    return { x: safeX, y: safeY };
-  }
+  // Try to fill horizontal gaps by checking each "row"
+  // Group images by their Y position (with tolerance)
+  const yPositions = [...new Set(positions.map(p => p.y))].sort((a, b) => a - b);
+  for (const y of yPositions) {
+    // Find images in this row
+    const rowImages = positions.filter(p => Math.abs(p.y - y) < 0.1);
+    if (rowImages.length > 0) {
+      // Find gaps in this row
+      const sortedByX = [...rowImages].sort((a, b) => a.x - b.x);
 
-  // Ultimate fallback: extend further down (this should never be reached)
-  // Keep trying lower positions until we find one that works
-  for (let y = safeY; y <= safeY + 1000; y += 0.1) {
-    if (canPlaceAt(PADDING_INCHES, y, width, height, positions, availableWidthInches)) {
-      return { x: PADDING_INCHES, y };
+      // Check gap at the start
+      if (sortedByX[0].x > EDGE_MARGIN + width + SPACING_INCHES) {
+        candidates.push({ x: EDGE_MARGIN, y });
+      }
+
+      // Check gaps between images
+      for (let i = 0; i < sortedByX.length - 1; i++) {
+        const gapStart = sortedByX[i].x + sortedByX[i].widthInches + SPACING_INCHES;
+        const gapEnd = sortedByX[i + 1].x - SPACING_INCHES;
+        if (gapEnd - gapStart >= width) {
+          candidates.push({ x: gapStart, y });
+        }
+      }
+
+      // Check gap at the end
+      const lastImg = sortedByX[sortedByX.length - 1];
+      const endGapStart = lastImg.x + lastImg.widthInches + SPACING_INCHES;
+      if (endGapStart + width <= sheetWidthInches - EDGE_MARGIN) {
+        candidates.push({ x: endGapStart, y });
+      }
     }
   }
 
-  // This should truly never happen, but if it does, throw an error
-  // instead of returning an invalid position that could cause overlap
-  console.error('CRITICAL: Could not find any valid position for image', { width, height, positions: positions.length });
-  return { x: PADDING_INCHES, y: currentMaxY + 100 }; // Extreme fallback - far below any existing images
+  // Remove duplicates and sort by Y then X (prefer top-left positions)
+  const uniqueCandidates = candidates.filter((c, i, arr) =>
+    arr.findIndex(other => Math.abs(other.x - c.x) < 0.01 && Math.abs(other.y - c.y) < 0.01) === i
+  );
+
+  return uniqueCandidates.sort((a, b) => {
+    if (Math.abs(a.y - b.y) < 0.01) return a.x - b.x;
+    return a.y - b.y;
+  });
+};
+
+// Find the best position for an image that minimizes wasted space
+// Uses candidate positions instead of grid search for better gap filling
+const findBestPosition = (
+  width: number,
+  height: number,
+  positions: PositionedImage[],
+  sheetWidthInches: number
+): { x: number; y: number } => {
+  // Generate smart candidate positions based on existing layout
+  const candidates = generateCandidatePositions(width, height, positions, sheetWidthInches);
+
+  let bestPosition: { x: number; y: number } | null = null;
+  let bestScore = Infinity;
+
+  for (const candidate of candidates) {
+    if (canPlaceAt(candidate.x, candidate.y, width, height, positions, sheetWidthInches)) {
+      // Score: prioritize lowest Y (keeps sheet short), then lowest X (fills from left)
+      // Also give bonus for positions that are adjacent to existing images (fills gaps)
+      const yScore = candidate.y * 1000; // Primary: minimize Y
+      const xScore = candidate.x * 10;   // Secondary: minimize X
+
+      // Bonus for being adjacent to existing images (encourages gap filling)
+      let adjacencyBonus = 0;
+      for (const existing of positions) {
+        // Check if horizontally adjacent
+        const hAdjacent = Math.abs((candidate.x + width + SPACING_INCHES) - existing.x) < 0.1 ||
+                          Math.abs((existing.x + existing.widthInches + SPACING_INCHES) - candidate.x) < 0.1;
+        // Check if vertically adjacent
+        const vAdjacent = Math.abs((candidate.y + height + SPACING_INCHES) - existing.y) < 0.1 ||
+                          Math.abs((existing.y + existing.heightInches + SPACING_INCHES) - candidate.y) < 0.1;
+
+        if (hAdjacent || vAdjacent) {
+          adjacencyBonus -= 50; // Negative = better score
+        }
+      }
+
+      const score = yScore + xScore + adjacencyBonus;
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestPosition = candidate;
+      }
+    }
+  }
+
+  // If no candidate worked, fall back to grid search
+  if (!bestPosition) {
+    const currentMaxY = positions.length > 0
+      ? Math.max(...positions.map(p => p.y + p.heightInches)) + SPACING_INCHES
+      : EDGE_MARGIN;
+
+    const maxSearchY = currentMaxY + height + SPACING_INCHES * 2;
+
+    for (let y = EDGE_MARGIN; y <= maxSearchY; y += 0.1) {
+      for (let x = EDGE_MARGIN; x <= sheetWidthInches - width - EDGE_MARGIN; x += 0.1) {
+        if (canPlaceAt(x, y, width, height, positions, sheetWidthInches)) {
+          return { x, y };
+        }
+      }
+    }
+
+    // Ultimate fallback: place at bottom
+    return { x: EDGE_MARGIN, y: currentMaxY };
+  }
+
+  return bestPosition;
 };
 
 // Helper function to calculate total height of a layout
 const calculateTotalHeight = (positions: PositionedImage[]): number => {
-  if (positions.length === 0) return PADDING_INCHES * 2;
+  if (positions.length === 0) return 0;
   const maxBottom = Math.max(...positions.map(p => p.y + p.heightInches));
-  return maxBottom + PADDING_INCHES;
+  return maxBottom + EDGE_MARGIN;
 };
 
 // Pack images using a specific strategy
 const packWithStrategy = (
   images: ImageDimension[],
-  availableWidthInches: number,
+  sheetWidthInches: number,
   sortStrategy: 'area' | 'width' | 'height' | 'perimeter'
 ): PositionedImage[] => {
-  // Sort images based on strategy
+  // Sort images based on strategy (largest first for better packing)
   const sortedImages = [...images].sort((a, b) => {
     switch (sortStrategy) {
       case 'area':
@@ -293,30 +402,31 @@ const packWithStrategy = (
   });
 
   const positions: PositionedImage[] = [];
-  
+
   for (const image of sortedImages) {
     const orientations = [
       { width: image.widthInches, height: image.heightInches, rotated: false },
       { width: image.heightInches, height: image.widthInches, rotated: true }
     ];
-    
+
     let bestOrientation = null;
     let bestPosition = null;
     let bestScore = Infinity;
-    
+
     // Evaluate both orientations
     for (const orientation of orientations) {
-      if (orientation.width > availableWidthInches) {
+      // Skip if this orientation doesn't fit the sheet width
+      if (orientation.width > sheetWidthInches - EDGE_MARGIN * 2) {
         continue;
       }
-      
+
       const position = findBestPosition(
-        orientation.width, 
-        orientation.height, 
-        positions, 
-        availableWidthInches
+        orientation.width,
+        orientation.height,
+        positions,
+        sheetWidthInches
       );
-      
+
       // Score based on: Y position (primary) and how well it uses horizontal space (secondary)
       const tempPositions = [...positions, {
         id: image.id,
@@ -326,30 +436,30 @@ const packWithStrategy = (
         heightInches: orientation.height,
         rotated: orientation.rotated
       }];
-      
+
       const totalHeight = calculateTotalHeight(tempPositions);
-      const horizontalUtilization = orientation.width / availableWidthInches;
-      
+      const horizontalUtilization = orientation.width / sheetWidthInches;
+
       // Prioritize lower height, but also consider horizontal space usage
       const score = totalHeight * 100 + (1 - horizontalUtilization) * 10;
-      
+
       if (score < bestScore) {
         bestScore = score;
         bestOrientation = orientation;
         bestPosition = position;
       }
     }
-    
-    // If no orientation fits, scale down
+
+    // If no orientation fits, scale down (shouldn't happen with proper input validation)
     if (!bestOrientation) {
-      const scale = availableWidthInches / image.widthInches;
-      const scaledWidth = availableWidthInches;
+      const scale = (sheetWidthInches - EDGE_MARGIN * 2) / image.widthInches;
+      const scaledWidth = sheetWidthInches - EDGE_MARGIN * 2;
       const scaledHeight = image.heightInches * scale;
-      
+
       bestOrientation = { width: scaledWidth, height: scaledHeight, rotated: false };
-      bestPosition = findBestPosition(scaledWidth, scaledHeight, positions, availableWidthInches);
+      bestPosition = findBestPosition(scaledWidth, scaledHeight, positions, sheetWidthInches);
     }
-    
+
     positions.push({
       id: image.id,
       x: bestPosition!.x,
@@ -359,7 +469,7 @@ const packWithStrategy = (
       rotated: bestOrientation!.rotated,
     });
   }
-  
+
   return positions;
 };
 
@@ -367,10 +477,10 @@ const packWithStrategy = (
 // Places each image in a new row, one after another
 const simpleVerticalStack = (
   images: ImageDimension[],
-  availableWidthInches: number
+  sheetWidthInches: number
 ): PositionedImage[] => {
   const positions: PositionedImage[] = [];
-  let currentY = PADDING_INCHES;
+  let currentY = EDGE_MARGIN;
 
   for (const image of images) {
     // Determine if image needs to be scaled or rotated to fit width
@@ -379,41 +489,41 @@ const simpleVerticalStack = (
     let rotated = false;
 
     // Try rotation first if it fits better
-    if (width > availableWidthInches && height <= availableWidthInches) {
+    if (width > sheetWidthInches - EDGE_MARGIN * 2 && height <= sheetWidthInches - EDGE_MARGIN * 2) {
       width = image.heightInches;
       height = image.widthInches;
       rotated = true;
     }
 
     // Scale down if still too wide
-    if (width > availableWidthInches) {
-      const scale = availableWidthInches / width;
-      width = availableWidthInches;
+    if (width > sheetWidthInches - EDGE_MARGIN * 2) {
+      const scale = (sheetWidthInches - EDGE_MARGIN * 2) / width;
+      width = sheetWidthInches - EDGE_MARGIN * 2;
       height = height * scale;
     }
 
     positions.push({
       id: image.id,
-      x: PADDING_INCHES,
+      x: EDGE_MARGIN,
       y: currentY,
       widthInches: width,
       heightInches: height,
       rotated
     });
 
-    currentY += height + PADDING_INCHES;
+    currentY += height + SPACING_INCHES;
   }
 
   return positions;
 };
 
-// Best-Fit with Rotation algorithm - now tries multiple strategies
+// Best-Fit with Rotation algorithm - tries multiple strategies
 export const generateLayout = (
   images: ImageDimension[],
   sheetWidthInches: number,
   spacingInches: number = 0.3
 ): { positionedImages: PositionedImage[]; totalHeightInches: number } => {
-  PADDING_INCHES = spacingInches;
+  SPACING_INCHES = spacingInches;
 
   if (images.length === 0) {
     return { positionedImages: [], totalHeightInches: 0 };
@@ -441,8 +551,6 @@ export const generateLayout = (
     console.warn(`[Layout] Filtered ${images.length - validImages.length} images with invalid dimensions`);
   }
 
-  const availableWidthInches = sheetWidthInches - (PADDING_INCHES * 2);
-
   // Try multiple packing strategies
   const strategies: Array<'area' | 'width' | 'height' | 'perimeter'> = ['area', 'width', 'height', 'perimeter'];
   let bestLayout: PositionedImage[] = [];
@@ -450,16 +558,16 @@ export const generateLayout = (
   let bestStrategy = '';
 
   for (const strategy of strategies) {
-    const positions = packWithStrategy(validImages, availableWidthInches, strategy);
+    const positions = packWithStrategy(validImages, sheetWidthInches, strategy);
     const totalHeight = calculateTotalHeight(positions);
-    
+
     if (totalHeight < bestHeight) {
       bestHeight = totalHeight;
       bestLayout = positions;
       bestStrategy = strategy;
     }
   }
-  
+
   console.log(`Best strategy: ${bestStrategy} with height ${bestHeight.toFixed(2)} inches`);
   console.log("Generated positions:", bestLayout);
 
@@ -471,7 +579,7 @@ export const generateLayout = (
     console.error('Overlapping pairs:', validation.overlappingPairs);
 
     // Attempt to fix overlaps by repositioning images
-    bestLayout = fixOverlaps(bestLayout, availableWidthInches);
+    bestLayout = fixOverlaps(bestLayout, sheetWidthInches);
     bestHeight = calculateTotalHeight(bestLayout);
 
     // Validate again after fix attempt
@@ -481,7 +589,7 @@ export const generateLayout = (
       console.error('CRITICAL: Failed to fix overlaps after repositioning!', revalidation.overlappingPairs);
       // As a last resort, repack from scratch with a simple vertical stacking
       console.warn('Falling back to simple vertical stacking...');
-      bestLayout = simpleVerticalStack(validImages, availableWidthInches);
+      bestLayout = simpleVerticalStack(validImages, sheetWidthInches);
       bestHeight = calculateTotalHeight(bestLayout);
     } else {
       console.log('Successfully fixed all overlaps');
