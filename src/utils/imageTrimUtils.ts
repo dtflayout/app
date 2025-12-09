@@ -247,18 +247,20 @@ export const hasSignificantPadding = (
  * @param imageUrl URL of the source image
  * @param bounds The crop bounds to apply
  * @param originalFileName Original filename for the new File object
+ * @param padding Optional padding in pixels to add around the cropped content (transparent)
  */
 export const cropImage = async (
   imageUrl: string,
   bounds: CropBounds,
-  originalFileName: string
+  originalFileName: string,
+  padding: number = 0
 ): Promise<{ url: string; file: File }> => {
   const img = await loadImage(imageUrl);
 
-  // Create canvas with cropped dimensions
+  // Create canvas with cropped dimensions plus padding on all sides
   const canvas = document.createElement('canvas');
-  canvas.width = bounds.width;
-  canvas.height = bounds.height;
+  canvas.width = bounds.width + (padding * 2);
+  canvas.height = bounds.height + (padding * 2);
 
   const ctx = canvas.getContext('2d');
 
@@ -266,15 +268,16 @@ export const cropImage = async (
     throw new Error('Could not get canvas context');
   }
 
-  // Draw the cropped portion
+  // Canvas starts transparent by default (alpha = 0)
+  // Draw the cropped portion with padding offset
   ctx.drawImage(
     img,
     bounds.left,
     bounds.top,
     bounds.width,
     bounds.height,
-    0,
-    0,
+    padding,  // Offset by padding to center content
+    padding,
     bounds.width,
     bounds.height
   );

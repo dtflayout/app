@@ -131,28 +131,6 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
     };
   }, [isOpen, currentImage, detectTransparent]);
 
-  // Calculate bounds with padding applied (clamped to image bounds)
-  const getBoundsWithPadding = useCallback((bounds: CropBounds, pad: number): CropBounds => {
-    if (!detectionResult || pad === 0) return bounds;
-
-    const paddedLeft = Math.max(0, bounds.left - pad);
-    const paddedTop = Math.max(0, bounds.top - pad);
-    const paddedRight = Math.min(detectionResult.originalWidth - 1, bounds.right + pad);
-    const paddedBottom = Math.min(detectionResult.originalHeight - 1, bounds.bottom + pad);
-
-    return {
-      left: paddedLeft,
-      top: paddedTop,
-      right: paddedRight,
-      bottom: paddedBottom,
-      width: paddedRight - paddedLeft + 1,
-      height: paddedBottom - paddedTop + 1,
-    };
-  }, [detectionResult]);
-
-  // Get the effective bounds (with padding)
-  const effectiveBounds = cropBounds ? getBoundsWithPadding(cropBounds, padding) : null;
-
   // Draw preview on canvas
   useEffect(() => {
     if (!canvasRef.current || !currentImage || !cropBounds || !detectionResult) return;
@@ -160,9 +138,6 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    // Calculate bounds with padding
-    const displayBounds = getBoundsWithPadding(cropBounds, padding);
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -177,27 +152,27 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
       // Draw image
       ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
 
-      // Draw semi-transparent overlay on areas to be cropped (using padded bounds)
+      // Draw semi-transparent overlay on areas to be cropped
       ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
 
       // Top region
-      ctx.fillRect(0, 0, displayWidth, displayBounds.top * scale);
+      ctx.fillRect(0, 0, displayWidth, cropBounds.top * scale);
       // Bottom region
-      ctx.fillRect(0, (displayBounds.bottom + 1) * scale, displayWidth, displayHeight - (displayBounds.bottom + 1) * scale);
+      ctx.fillRect(0, (cropBounds.bottom + 1) * scale, displayWidth, displayHeight - (cropBounds.bottom + 1) * scale);
       // Left region
-      ctx.fillRect(0, displayBounds.top * scale, displayBounds.left * scale, (displayBounds.bottom - displayBounds.top + 1) * scale);
+      ctx.fillRect(0, cropBounds.top * scale, cropBounds.left * scale, (cropBounds.bottom - cropBounds.top + 1) * scale);
       // Right region
-      ctx.fillRect((displayBounds.right + 1) * scale, displayBounds.top * scale, displayWidth - (displayBounds.right + 1) * scale, (displayBounds.bottom - displayBounds.top + 1) * scale);
+      ctx.fillRect((cropBounds.right + 1) * scale, cropBounds.top * scale, displayWidth - (cropBounds.right + 1) * scale, (cropBounds.bottom - cropBounds.top + 1) * scale);
 
-      // Draw crop rectangle border (padded bounds)
+      // Draw crop rectangle border
       ctx.strokeStyle = '#22c55e';
       ctx.lineWidth = 3;
       ctx.setLineDash([8, 6]);
       ctx.strokeRect(
-        displayBounds.left * scale,
-        displayBounds.top * scale,
-        displayBounds.width * scale,
-        displayBounds.height * scale
+        cropBounds.left * scale,
+        cropBounds.top * scale,
+        cropBounds.width * scale,
+        cropBounds.height * scale
       );
       ctx.setLineDash([]);
 
@@ -214,13 +189,13 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
       };
 
       // Top-left
-      drawHandle(displayBounds.left * scale - handleSize / 2, displayBounds.top * scale - handleSize / 2, handleSize, handleSize);
+      drawHandle(cropBounds.left * scale - handleSize / 2, cropBounds.top * scale - handleSize / 2, handleSize, handleSize);
       // Top-right
-      drawHandle((displayBounds.right + 1) * scale - handleSize / 2, displayBounds.top * scale - handleSize / 2, handleSize, handleSize);
+      drawHandle((cropBounds.right + 1) * scale - handleSize / 2, cropBounds.top * scale - handleSize / 2, handleSize, handleSize);
       // Bottom-left
-      drawHandle(displayBounds.left * scale - handleSize / 2, (displayBounds.bottom + 1) * scale - handleSize / 2, handleSize, handleSize);
+      drawHandle(cropBounds.left * scale - handleSize / 2, (cropBounds.bottom + 1) * scale - handleSize / 2, handleSize, handleSize);
       // Bottom-right
-      drawHandle((displayBounds.right + 1) * scale - handleSize / 2, (displayBounds.bottom + 1) * scale - handleSize / 2, handleSize, handleSize);
+      drawHandle((cropBounds.right + 1) * scale - handleSize / 2, (cropBounds.bottom + 1) * scale - handleSize / 2, handleSize, handleSize);
 
       // Draw edge handles - larger
       const edgeHandleWidth = 28;
@@ -228,36 +203,36 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
 
       // Top edge
       drawHandle(
-        (displayBounds.left + displayBounds.width / 2) * scale - edgeHandleWidth / 2,
-        displayBounds.top * scale - edgeHandleHeight / 2,
+        (cropBounds.left + cropBounds.width / 2) * scale - edgeHandleWidth / 2,
+        cropBounds.top * scale - edgeHandleHeight / 2,
         edgeHandleWidth,
         edgeHandleHeight
       );
       // Bottom edge
       drawHandle(
-        (displayBounds.left + displayBounds.width / 2) * scale - edgeHandleWidth / 2,
-        (displayBounds.bottom + 1) * scale - edgeHandleHeight / 2,
+        (cropBounds.left + cropBounds.width / 2) * scale - edgeHandleWidth / 2,
+        (cropBounds.bottom + 1) * scale - edgeHandleHeight / 2,
         edgeHandleWidth,
         edgeHandleHeight
       );
       // Left edge
       drawHandle(
-        displayBounds.left * scale - edgeHandleHeight / 2,
-        (displayBounds.top + displayBounds.height / 2) * scale - edgeHandleWidth / 2,
+        cropBounds.left * scale - edgeHandleHeight / 2,
+        (cropBounds.top + cropBounds.height / 2) * scale - edgeHandleWidth / 2,
         edgeHandleHeight,
         edgeHandleWidth
       );
       // Right edge
       drawHandle(
-        (displayBounds.right + 1) * scale - edgeHandleHeight / 2,
-        (displayBounds.top + displayBounds.height / 2) * scale - edgeHandleWidth / 2,
+        (cropBounds.right + 1) * scale - edgeHandleHeight / 2,
+        (cropBounds.top + cropBounds.height / 2) * scale - edgeHandleWidth / 2,
         edgeHandleHeight,
         edgeHandleWidth
       );
     };
     // Use workingUrl instead of currentImage.url (which may be empty after layout generation)
     img.src = workingUrl;
-  }, [workingUrl, cropBounds, detectionResult, getDisplayScale, zoomLevel, padding, getBoundsWithPadding]);
+  }, [workingUrl, cropBounds, detectionResult, getDisplayScale, zoomLevel]);
 
   // Handle mouse events for dragging
   const getHandleAtPosition = (x: number, y: number): DragHandle => {
@@ -266,14 +241,11 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
     const scale = getDisplayScale();
     const handleSize = 18; // Hit area size (slightly larger than visual handle for easier grabbing)
 
-    // Use padded bounds for handle positions
-    const paddedBounds = getBoundsWithPadding(cropBounds, padding);
-    const left = paddedBounds.left * scale;
-    const right = (paddedBounds.right + 1) * scale;
-    const top = paddedBounds.top * scale;
-    const bottom = (paddedBounds.bottom + 1) * scale;
-    const centerX = (left + right) / 2;
-    const centerY = (top + bottom) / 2;
+    // Use cropBounds for handle positions
+    const left = cropBounds.left * scale;
+    const right = (cropBounds.right + 1) * scale;
+    const top = cropBounds.top * scale;
+    const bottom = (cropBounds.bottom + 1) * scale;
 
     // Check corners first
     if (Math.abs(x - left) < handleSize && Math.abs(y - top) < handleSize) return 'topLeft';
@@ -515,10 +487,9 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
     if (!currentImage || !cropBounds || !detectionResult || !workingUrl) return;
 
     try {
-      // Use effective bounds (with padding)
-      const boundsToUse = getBoundsWithPadding(cropBounds, padding);
       // Use workingUrl instead of currentImage.url (which may be empty after layout generation)
-      const result = await cropImage(workingUrl, boundsToUse, currentImage.file.name);
+      // Pass padding as the 4th argument - it will add transparent space around the cropped content
+      const result = await cropImage(workingUrl, cropBounds, currentImage.file.name, padding);
 
       // Create download filename
       const originalName = currentImage.file.name;
@@ -548,13 +519,11 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
       return;
     }
 
-    // Use effective bounds (with padding)
-    const boundsToUse = getBoundsWithPadding(cropBounds, padding);
-
     setIsLoading(true);
     try {
       // Use workingUrl instead of currentImage.url (which may be empty after layout generation)
-      const result = await cropImage(workingUrl, boundsToUse, currentImage.file.name);
+      // Pass padding as the 4th argument - it will add transparent space around the cropped content
+      const result = await cropImage(workingUrl, cropBounds, currentImage.file.name, padding);
 
       // Generate thumbnail for the trimmed image (for gallery display)
       let thumbnailUrl: string;
@@ -816,20 +785,23 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
           </div>
 
           {/* Image info */}
-          {detectionResult && effectiveBounds && (
+          {detectionResult && cropBounds && (
             <div className="flex flex-wrap gap-4 text-sm">
               <div className="bg-slate-100 rounded-lg px-3 py-2">
                 <span className="text-muted-foreground">Original: </span>
                 <span className="font-medium">{detectionResult.originalWidth} × {detectionResult.originalHeight} px</span>
               </div>
               <div className="bg-emerald-100 rounded-lg px-3 py-2">
-                <span className="text-muted-foreground">Trimmed: </span>
-                <span className="font-medium text-emerald-700">{effectiveBounds.width} × {effectiveBounds.height} px</span>
+                <span className="text-muted-foreground">Output: </span>
+                <span className="font-medium text-emerald-700">
+                  {cropBounds.width + (padding * 2)} × {cropBounds.height + (padding * 2)} px
+                  {padding > 0 && <span className="text-emerald-600 ml-1">(+{padding}px padding)</span>}
+                </span>
               </div>
               <div className="bg-blue-100 rounded-lg px-3 py-2">
                 <span className="text-muted-foreground">Reduction: </span>
                 <span className="font-medium text-blue-700">
-                  {Math.round((1 - (effectiveBounds.width * effectiveBounds.height) / (detectionResult.originalWidth * detectionResult.originalHeight)) * 100)}%
+                  {Math.round((1 - ((cropBounds.width + padding * 2) * (cropBounds.height + padding * 2)) / (detectionResult.originalWidth * detectionResult.originalHeight)) * 100)}%
                 </span>
               </div>
             </div>
@@ -849,9 +821,9 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
               <Input
                 type="number"
                 min={0}
-                max={50}
+                max={200}
                 value={padding}
-                onChange={(e) => setPadding(Math.max(0, Math.min(50, parseInt(e.target.value) || 0)))}
+                onChange={(e) => setPadding(Math.max(0, Math.min(200, parseInt(e.target.value) || 0)))}
                 className="w-20 h-8 text-center"
               />
             </div>
