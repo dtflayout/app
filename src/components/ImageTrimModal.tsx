@@ -176,36 +176,39 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
     ctx.setLineDash([]);
 
     // Draw padding indicator (blue dashed outer box) if padding > 0
-    if (padding > 0) {
+    // Note: padding is in original image pixels, so we need to scale it for display
+    // But we also want it visible, so use a minimum display size
+    if (Number(padding) > 0) {
       const paddingScaled = padding * scale;
+      // Ensure minimum visible padding indicator (at least 10 display pixels)
+      const displayPadding = Math.max(paddingScaled, 10);
+
       ctx.strokeStyle = '#3b82f6'; // Blue color
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 4]);
-      ctx.strokeRect(
-        cropBounds.left * scale - paddingScaled,
-        cropBounds.top * scale - paddingScaled,
-        cropBounds.width * scale + paddingScaled * 2,
-        cropBounds.height * scale + paddingScaled * 2
-      );
+
+      // Calculate box coordinates - ensure they're at least slightly outside the crop box
+      const boxX = cropBounds.left * scale - displayPadding;
+      const boxY = cropBounds.top * scale - displayPadding;
+      const boxWidth = cropBounds.width * scale + displayPadding * 2;
+      const boxHeight = cropBounds.height * scale + displayPadding * 2;
+
+      ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
       ctx.setLineDash([]);
 
-      // Draw padding label
-      ctx.fillStyle = '#3b82f6';
+      // Draw padding label - position it at top of the blue box
       ctx.font = 'bold 11px sans-serif';
       const labelText = `+${padding}px padding`;
       const labelWidth = ctx.measureText(labelText).width;
-      const labelX = cropBounds.left * scale - paddingScaled + 4;
-      const labelY = cropBounds.top * scale - paddingScaled - 4;
+      const labelX = Math.max(4, boxX + 4);
+      const labelY = Math.max(12, boxY - 4);
 
-      // Only draw label if it fits in the visible area
-      if (labelX > 0 && labelY > 10) {
-        // Background for label
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.fillRect(labelX - 2, labelY - 10, labelWidth + 4, 14);
-        // Label text
-        ctx.fillStyle = '#3b82f6';
-        ctx.fillText(labelText, labelX, labelY);
-      }
+      // Background for label
+      ctx.fillStyle = 'rgba(59, 130, 246, 0.9)'; // Blue background
+      ctx.fillRect(labelX - 2, labelY - 10, labelWidth + 4, 14);
+      // Label text
+      ctx.fillStyle = '#ffffff'; // White text for contrast
+      ctx.fillText(labelText, labelX, labelY);
     }
 
     // Draw corner handles - larger with white fill and green border
