@@ -164,7 +164,7 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
       // Right region
       ctx.fillRect((cropBounds.right + 1) * scale, cropBounds.top * scale, displayWidth - (cropBounds.right + 1) * scale, (cropBounds.bottom - cropBounds.top + 1) * scale);
 
-      // Draw crop rectangle border
+      // Draw crop rectangle border (green - content area)
       ctx.strokeStyle = '#22c55e';
       ctx.lineWidth = 3;
       ctx.setLineDash([8, 6]);
@@ -175,6 +175,39 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
         cropBounds.height * scale
       );
       ctx.setLineDash([]);
+
+      // Draw padding indicator (blue dashed outer box) if padding > 0
+      if (padding > 0) {
+        const paddingScaled = padding * scale;
+        ctx.strokeStyle = '#3b82f6'; // Blue color
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.strokeRect(
+          cropBounds.left * scale - paddingScaled,
+          cropBounds.top * scale - paddingScaled,
+          cropBounds.width * scale + paddingScaled * 2,
+          cropBounds.height * scale + paddingScaled * 2
+        );
+        ctx.setLineDash([]);
+
+        // Draw padding label
+        ctx.fillStyle = '#3b82f6';
+        ctx.font = 'bold 11px sans-serif';
+        const labelText = `+${padding}px padding`;
+        const labelWidth = ctx.measureText(labelText).width;
+        const labelX = cropBounds.left * scale - paddingScaled + 4;
+        const labelY = cropBounds.top * scale - paddingScaled - 4;
+
+        // Only draw label if it fits in the visible area
+        if (labelX > 0 && labelY > 10) {
+          // Background for label
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+          ctx.fillRect(labelX - 2, labelY - 10, labelWidth + 4, 14);
+          // Label text
+          ctx.fillStyle = '#3b82f6';
+          ctx.fillText(labelText, labelX, labelY);
+        }
+      }
 
       // Draw corner handles - larger with white fill and green border
       const handleSize = 14;
@@ -232,7 +265,7 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
     };
     // Use workingUrl instead of currentImage.url (which may be empty after layout generation)
     img.src = workingUrl;
-  }, [workingUrl, cropBounds, detectionResult, getDisplayScale, zoomLevel]);
+  }, [workingUrl, cropBounds, detectionResult, getDisplayScale, zoomLevel, padding]);
 
   // Handle mouse events for dragging
   const getHandleAtPosition = (x: number, y: number): DragHandle => {
