@@ -542,11 +542,18 @@ export const ImageManager = ({
               const errors = dimensionErrors.get(image.id);
               const inputs = inputValues.get(image.id);
 
+              // Check if image exceeds canvas dimensions
+              const exceedsCanvas = errors?.width || errors?.height;
+
               return (
                 <div
                   key={image.id}
-                  className="border border-emerald-200 rounded-xl p-5 shadow-lg hover:shadow-xl transition-shadow"
-                  style={{ backgroundColor: '#f6fffb' }}
+                  className={`rounded-xl p-5 shadow-lg hover:shadow-xl transition-shadow ${
+                    exceedsCanvas
+                      ? 'border-2 border-red-300 bg-red-50'
+                      : 'border border-emerald-200'
+                  }`}
+                  style={exceedsCanvas ? undefined : { backgroundColor: '#f6fffb' }}
                 >
                   {/* Top section: Thumbnail + Filename + DPI */}
                   <div className="flex gap-3 mb-3">
