@@ -177,29 +177,22 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
 
     // Draw padding indicator (blue dashed outer box) if padding > 0
     // Note: padding is in original image pixels, so we need to scale it for display
-    // But we also want it visible, so use a minimum display size
-    if (Number(padding) > 0) {
-      const paddingScaled = padding * scale;
+    const currentPadding = Number(padding) || 0;
+    if (currentPadding > 0) {
+      const paddingScaled = currentPadding * scale;
       // Ensure minimum visible padding indicator (at least 15 display pixels)
       const displayPadding = Math.max(paddingScaled, 15);
 
-      // Calculate box coordinates - ensure they're outside the crop box
-      const boxX = cropBounds.left * scale - displayPadding;
-      const boxY = cropBounds.top * scale - displayPadding;
-      const boxWidth = cropBounds.width * scale + displayPadding * 2;
-      const boxHeight = cropBounds.height * scale + displayPadding * 2;
+      // Calculate outer box coordinates
+      const cropX = cropBounds.left * scale;
+      const cropY = cropBounds.top * scale;
+      const cropW = cropBounds.width * scale;
+      const cropH = cropBounds.height * scale;
 
-      // Draw subtle fill for the padding area (light blue tint)
-      ctx.fillStyle = 'rgba(37, 99, 235, 0.15)';
-      ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-      // Cut out the center (crop area) to only show padding zone
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; // Match the overlay color
-      ctx.fillRect(
-        cropBounds.left * scale,
-        cropBounds.top * scale,
-        cropBounds.width * scale,
-        cropBounds.height * scale
-      );
+      const boxX = cropX - displayPadding;
+      const boxY = cropY - displayPadding;
+      const boxWidth = cropW + displayPadding * 2;
+      const boxHeight = cropH + displayPadding * 2;
 
       // Draw the outer padding box border - bright blue, thick line
       ctx.strokeStyle = '#2563EB'; // Bright blue
@@ -208,12 +201,12 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
       ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
       ctx.setLineDash([]);
 
-      // Draw padding label - position it at top of the blue box
+      // Draw padding label - position it at top-left of the blue box
       ctx.font = 'bold 12px sans-serif';
-      const labelText = `+${padding}px padding`;
+      const labelText = `+${currentPadding}px padding`;
       const labelWidth = ctx.measureText(labelText).width;
       const labelX = Math.max(4, boxX + 4);
-      const labelY = Math.max(16, boxY - 6);
+      const labelY = Math.max(18, boxY + 14);
 
       // Background for label
       ctx.fillStyle = 'rgba(37, 99, 235, 0.95)'; // Blue background
