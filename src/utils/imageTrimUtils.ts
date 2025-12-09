@@ -56,13 +56,31 @@ const isBackgroundPixel = (
   detectTransparent: boolean,
   backgroundColor?: { r: number; g: number; b: number }
 ): boolean => {
-  // Check for transparency first
-  if (detectTransparent && a < 10) {
+  // Check for transparency first - use a low threshold to catch truly transparent pixels
+  // but not anti-aliased edges which may have alpha > 5
+  if (detectTransparent && a < 5) {
     return true;
   }
 
   // If a specific background color is provided, check against it
   if (backgroundColor) {
+    // For semi-transparent pixels blending with background, factor in alpha
+    // A pixel with low alpha that matches background color is still background
+    if (detectTransparent && a < 128) {
+      // Semi-transparent pixel - be more lenient with color matching
+      const colorTolerance = tolerance * 3; // More tolerant for semi-transparent
+      const colorMatch = (
+        Math.abs(r - backgroundColor.r) <= colorTolerance &&
+        Math.abs(g - backgroundColor.g) <= colorTolerance &&
+        Math.abs(b - backgroundColor.b) <= colorTolerance
+      );
+      // If very transparent and somewhat matches background, treat as background
+      if (a < 30 && colorMatch) {
+        return true;
+      }
+    }
+
+    // Fully opaque or semi-opaque pixel - use standard tolerance
     const colorTolerance = tolerance * 2.55; // Convert 0-50 to 0-127.5 range
     return (
       Math.abs(r - backgroundColor.r) <= colorTolerance &&
@@ -117,10 +135,43 @@ export const detectContentBounds = async (
     };
   };
 
+  // Auto-detect background color from corners if not provided
+  // Sample multiple corner pixels and find the most common color
+  let detectedBgColor = backgroundColor;
+  if (!detectedBgColor) {
+    const cornerSamples = [
+      getPixel(0, 0),
+      getPixel(width - 1, 0),
+      getPixel(0, height - 1),
+      getPixel(width - 1, height - 1),
+      // Also sample a few pixels inward from corners for more accuracy
+      getPixel(Math.min(5, width - 1), Math.min(5, height - 1)),
+      getPixel(Math.max(0, width - 6), Math.min(5, height - 1)),
+      getPixel(Math.min(5, width - 1), Math.max(0, height - 6)),
+      getPixel(Math.max(0, width - 6), Math.max(0, height - 6)),
+    ];
+
+    // Check if corners are mostly transparent
+    const transparentCorners = cornerSamples.filter(p => p.a < 10).length;
+    const isTransparentBackground = transparentCorners >= 4;
+
+    if (!isTransparentBackground) {
+      // Find the most common corner color (for solid backgrounds)
+      // Average the non-transparent corner pixels
+      const opaqueCorners = cornerSamples.filter(p => p.a >= 10);
+      if (opaqueCorners.length > 0) {
+        const avgR = Math.round(opaqueCorners.reduce((sum, p) => sum + p.r, 0) / opaqueCorners.length);
+        const avgG = Math.round(opaqueCorners.reduce((sum, p) => sum + p.g, 0) / opaqueCorners.length);
+        const avgB = Math.round(opaqueCorners.reduce((sum, p) => sum + p.b, 0) / opaqueCorners.length);
+        detectedBgColor = { r: avgR, g: avgG, b: avgB };
+      }
+    }
+  }
+
   // Helper to check if pixel is background
   const isBg = (x: number, y: number) => {
     const { r, g, b, a } = getPixel(x, y);
-    return isBackgroundPixel(r, g, b, a, tolerance, detectTransparent, backgroundColor);
+    return isBackgroundPixel(r, g, b, a, tolerance, detectTransparent, detectedBgColor);
   };
 
   // Scan from top
