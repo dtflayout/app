@@ -5,7 +5,7 @@ import { ImageUploader } from "./ImageUploader";
 import { ImageManager } from "./ImageManager";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Download, Eye } from "lucide-react";
+import { Download, Eye, HelpCircle } from "lucide-react";
 import { generateLayout, ImageDimension, PositionedImage } from "@/utils/layoutAlgorithm";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,6 +26,7 @@ import { quickPaddingCheck } from "@/utils/imageTrimUtils";
 import { generatePreviewImage } from "@/utils/thumbnailUtils";
 import { PreviewModal } from "./PreviewModal";
 import { generateExport } from "@/utils/exportUtils";
+import { MobileTooltip } from "@/components/ui/tooltip";
 
 // Debug flag - set to true to enable debug logging
 const DEBUG = false;
@@ -815,7 +816,12 @@ export const CollageCreator = ({
         {/* Row 1: Configuration inputs - 25% + 25% + 50% empty */}
         <div className="grid grid-cols-4 gap-4">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="sheet-width" className="text-base font-medium text-slate-700">Sheet Width</Label>
+            <Label htmlFor="sheet-width" className="text-base font-medium text-slate-700 flex items-center gap-1.5">
+              Sheet Width
+              <MobileTooltip content="Set your sheet width here — the generated file will use this exact width.">
+                <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors" />
+              </MobileTooltip>
+            </Label>
             <Select
               value={canvasWidthInches.toString()}
               onValueChange={(value) => {
@@ -837,7 +843,12 @@ export const CollageCreator = ({
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="spacing" className="text-base font-medium text-slate-700">Spacing (inches)</Label>
+            <Label htmlFor="spacing" className="text-base font-medium text-slate-700 flex items-center gap-1.5">
+              Spacing (inches)
+              <MobileTooltip content="Enter the spacing/padding you want around your images. 0.3 works best for cutting, but you can adjust it as needed.">
+                <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors" />
+              </MobileTooltip>
+            </Label>
             <input
               id="spacing"
               type="number"
