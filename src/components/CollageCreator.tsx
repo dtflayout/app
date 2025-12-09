@@ -883,9 +883,13 @@ export const CollageCreator = ({
             onClick={() => setShowPreviewModal(true)}
             disabled={layout.length === 0}
             variant="outline"
-            className="h-12 border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 text-base font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`h-12 border-2 text-base font-semibold rounded-xl shadow-sm transition-all duration-200 ${
+              layout.length === 0
+                ? "border-gray-300 text-gray-400 cursor-not-allowed opacity-50"
+                : "border-blue-500 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-600 hover:shadow-md shadow-blue-100"
+            }`}
           >
-            <Eye className="mr-2 h-5 w-5" />
+            <Eye className={`mr-2 h-5 w-5 ${layout.length > 0 ? "text-blue-500" : ""}`} />
             Preview Sheet
           </Button>
 
@@ -893,9 +897,13 @@ export const CollageCreator = ({
             onClick={handleExport}
             disabled={layout.length === 0 || isExporting}
             variant="outline"
-            className="h-12 border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 text-base font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`h-12 border-2 text-base font-semibold rounded-xl shadow-sm transition-all duration-200 ${
+              layout.length === 0 || isExporting
+                ? "border-gray-300 text-gray-400 cursor-not-allowed opacity-50"
+                : "border-emerald-500 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:border-emerald-600 hover:shadow-md shadow-emerald-100"
+            }`}
           >
-            <Download className="mr-2 h-5 w-5" />
+            <Download className={`mr-2 h-5 w-5 ${layout.length > 0 && !isExporting ? "text-emerald-500" : ""}`} />
             {isExporting ? "Exporting..." : "Download Sheet"}
           </Button>
         </div>
