@@ -743,12 +743,8 @@ export const CollageCreator = ({
     // Show success message with credit deduction info
     toast.success(`Layout generated! ${formatNumber(pendingLayout.sqInches)} sq.in deducted from your balance.`);
 
-    // Scroll to the canvas after it renders
-    setTimeout(() => {
-      if (canvasContainerRef.current) {
-        canvasContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 100);
+    // Auto-open preview modal so users can immediately see their result
+    setShowPreviewModal(true);
 
     console.log("[Layout] ✅ Layout generation complete!");
   };
