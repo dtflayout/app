@@ -151,48 +151,60 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
     // Draw image
     ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
 
-    // Draw semi-transparent overlay on areas to be cropped
+    // Calculate padding values first (needed for overlay calculation)
+    const currentPadding = Number(padding) || 0;
+    const paddingScaled = currentPadding * scale;
+    const displayPadding = currentPadding > 0 ? Math.max(paddingScaled, 15) : 0;
+
+    // Calculate crop coordinates
+    const cropX = cropBounds.left * scale;
+    const cropY = cropBounds.top * scale;
+    const cropW = cropBounds.width * scale;
+    const cropH = cropBounds.height * scale;
+
+    // Calculate the effective "keep" area (crop area + padding)
+    // Everything outside this area will have dark overlay
+    const keepX = cropX - displayPadding;
+    const keepY = cropY - displayPadding;
+    const keepW = cropW + displayPadding * 2;
+    const keepH = cropH + displayPadding * 2;
+
+    // Draw semi-transparent overlay on areas that will be trimmed away
+    // This is everything OUTSIDE the keep area (crop + padding)
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
 
-    // Top region
-    ctx.fillRect(0, 0, displayWidth, cropBounds.top * scale);
-    // Bottom region
-    ctx.fillRect(0, (cropBounds.bottom + 1) * scale, displayWidth, displayHeight - (cropBounds.bottom + 1) * scale);
-    // Left region
-    ctx.fillRect(0, cropBounds.top * scale, cropBounds.left * scale, (cropBounds.bottom - cropBounds.top + 1) * scale);
-    // Right region
-    ctx.fillRect((cropBounds.right + 1) * scale, cropBounds.top * scale, displayWidth - (cropBounds.right + 1) * scale, (cropBounds.bottom - cropBounds.top + 1) * scale);
+    // Top region (above keep area)
+    if (keepY > 0) {
+      ctx.fillRect(0, 0, displayWidth, keepY);
+    }
+    // Bottom region (below keep area)
+    const keepBottom = keepY + keepH;
+    if (keepBottom < displayHeight) {
+      ctx.fillRect(0, keepBottom, displayWidth, displayHeight - keepBottom);
+    }
+    // Left region (left of keep area, between top and bottom)
+    if (keepX > 0) {
+      ctx.fillRect(0, Math.max(0, keepY), keepX, keepH);
+    }
+    // Right region (right of keep area, between top and bottom)
+    const keepRight = keepX + keepW;
+    if (keepRight < displayWidth) {
+      ctx.fillRect(keepRight, Math.max(0, keepY), displayWidth - keepRight, keepH);
+    }
 
     // Draw crop rectangle border (green - content area)
     ctx.strokeStyle = '#22c55e';
     ctx.lineWidth = 3;
     ctx.setLineDash([8, 6]);
-    ctx.strokeRect(
-      cropBounds.left * scale,
-      cropBounds.top * scale,
-      cropBounds.width * scale,
-      cropBounds.height * scale
-    );
+    ctx.strokeRect(cropX, cropY, cropW, cropH);
     ctx.setLineDash([]);
 
     // Draw padding indicator (blue dashed outer box) if padding > 0
-    // Note: padding is in original image pixels, so we need to scale it for display
-    const currentPadding = Number(padding) || 0;
     if (currentPadding > 0) {
-      const paddingScaled = currentPadding * scale;
-      // Ensure minimum visible padding indicator (at least 15 display pixels)
-      const displayPadding = Math.max(paddingScaled, 15);
-
-      // Calculate outer box coordinates
-      const cropX = cropBounds.left * scale;
-      const cropY = cropBounds.top * scale;
-      const cropW = cropBounds.width * scale;
-      const cropH = cropBounds.height * scale;
-
-      const boxX = cropX - displayPadding;
-      const boxY = cropY - displayPadding;
-      const boxWidth = cropW + displayPadding * 2;
-      const boxHeight = cropH + displayPadding * 2;
+      const boxX = keepX;
+      const boxY = keepY;
+      const boxWidth = keepW;
+      const boxHeight = keepH;
 
       // Draw the outer padding box border - bright blue, thick line
       ctx.strokeStyle = '#2563EB'; // Bright blue
@@ -201,19 +213,22 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
       ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
       ctx.setLineDash([]);
 
-      // Draw padding label - position it at top-left of the blue box
+      // Draw padding label - position at bottom-right of padding box
       ctx.font = 'bold 12px sans-serif';
       const labelText = `+${currentPadding}px padding`;
       const labelWidth = ctx.measureText(labelText).width;
-      const labelX = Math.max(4, boxX + 4);
-      const labelY = Math.max(18, boxY + 14);
+      const labelX = Math.min(boxX + boxWidth - labelWidth - 8, displayWidth - labelWidth - 8);
+      const labelY = boxY + boxHeight - 6;
 
-      // Background for label
-      ctx.fillStyle = 'rgba(37, 99, 235, 0.95)'; // Blue background
-      ctx.fillRect(labelX - 4, labelY - 12, labelWidth + 8, 18);
-      // Label text
-      ctx.fillStyle = '#ffffff'; // White text for contrast
-      ctx.fillText(labelText, labelX, labelY);
+      // Only draw label if it fits
+      if (labelX > 0 && labelY > 0 && labelY < displayHeight) {
+        // Background for label
+        ctx.fillStyle = 'rgba(37, 99, 235, 0.95)'; // Blue background
+        ctx.fillRect(labelX - 4, labelY - 12, labelWidth + 8, 18);
+        // Label text
+        ctx.fillStyle = '#ffffff'; // White text for contrast
+        ctx.fillText(labelText, labelX, labelY);
+      }
     }
 
     // Draw corner handles - larger with white fill and green border
