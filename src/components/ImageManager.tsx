@@ -78,14 +78,20 @@ export const ImageManager = ({
         }
       }
 
-      // Need to recalculate if it's a new image OR if the URL changed (e.g., after trimming/bg removal)
-      if (isNewImage || urlChanged) {
+      // Detect if URL was cleared for memory optimization (not a real image change)
+      // When URL is cleared after layout generation, we should preserve user-entered dimensions
+      const wasMemoryOptimizationClear = urlChanged && previousUrl && (!img.url || img.url === '');
+
+      // Need to recalculate if it's a new image OR if the URL changed due to actual image modification
+      // (e.g., after trimming/bg removal), but NOT if URL was just cleared for memory optimization
+      if (isNewImage || (urlChanged && !wasMemoryOptimizationClear)) {
         // Update the ref immediately with the effective URL
         imageUrlsRef.current.set(img.id, effectiveUrl);
 
-        // IMPORTANT: Clear old cached dimensions immediately when URL changes
+        // IMPORTANT: Clear old cached dimensions immediately when URL changes due to image modification
         // This forces recalculation and prevents stale dimensions from being used
-        if (urlChanged) {
+        // But skip this if we're just clearing URL for memory optimization
+        if (urlChanged && !wasMemoryOptimizationClear) {
           setImageDimensions(prev => {
             const updated = new Map(prev);
             updated.delete(img.id);
@@ -166,6 +172,10 @@ export const ImageManager = ({
         };
         // Use effectiveUrl (regenerated from File if original was empty)
         imageEl.src = effectiveUrl;
+      } else if (wasMemoryOptimizationClear) {
+        // URL was cleared for memory optimization - just update the ref to track the new temp URL
+        // but don't recalculate dimensions (user-entered dimensions should be preserved)
+        imageUrlsRef.current.set(img.id, effectiveUrl);
       } else if (!imageUrlsRef.current.has(img.id)) {
         // Track URL for existing images that weren't tracked before
         imageUrlsRef.current.set(img.id, effectiveUrl);
