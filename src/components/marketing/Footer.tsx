@@ -25,7 +25,7 @@ const Footer = () => {
 
         <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-slate-400 text-sm mb-4 md:mb-0">
-            © 2025 DTF Layout • Made in India
+            © 2025 Data Canvas Tech • Made in India
           </p>
           <div className="flex gap-6">
             <a
