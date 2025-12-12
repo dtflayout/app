@@ -36,7 +36,7 @@ export const ConfirmLayoutDialog: React.FC<ConfirmLayoutDialogProps> = ({
   const [isConfirming, setIsConfirming] = useState(false);
 
   const formatNumber = (num: number): string => {
-    return num.toLocaleString('en-US', {
+    return num.toLocaleString('en-IN', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });

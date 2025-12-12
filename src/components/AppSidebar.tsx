@@ -164,9 +164,9 @@ export const AppSidebar = () => {
             isExpanded ? "text-lg" : "text-sm text-center"
           )}>
             {isExpanded ? (
-              <>{creditsBalance.toLocaleString()} <span className="text-sm font-normal text-slate-400">sq.in</span></>
+              <>{creditsBalance.toLocaleString('en-IN')} <span className="text-sm font-normal text-slate-400">sq.in</span></>
             ) : (
-              <span title={`${creditsBalance.toLocaleString()} sq.in`}>
+              <span title={`${creditsBalance.toLocaleString('en-IN')} sq.in`}>
                 {creditsBalance >= 1000 ? `${(creditsBalance / 1000).toFixed(0)}k` : creditsBalance}
               </span>
             )}
@@ -340,7 +340,7 @@ export const AppSidebar = () => {
         <div className="bg-slate-800 rounded-lg px-3 py-2">
           <p className="text-xs text-slate-400 mb-1">Credits Balance</p>
           <p className="text-lg font-bold text-emerald-400">
-            {creditsBalance.toLocaleString()} <span className="text-sm font-normal text-slate-400">sq.in</span>
+            {creditsBalance.toLocaleString('en-IN')} <span className="text-sm font-normal text-slate-400">sq.in</span>
           </p>
           {/* Progress Bar */}
           <div className="mt-2">

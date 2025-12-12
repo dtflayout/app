@@ -4,8 +4,8 @@ import { PositionedImage } from "./layoutAlgorithm";
 // Target DPI for print-quality exports (optimized for DTF printing)
 const DPI_PRINT = 150;
 
-// Padding in inches (matches layout algorithm)
-const PADDING_INCHES = 0.3;
+// Padding in inches - layout algorithm now handles edge margins
+const PADDING_INCHES = 0;
 
 interface ExportOptions {
   images: ImageObject[];

@@ -253,7 +253,7 @@ export const initiateRazorpayCheckout = async (
         amount: orderResult.amount || plan.price * 100,
         currency: orderResult.currency || 'INR',
         name: 'Data Canvas Tech',
-        description: `${plan.name} Plan - ${plan.credits.toLocaleString()} sq.inch credits`,
+        description: `${plan.name} Plan - ${plan.credits.toLocaleString('en-IN')} sq.inch credits`,
         order_id: orderResult.order_id, // Important: Pass the order_id
         prefill: {
           name: userInfo.name || '',

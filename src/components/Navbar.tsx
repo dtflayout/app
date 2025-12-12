@@ -91,19 +91,19 @@ export const Navbar = () => {
         return {
           className: "bg-red-500 hover:bg-red-600 text-white border-red-600",
           icon: <AlertCircle className="w-4 h-4 mr-1" />,
-          tooltip: `Low credits warning! Only ${creditsBalance.toLocaleString()} sq.in remaining.`
+          tooltip: `Low credits warning! Only ${creditsBalance.toLocaleString('en-IN')} sq.in remaining.`
         };
       case "warning":
         return {
           className: "bg-orange-500 hover:bg-orange-600 text-white border-orange-600",
           icon: <AlertTriangle className="w-4 h-4 mr-1" />,
-          tooltip: `Running low on credits. ${creditsBalance.toLocaleString()} sq.in remaining.`
+          tooltip: `Running low on credits. ${creditsBalance.toLocaleString('en-IN')} sq.in remaining.`
         };
       default:
         return {
           className: "bg-green-600 hover:bg-green-700 text-white border-green-700",
           icon: null,
-          tooltip: `You have ${creditsBalance.toLocaleString()} sq.in available.`
+          tooltip: `You have ${creditsBalance.toLocaleString('en-IN')} sq.in available.`
         };
     }
   };
@@ -157,7 +157,7 @@ export const Navbar = () => {
                   className={`text-sm font-semibold px-3 py-1.5 flex items-center gap-1 cursor-help ${badgeConfig.className}`}
                 >
                   {badgeConfig.icon}
-                  Credits: {creditsBalance.toLocaleString()} sq.in
+                  Credits: {creditsBalance.toLocaleString('en-IN')} sq.in
                 </Badge>
               </TooltipTrigger>
               <TooltipContent>

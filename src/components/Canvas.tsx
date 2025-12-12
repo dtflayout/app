@@ -47,7 +47,7 @@ interface CanvasProps {
 const DPI = 72; // Screen DPI for preview
 const DPI_PRINT = 150; // Target DPI for print-quality exports (optimized for DTF printing)
 const EXPORT_MULTIPLIER = DPI_PRINT / DPI; // ~2.08x for 150 DPI output
-const PADDING_INCHES = 0.3; // Match the padding between images
+const PADDING_INCHES = 0; // Layout algorithm now handles edge margins
 const MIN_CANVAS_HEIGHT_PX = 800;
 
 export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeightInches, canvasWidthInches }, ref) => {

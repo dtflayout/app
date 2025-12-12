@@ -188,7 +188,7 @@ const Pricing3 = () => {
         });
 
         if (verifyResult.success) {
-          toast.success(`Payment successful! ${verifyResult.credits_added?.toLocaleString()} sq.inch added to your account.`);
+          toast.success(`Payment successful! ${verifyResult.credits_added?.toLocaleString('en-IN')} sq.inch added to your account.`);
           await refreshCredits(); // Refresh credits from Supabase
           navigate("/app");
         } else {

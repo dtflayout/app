@@ -14,7 +14,7 @@ export const SheetLogs = () => {
   const itemsPerPage = 20;
 
   const formatNumber = (num: number): string => {
-    return num.toLocaleString('en-US', {
+    return num.toLocaleString('en-IN', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
@@ -22,7 +22,7 @@ export const SheetLogs = () => {
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
+    return date.toLocaleString('en-IN', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',

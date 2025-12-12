@@ -36,6 +36,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [zoom, setZoom] = useState(25);
   const [showFloatingControls, setShowFloatingControls] = useState(false);
+  const [previewBg, setPreviewBg] = useState<'transparent' | 'grey' | 'black'>('transparent');
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -99,8 +100,8 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
       const scaleX = previewWidth / canvasWidthInches;
       const scaleY = previewHeight / canvasHeightInches;
 
-      // Padding in inches (matches layout algorithm)
-      const PADDING_INCHES = 0.3;
+      // Padding in inches - layout algorithm now handles edge margins
+      const PADDING_INCHES = 0;
 
       // Load and draw each image
       for (const item of layout) {
@@ -191,6 +192,23 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
 
   const handleResetZoom = () => {
     setZoom(25);
+  };
+
+  // Get background style based on selected option
+  const getCanvasBackgroundStyle = () => {
+    switch (previewBg) {
+      case 'grey':
+        return { backgroundColor: '#808080' };
+      case 'black':
+        return { backgroundColor: '#000000' };
+      default: // transparent - checkered pattern
+        return {
+          backgroundImage: 'linear-gradient(45deg, #e5e7eb 25%, transparent 25%), linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e5e7eb 75%), linear-gradient(-45deg, transparent 75%, #e5e7eb 75%)',
+          backgroundSize: '16px 16px',
+          backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
+          backgroundColor: '#ffffff',
+        };
+    }
   };
 
   // Floating controls hover handlers
@@ -370,6 +388,50 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                   <RotateCcw className="h-4 w-4" />
                 </Button>
               </div>
+
+              {/* Background Preview (Hold to preview) */}
+              <div className="flex items-center gap-2 border rounded-lg px-2 py-1" title="Hold to preview background">
+                <span className="text-xs text-slate-500">Press & hold to preview:</span>
+                <div
+                  className="h-6 w-6 rounded flex items-center justify-center bg-blue-50 ring-1 ring-blue-300"
+                  title="Default (checkered)"
+                >
+                  <div
+                    className="w-4 h-4 rounded-sm border border-slate-300"
+                    style={{
+                      backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
+                      backgroundSize: '6px 6px',
+                      backgroundPosition: '0 0, 0 3px, 3px -3px, -3px 0px'
+                    }}
+                  />
+                </div>
+                <button
+                  onMouseDown={() => setPreviewBg('grey')}
+                  onMouseUp={() => setPreviewBg('transparent')}
+                  onMouseLeave={() => setPreviewBg('transparent')}
+                  className={`h-6 w-6 rounded flex items-center justify-center transition-colors select-none ${
+                    previewBg === 'grey'
+                      ? 'bg-gray-200 ring-2 ring-gray-400'
+                      : 'hover:bg-slate-100'
+                  }`}
+                  title="Hold to preview grey background"
+                >
+                  <div className="w-4 h-4 rounded-sm bg-gray-500 border border-slate-300" />
+                </button>
+                <button
+                  onMouseDown={() => setPreviewBg('black')}
+                  onMouseUp={() => setPreviewBg('transparent')}
+                  onMouseLeave={() => setPreviewBg('transparent')}
+                  className={`h-6 w-6 rounded flex items-center justify-center transition-colors select-none ${
+                    previewBg === 'black'
+                      ? 'bg-gray-700 ring-2 ring-gray-500'
+                      : 'hover:bg-slate-100'
+                  }`}
+                  title="Hold to preview black background"
+                >
+                  <div className="w-4 h-4 rounded-sm bg-black border border-slate-300" />
+                </button>
+              </div>
             </div>
           </div>
         </DialogHeader>
@@ -438,19 +500,14 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                     {verticalRulerMarks}
                   </div>
 
-                  {/* Sheet with checkered background */}
+                  {/* Sheet with dynamic background */}
                   <div
                     className="flex-shrink-0"
                     style={{
                       width: scaledWidth,
                       height: scaledHeight,
-                      // Checkerboard background for transparency
-                      backgroundImage:
-                        "linear-gradient(45deg, #e5e7eb 25%, transparent 25%), linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e5e7eb 75%), linear-gradient(-45deg, transparent 75%, #e5e7eb 75%)",
-                      backgroundSize: "16px 16px",
-                      backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0px",
-                      backgroundColor: '#ffffff',
                       boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                      ...getCanvasBackgroundStyle(),
                     }}
                   >
                     <img

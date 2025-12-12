@@ -46,7 +46,7 @@ const fileToBase64 = (file: File): Promise<string> => {
 };
 
 const formatNumber = (num: number): string => {
-  return num.toLocaleString('en-US', {
+  return num.toLocaleString('en-IN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
