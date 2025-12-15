@@ -1,0 +1,282 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+/**
+ * Outseta Custom Activity API Endpoint
+ *
+ * Posts custom activities to Outseta to trigger email campaigns.
+ * First looks up the person by email, then posts the activity.
+ */
+
+type OutsetaActivityType = 'payment_successful' | 'invoice_created' | 'low_credits';
+
+interface OutsetaActivityRequest {
+  email: string;
+  activityType: OutsetaActivityType;
+  metadata?: Record<string, any>;
+}
+
+interface OutsetaPerson {
+  Uid: string;
+  Email: string;
+  FullName?: string;
+}
+
+// Get Outseta API credentials
+const getOutsetaCredentials = () => {
+  const apiKey = process.env.OUTSETA_API_KEY;
+  const apiSecret = process.env.OUTSETA_API_SECRET;
+  const subdomain = process.env.OUTSETA_SUBDOMAIN;
+
+  if (!apiKey || !apiSecret || !subdomain) {
+    throw new Error('Missing Outseta environment variables');
+  }
+
+  // Create Base64 encoded auth header
+  const credentials = `${apiKey}:${apiSecret}`;
+  const base64Credentials = Buffer.from(credentials).toString('base64');
+
+  return {
+    authHeader: `Basic ${base64Credentials}`,
+    baseUrl: `https://${subdomain}.outseta.com/api/v1`,
+  };
+};
+
+/**
+ * Find a person in Outseta by their email address
+ */
+async function findPersonByEmail(
+  email: string,
+  authHeader: string,
+  baseUrl: string
+): Promise<{ success: boolean; person?: OutsetaPerson; error?: string }> {
+  try {
+    const url = `${baseUrl}/crm/people?email=${encodeURIComponent(email)}`;
+    console.log('[Outseta] Looking up person by email:', email);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Outseta] Failed to find person:', response.status, errorText);
+      return {
+        success: false,
+        error: `Failed to find person: ${response.status} ${errorText}`,
+      };
+    }
+
+    const data = await response.json();
+
+    // Outseta returns items array for list endpoints
+    const items = data.items || data.Items || [];
+    if (items.length === 0) {
+      console.log('[Outseta] No person found for email:', email);
+      return {
+        success: false,
+        error: `No person found with email: ${email}`,
+      };
+    }
+
+    const person = items[0];
+    console.log('[Outseta] Found person:', person.Uid, person.FullName || person.Email);
+
+    return {
+      success: true,
+      person: {
+        Uid: person.Uid,
+        Email: person.Email,
+        FullName: person.FullName,
+      },
+    };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('[Outseta] Exception finding person:', errorMessage);
+    return {
+      success: false,
+      error: `Network error: ${errorMessage}`,
+    };
+  }
+}
+
+/**
+ * Post a custom activity to Outseta
+ */
+async function postCustomActivity(
+  personUid: string,
+  activityType: OutsetaActivityType,
+  metadata: Record<string, any>,
+  authHeader: string,
+  baseUrl: string
+): Promise<{ success: boolean; error?: string; data?: any }> {
+  try {
+    const url = `${baseUrl}/activities/customactivity`;
+    console.log('[Outseta] Posting custom activity:', activityType, 'for person:', personUid);
+
+    // Build activity description from metadata
+    let description = `Activity: ${activityType}`;
+    if (Object.keys(metadata).length > 0) {
+      description += ` | ${JSON.stringify(metadata)}`;
+    }
+
+    const requestBody = {
+      EntityUid: personUid,
+      EntityType: 1, // 1 = Person in Outseta
+      Title: activityType,
+      Description: description,
+      ActivityData: JSON.stringify(metadata),
+    };
+
+    console.log('[Outseta] Activity request body:', JSON.stringify(requestBody, null, 2));
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      let errorText: string;
+      try {
+        const errorData = await response.json();
+        errorText = JSON.stringify(errorData);
+      } catch {
+        errorText = await response.text();
+      }
+      console.error('[Outseta] Failed to post activity:', response.status, errorText);
+      return {
+        success: false,
+        error: `Failed to post activity: ${response.status} ${errorText}`,
+      };
+    }
+
+    const data = await response.json();
+    console.log('[Outseta] Activity posted successfully:', data.Uid || data.uid);
+
+    return {
+      success: true,
+      data,
+    };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('[Outseta] Exception posting activity:', errorMessage);
+    return {
+      success: false,
+      error: `Network error: ${errorMessage}`,
+    };
+  }
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const { email, activityType, metadata = {} } = req.body as OutsetaActivityRequest;
+
+    console.log('[Outseta Activity] Request received:', {
+      email,
+      activityType,
+      hasMetadata: Object.keys(metadata).length > 0,
+    });
+
+    // Validate required fields
+    if (!email || !activityType) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: email and activityType',
+      });
+    }
+
+    // Validate activity type
+    const validActivityTypes: OutsetaActivityType[] = [
+      'payment_successful',
+      'invoice_created',
+      'low_credits',
+    ];
+    if (!validActivityTypes.includes(activityType)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid activity type. Must be one of: ${validActivityTypes.join(', ')}`,
+      });
+    }
+
+    // Get Outseta credentials
+    let credentials;
+    try {
+      credentials = getOutsetaCredentials();
+    } catch (e) {
+      console.error('[Outseta Activity] Credentials not configured');
+      return res.status(500).json({
+        success: false,
+        error: 'Outseta not configured',
+      });
+    }
+
+    // Step 1: Find the person by email
+    const personResult = await findPersonByEmail(
+      email,
+      credentials.authHeader,
+      credentials.baseUrl
+    );
+
+    if (!personResult.success || !personResult.person) {
+      // If person not found, log but don't fail the request
+      // The activity might still be relevant for analytics
+      console.warn('[Outseta Activity] Person not found, skipping activity post');
+      return res.status(200).json({
+        success: true,
+        message: 'Person not found in Outseta, activity skipped',
+        personNotFound: true,
+      });
+    }
+
+    // Step 2: Post the custom activity
+    const activityResult = await postCustomActivity(
+      personResult.person.Uid,
+      activityType,
+      metadata,
+      credentials.authHeader,
+      credentials.baseUrl
+    );
+
+    if (!activityResult.success) {
+      console.error('[Outseta Activity] Failed to post activity:', activityResult.error);
+      return res.status(500).json({
+        success: false,
+        error: activityResult.error,
+      });
+    }
+
+    console.log('[Outseta Activity] Activity posted successfully');
+    return res.status(200).json({
+      success: true,
+      message: 'Activity posted successfully',
+      activityType,
+      personUid: personResult.person.Uid,
+    });
+  } catch (error: any) {
+    console.error('[Outseta Activity] Unexpected error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+    });
+  }
+}

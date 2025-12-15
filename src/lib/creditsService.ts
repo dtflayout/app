@@ -1,6 +1,8 @@
 import { supabase } from './supabaseClient';
 
 const FREE_TRIAL_CREDITS = 5000;
+const LOW_CREDITS_THRESHOLD = 1000; // sq.inches
+const LOW_CREDITS_ALERT_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 export interface UserCredits {
   user_id: string;
@@ -183,6 +185,92 @@ export async function deductCredits(
     console.error('[Credits] Exception:', err);
     return { success: false, error: err.message };
   }
+}
+
+/**
+ * Check if user should receive a low credits alert
+ * Returns true if balance is below threshold AND no alert was sent in the last 24 hours
+ */
+export async function shouldSendLowCreditsAlert(
+  userId: string,
+  currentBalance: number
+): Promise<{ shouldSend: boolean; error?: string }> {
+  try {
+    // Check if balance is below threshold
+    if (currentBalance >= LOW_CREDITS_THRESHOLD) {
+      return { shouldSend: false };
+    }
+
+    // Check last alert timestamp
+    const { data, error } = await supabase
+      .from('user_credits')
+      .select('last_low_credit_alert')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) {
+      console.error('[Credits] Error checking low credit alert:', error);
+      return { shouldSend: false, error: error.message };
+    }
+
+    const lastAlert = data?.last_low_credit_alert;
+    if (!lastAlert) {
+      // No previous alert, should send
+      console.log('[Credits] No previous low credit alert, should send');
+      return { shouldSend: true };
+    }
+
+    // Check if 24 hours have passed since last alert
+    const lastAlertTime = new Date(lastAlert).getTime();
+    const now = Date.now();
+    const timeSinceLastAlert = now - lastAlertTime;
+
+    if (timeSinceLastAlert >= LOW_CREDITS_ALERT_COOLDOWN_MS) {
+      console.log('[Credits] Low credit alert cooldown passed, should send');
+      return { shouldSend: true };
+    }
+
+    console.log('[Credits] Low credit alert sent recently, skipping');
+    return { shouldSend: false };
+  } catch (err: any) {
+    console.error('[Credits] Exception checking low credit alert:', err);
+    return { shouldSend: false, error: err.message };
+  }
+}
+
+/**
+ * Update the last low credit alert timestamp
+ */
+export async function updateLowCreditAlertTimestamp(
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from('user_credits')
+      .update({
+        last_low_credit_alert: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('[Credits] Error updating low credit alert timestamp:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('[Credits] Low credit alert timestamp updated');
+    return { success: true };
+  } catch (err: any) {
+    console.error('[Credits] Exception updating low credit alert timestamp:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Get the low credits threshold constant
+ */
+export function getLowCreditsThreshold(): number {
+  return LOW_CREDITS_THRESHOLD;
 }
 
 /**

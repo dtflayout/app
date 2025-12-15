@@ -2,6 +2,93 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHmac } from 'crypto';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
+// Outseta Activity Helper Functions
+const getOutsetaCredentials = () => {
+  const apiKey = process.env.OUTSETA_API_KEY;
+  const apiSecret = process.env.OUTSETA_API_SECRET;
+  const subdomain = process.env.OUTSETA_SUBDOMAIN;
+
+  if (!apiKey || !apiSecret || !subdomain) {
+    return null;
+  }
+
+  const credentials = `${apiKey}:${apiSecret}`;
+  const base64Credentials = Buffer.from(credentials).toString('base64');
+
+  return {
+    authHeader: `Basic ${base64Credentials}`,
+    baseUrl: `https://${subdomain}.outseta.com/api/v1`,
+  };
+};
+
+const findOutsetaPersonByEmail = async (
+  email: string,
+  authHeader: string,
+  baseUrl: string
+): Promise<string | null> => {
+  try {
+    const url = `${baseUrl}/crm/people?email=${encodeURIComponent(email)}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.log('[Outseta] Failed to find person:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const items = data.items || data.Items || [];
+    return items.length > 0 ? items[0].Uid : null;
+  } catch (err) {
+    console.error('[Outseta] Exception finding person:', err);
+    return null;
+  }
+};
+
+const postOutsetaActivity = async (
+  personUid: string,
+  activityType: string,
+  metadata: Record<string, any>,
+  authHeader: string,
+  baseUrl: string
+): Promise<boolean> => {
+  try {
+    const url = `${baseUrl}/activities/customactivity`;
+    const description = `Activity: ${activityType} | ${JSON.stringify(metadata)}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        EntityUid: personUid,
+        EntityType: 1,
+        Title: activityType,
+        Description: description,
+        ActivityData: JSON.stringify(metadata),
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('[Outseta] Failed to post activity:', response.status);
+      return false;
+    }
+
+    console.log(`[Outseta] Activity ${activityType} posted successfully`);
+    return true;
+  } catch (err) {
+    console.error('[Outseta] Exception posting activity:', err);
+    return false;
+  }
+};
+
 // Plan credits mapping (in sq.inches)
 const PLAN_CREDITS: Record<string, number> = {
   free_trial: 5000,
@@ -481,6 +568,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     console.log('[Verify Payment] Success! New balance:', addResult.newBalance);
+
+    // Post Outseta activities for email campaigns (non-blocking)
+    const outsetaCredentials = getOutsetaCredentials();
+    if (outsetaCredentials) {
+      console.log('[Verify Payment] Posting Outseta activities...');
+
+      const personUid = await findOutsetaPersonByEmail(
+        user_email,
+        outsetaCredentials.authHeader,
+        outsetaCredentials.baseUrl
+      );
+
+      if (personUid) {
+        const activityMetadata = {
+          amount: amount || PLAN_PRICES[plan_id],
+          planName: PLAN_NAMES[plan_id],
+          creditsAdded: creditsToAdd,
+          transactionId: razorpay_payment_id,
+        };
+
+        // Post payment_successful activity
+        await postOutsetaActivity(
+          personUid,
+          'payment_successful',
+          activityMetadata,
+          outsetaCredentials.authHeader,
+          outsetaCredentials.baseUrl
+        );
+
+        // Post invoice_created activity
+        await postOutsetaActivity(
+          personUid,
+          'invoice_created',
+          activityMetadata,
+          outsetaCredentials.authHeader,
+          outsetaCredentials.baseUrl
+        );
+      } else {
+        console.log('[Verify Payment] Person not found in Outseta, skipping activities');
+      }
+    } else {
+      console.log('[Verify Payment] Outseta not configured, skipping activities');
+    }
 
     return res.status(200).json({
       success: true,

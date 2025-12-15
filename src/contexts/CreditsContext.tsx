@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { useOutseta } from "./OutsetaContext";
-import { getOrCreateUserCredits, deductCredits as deductCreditsService } from "@/lib/creditsService";
+import {
+  getOrCreateUserCredits,
+  deductCredits as deductCreditsService,
+  shouldSendLowCreditsAlert,
+  updateLowCreditAlertTimestamp,
+} from "@/lib/creditsService";
+import { postLowCreditsActivity } from "@/services/outsetaActivityService";
 
 interface CreditsContextType {
   credits: number;
@@ -101,6 +107,27 @@ export const CreditsProvider = ({ children }: CreditsProviderProps) => {
     if (result.success && result.newBalance !== undefined) {
       setCredits(result.newBalance);
       console.log("[CreditsContext] Credits updated to:", result.newBalance);
+
+      // Check if we should send a low credits alert
+      const alertCheck = await shouldSendLowCreditsAlert(userId, result.newBalance);
+      if (alertCheck.shouldSend) {
+        console.log("[CreditsContext] Sending low credits alert...");
+
+        // Send the alert (non-blocking)
+        postLowCreditsActivity(email, result.newBalance)
+          .then(async (activityResult) => {
+            if (activityResult.success) {
+              // Update the timestamp to prevent duplicate alerts
+              await updateLowCreditAlertTimestamp(userId);
+              console.log("[CreditsContext] Low credits alert sent successfully");
+            } else {
+              console.error("[CreditsContext] Failed to send low credits alert:", activityResult.error);
+            }
+          })
+          .catch((err) => {
+            console.error("[CreditsContext] Exception sending low credits alert:", err);
+          });
+      }
     }
 
     return result;
