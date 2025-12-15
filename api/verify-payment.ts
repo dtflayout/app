@@ -406,6 +406,96 @@ const addCreditsToUser = async (
   }
 };
 
+// Razorpay Invoice Generation
+interface RazorpayInvoiceResult {
+  success: boolean;
+  invoice_id?: string;
+  invoice_url?: string;
+  error?: string;
+}
+
+const createRazorpayInvoice = async (
+  userEmail: string,
+  planName: string,
+  creditsAdded: number,
+  amountInr: number,
+  razorpayPaymentId: string
+): Promise<RazorpayInvoiceResult> => {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+  if (!keyId || !keySecret) {
+    console.log('[Razorpay Invoice] API keys not configured, skipping invoice generation');
+    return { success: false, error: 'Razorpay API keys not configured' };
+  }
+
+  try {
+    const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+    const url = 'https://api.razorpay.com/v1/invoices';
+
+    const requestBody = {
+      type: 'invoice',
+      description: `DTF Layout Credits - ${planName}`,
+      customer: {
+        email: userEmail,
+      },
+      line_items: [
+        {
+          name: `${planName} Plan - ${creditsAdded.toLocaleString()} sq inches`,
+          amount: amountInr * 100, // Convert to paise
+          quantity: 1,
+        },
+      ],
+      sms_notify: 0,
+      email_notify: 0, // We'll send our own email via Outseta
+      currency: 'INR',
+      receipt: razorpayPaymentId,
+      notes: {
+        payment_id: razorpayPaymentId,
+        plan: planName,
+        credits: String(creditsAdded),
+      },
+    };
+
+    console.log('[Razorpay Invoice] ========== CREATE INVOICE DEBUG ==========');
+    console.log('[Razorpay Invoice] URL:', url);
+    console.log('[Razorpay Invoice] Request payload:', JSON.stringify(requestBody, null, 2));
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log('[Razorpay Invoice] Response status:', response.status, response.statusText);
+
+    const responseText = await response.text();
+    console.log('[Razorpay Invoice] Response body:', responseText);
+
+    if (!response.ok) {
+      console.error('[Razorpay Invoice] ❌ Failed to create invoice:', response.status, responseText);
+      return { success: false, error: `API error: ${response.status} - ${responseText}` };
+    }
+
+    const invoice = JSON.parse(responseText);
+    console.log('[Razorpay Invoice] ✅ Invoice created successfully');
+    console.log('[Razorpay Invoice] Invoice ID:', invoice.id);
+    console.log('[Razorpay Invoice] Invoice URL:', invoice.short_url);
+
+    return {
+      success: true,
+      invoice_id: invoice.id,
+      invoice_url: invoice.short_url,
+    };
+  } catch (err: any) {
+    console.error('[Razorpay Invoice] ❌ Exception creating invoice:', err);
+    return { success: false, error: err.message };
+  }
+};
+
 // Log payment to Supabase (for audit trail)
 const logPayment = async (
   supabase: SupabaseClient,
@@ -422,10 +512,12 @@ const logPayment = async (
     credits_after: number;
     status: 'success' | 'failed' | 'pending';
     error_message?: string;
+    razorpay_invoice_id?: string;
+    razorpay_invoice_url?: string;
   }
 ) => {
   // Map to actual transactions table column names
-  const insertData = {
+  const insertData: Record<string, any> = {
     email: data.user_email,           // Table uses "email" not "user_email"
     user_id: data.user_id,
     razorpay_payment_id: data.razorpay_payment_id,
@@ -440,6 +532,14 @@ const logPayment = async (
     error_message: data.error_message || null,
     created_at: new Date().toISOString(),
   };
+
+  // Add invoice fields if available
+  if (data.razorpay_invoice_id) {
+    insertData.razorpay_invoice_id = data.razorpay_invoice_id;
+  }
+  if (data.razorpay_invoice_url) {
+    insertData.razorpay_invoice_url = data.razorpay_invoice_url;
+  }
 
   console.log('[Payment Log] Attempting to insert:', JSON.stringify(insertData, null, 2));
 
@@ -657,7 +757,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Success! Log the payment
+    // Generate Razorpay invoice for paid plans (not free trial)
+    let invoiceResult: RazorpayInvoiceResult = { success: false };
+    if (plan_id !== 'free_trial') {
+      console.log('[Verify Payment] Generating Razorpay invoice...');
+      invoiceResult = await createRazorpayInvoice(
+        user_email,
+        PLAN_NAMES[plan_id],
+        creditsToAdd,
+        amount || PLAN_PRICES[plan_id],
+        razorpay_payment_id
+      );
+
+      if (invoiceResult.success) {
+        console.log('[Verify Payment] ✅ Invoice generated:', invoiceResult.invoice_url);
+      } else {
+        console.log('[Verify Payment] ⚠️ Invoice generation failed:', invoiceResult.error);
+        // Don't fail the payment, invoice is a nice-to-have
+      }
+    }
+
+    // Success! Log the payment with invoice details
     await logPayment(supabase, {
       user_email,
       user_id: outseta_account_id,
@@ -670,6 +790,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       credits_before: addResult.previousBalance || 0,
       credits_after: addResult.newBalance || creditsToAdd,
       status: 'success',
+      razorpay_invoice_id: invoiceResult.invoice_id,
+      razorpay_invoice_url: invoiceResult.invoice_url,
     });
 
     console.log('[Verify Payment] Success! New balance:', addResult.newBalance);
@@ -706,6 +828,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('[Verify Payment] ⚠️ Failed to update Account PaymentConfirmedAt field');
       }
 
+      // Update Account with invoice URL for use in email templates
+      if (invoiceResult.invoice_url) {
+        await updateOutsetaAccountField(
+          outseta_account_id,
+          'LastInvoiceUrl',
+          invoiceResult.invoice_url,
+          outsetaCredentials.authHeader,
+          outsetaCredentials.baseUrl
+        );
+        console.log('[Verify Payment] ✅ Account LastInvoiceUrl updated');
+      }
+
       // FALLBACK: Also post custom activities to Person (in case they start working)
       const personUid = await findOutsetaPersonByEmail(
         user_email,
@@ -722,6 +856,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           creditsAdded: creditsToAdd,
           transactionId: razorpay_payment_id,
           userEmail: user_email,
+          invoiceUrl: invoiceResult.invoice_url || null,
         };
 
         // Post payment_successful activity to Person
