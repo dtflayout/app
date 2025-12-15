@@ -31,12 +31,9 @@ const getOutsetaCredentials = () => {
     throw new Error('Missing Outseta environment variables');
   }
 
-  // Create Base64 encoded auth header
-  const credentials = `${apiKey}:${apiSecret}`;
-  const base64Credentials = Buffer.from(credentials).toString('base64');
-
+  // Outseta uses custom auth format: "Outseta [api-key]:[secret-key]"
   return {
-    authHeader: `Basic ${base64Credentials}`,
+    authHeader: `Outseta ${apiKey}:${apiSecret}`,
     baseUrl: `https://${subdomain}.outseta.com/api/v1`,
   };
 };
