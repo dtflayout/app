@@ -51,7 +51,12 @@ async function findPersonByEmail(
 ): Promise<{ success: boolean; person?: OutsetaPerson; error?: string }> {
   try {
     const url = `${baseUrl}/crm/people?email=${encodeURIComponent(email)}`;
-    console.log('[Outseta] Looking up person by email:', email);
+
+    console.log('[Outseta] ========== PERSON LOOKUP DEBUG ==========');
+    console.log('[Outseta] Email being searched:', email);
+    console.log('[Outseta] Full URL:', url);
+    console.log('[Outseta] Auth header present:', !!authHeader);
+    console.log('[Outseta] Auth header prefix:', authHeader?.substring(0, 10) + '...');
 
     const response = await fetch(url, {
       method: 'GET',
@@ -61,19 +66,37 @@ async function findPersonByEmail(
       },
     });
 
+    console.log('[Outseta] Response status:', response.status, response.statusText);
+
+    const responseText = await response.text();
+    console.log('[Outseta] Raw response body:', responseText);
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[Outseta] Failed to find person:', response.status, errorText);
+      console.error('[Outseta] Failed to find person - Status:', response.status);
       return {
         success: false,
-        error: `Failed to find person: ${response.status} ${errorText}`,
+        error: `Failed to find person: ${response.status} ${responseText}`,
       };
     }
 
-    const data = await response.json();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseErr) {
+      console.error('[Outseta] Failed to parse JSON response:', parseErr);
+      return {
+        success: false,
+        error: 'Failed to parse API response',
+      };
+    }
 
-    // Outseta returns items array for list endpoints
-    const items = data.items || data.Items || [];
+    console.log('[Outseta] Parsed response keys:', Object.keys(data));
+    console.log('[Outseta] Full parsed response:', JSON.stringify(data, null, 2));
+
+    // Try multiple possible response structures
+    const items = data.items || data.Items || data.results || data.Results || [];
+    console.log('[Outseta] Items array length:', items.length);
+
     if (items.length === 0) {
       console.log('[Outseta] No person found for email:', email);
       return {
@@ -83,7 +106,8 @@ async function findPersonByEmail(
     }
 
     const person = items[0];
-    console.log('[Outseta] Found person:', person.Uid, person.FullName || person.Email);
+    console.log('[Outseta] First item:', JSON.stringify(person, null, 2));
+    console.log('[Outseta] Found person UID:', person.Uid, 'Email:', person.Email);
 
     return {
       success: true,

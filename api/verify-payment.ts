@@ -28,6 +28,13 @@ const findOutsetaPersonByEmail = async (
 ): Promise<string | null> => {
   try {
     const url = `${baseUrl}/crm/people?email=${encodeURIComponent(email)}`;
+
+    console.log('[Outseta] ========== PERSON LOOKUP DEBUG ==========');
+    console.log('[Outseta] Email being searched:', email);
+    console.log('[Outseta] Full URL:', url);
+    console.log('[Outseta] Auth header present:', !!authHeader);
+    console.log('[Outseta] Auth header prefix:', authHeader?.substring(0, 10) + '...');
+
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -36,14 +43,39 @@ const findOutsetaPersonByEmail = async (
       },
     });
 
+    console.log('[Outseta] Response status:', response.status, response.statusText);
+
+    const responseText = await response.text();
+    console.log('[Outseta] Raw response body:', responseText);
+
     if (!response.ok) {
-      console.log('[Outseta] Failed to find person:', response.status);
+      console.error('[Outseta] Failed to find person - Status:', response.status);
       return null;
     }
 
-    const data = await response.json();
-    const items = data.items || data.Items || [];
-    return items.length > 0 ? items[0].Uid : null;
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseErr) {
+      console.error('[Outseta] Failed to parse JSON response:', parseErr);
+      return null;
+    }
+
+    console.log('[Outseta] Parsed response keys:', Object.keys(data));
+    console.log('[Outseta] Full parsed response:', JSON.stringify(data, null, 2));
+
+    // Try multiple possible response structures
+    const items = data.items || data.Items || data.results || data.Results || [];
+    console.log('[Outseta] Items array length:', items.length);
+
+    if (items.length > 0) {
+      console.log('[Outseta] First item:', JSON.stringify(items[0], null, 2));
+      console.log('[Outseta] Found person UID:', items[0].Uid);
+      return items[0].Uid;
+    }
+
+    console.log('[Outseta] No items found in response');
+    return null;
   } catch (err) {
     console.error('[Outseta] Exception finding person:', err);
     return null;
@@ -572,7 +604,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Post Outseta activities for email campaigns (non-blocking)
     const outsetaCredentials = getOutsetaCredentials();
     if (outsetaCredentials) {
-      console.log('[Verify Payment] Posting Outseta activities...');
+      console.log('[Verify Payment] ========== OUTSETA ACTIVITY DEBUG ==========');
+      console.log('[Verify Payment] user_email from request body:', user_email);
+      console.log('[Verify Payment] outseta_account_id from request body:', outseta_account_id);
+      console.log('[Verify Payment] Outseta subdomain:', process.env.OUTSETA_SUBDOMAIN);
+      console.log('[Verify Payment] Base URL:', outsetaCredentials.baseUrl);
 
       const personUid = await findOutsetaPersonByEmail(
         user_email,
