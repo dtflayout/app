@@ -4,21 +4,16 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
  * Outseta Custom Activity API Endpoint
  *
  * Posts custom activities to Outseta to trigger email campaigns.
- * First looks up the person by email, then posts the activity.
+ * Uses Account UID directly instead of looking up Person by email.
  */
 
 type OutsetaActivityType = 'payment_successful' | 'invoice_created' | 'low_credits';
 
 interface OutsetaActivityRequest {
   email: string;
+  accountUid?: string; // Account UID to post activity to
   activityType: OutsetaActivityType;
   metadata?: Record<string, any>;
-}
-
-interface OutsetaPerson {
-  Uid: string;
-  Email: string;
-  FullName?: string;
 }
 
 // Get Outseta API credentials
@@ -166,14 +161,15 @@ async function postCustomActivity(
     }
 
     const requestBody = {
-      EntityUid: personUid,
-      EntityType: 2, // 1 = Account, 2 = Person (needed for drip campaigns)
+      EntityUid: personUid, // This is now the Account UID
+      EntityType: 1, // 1 = Account (Person is linked to Account)
       Title: activityType,
       Description: description,
       ActivityData: JSON.stringify(metadata),
     };
 
     console.log('[Outseta] Request payload:', JSON.stringify(requestBody, null, 2));
+    console.log('[Outseta] Using Account UID:', personUid);
     console.log('[Outseta] Auth header prefix:', authHeader?.substring(0, 15) + '...');
 
     const response = await fetch(url, {
@@ -242,19 +238,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { email, activityType, metadata = {} } = req.body as OutsetaActivityRequest;
+    const { email, accountUid, activityType, metadata = {} } = req.body as OutsetaActivityRequest;
 
     console.log('[Outseta Activity] Request received:', {
       email,
+      accountUid,
       activityType,
       hasMetadata: Object.keys(metadata).length > 0,
     });
 
     // Validate required fields
-    if (!email || !activityType) {
+    if (!activityType) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: email and activityType',
+        error: 'Missing required field: activityType',
+      });
+    }
+
+    // Need either accountUid or email
+    if (!accountUid && !email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: accountUid or email',
       });
     }
 
@@ -283,17 +288,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Step 1: Find the person by email
-    const personResult = await findPersonByEmail(
-      email,
-      credentials.authHeader,
-      credentials.baseUrl
-    );
+    // Use accountUid directly if provided, otherwise look up by email
+    let entityUid = accountUid;
 
-    if (!personResult.success || !personResult.person) {
-      // If person not found, log but don't fail the request
-      // The activity might still be relevant for analytics
-      console.warn('[Outseta Activity] Person not found, skipping activity post');
+    if (!entityUid && email) {
+      console.log('[Outseta Activity] No accountUid provided, looking up by email...');
+      const personResult = await findPersonByEmail(
+        email,
+        credentials.authHeader,
+        credentials.baseUrl
+      );
+
+      if (!personResult.success || !personResult.person) {
+        console.warn('[Outseta Activity] Person not found, skipping activity post');
+        return res.status(200).json({
+          success: true,
+          message: 'Person not found in Outseta, activity skipped',
+          personNotFound: true,
+        });
+      }
+      // Use Person UID if we had to look up (fallback)
+      entityUid = personResult.person.Uid;
+      console.log('[Outseta Activity] Found person UID:', entityUid);
+    }
+
+    if (!entityUid) {
+      console.warn('[Outseta Activity] No entity UID available, skipping activity post');
       return res.status(200).json({
         success: true,
         message: 'Person not found in Outseta, activity skipped',
@@ -301,9 +321,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Step 2: Post the custom activity
+    // Step 2: Post the custom activity using Account UID
+    console.log('[Outseta Activity] Posting activity with Account UID:', entityUid);
     const activityResult = await postCustomActivity(
-      personResult.person.Uid,
+      entityUid,
       activityType,
       metadata,
       credentials.authHeader,
@@ -323,7 +344,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: true,
       message: 'Activity posted successfully',
       activityType,
-      personUid: personResult.person.Uid,
+      accountUid: entityUid,
     });
   } catch (error: any) {
     console.error('[Outseta Activity] Unexpected error:', error);
