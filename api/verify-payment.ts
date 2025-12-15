@@ -88,8 +88,23 @@ const postOutsetaActivity = async (
   baseUrl: string
 ): Promise<boolean> => {
   try {
-    const url = `${baseUrl}/activities/customactivity`;
+    // Use /activities endpoint (not /activities/customactivity)
+    const url = `${baseUrl}/activities`;
     const description = `Activity: ${activityType} | ${JSON.stringify(metadata)}`;
+
+    const requestBody = {
+      EntityUid: personUid,
+      EntityType: 2, // 1 = Account, 2 = Person (needed for drip campaigns)
+      Title: activityType,
+      Description: description,
+      ActivityData: JSON.stringify(metadata),
+    };
+
+    console.log('[Outseta] ========== POST ACTIVITY DEBUG ==========');
+    console.log('[Outseta] URL:', url);
+    console.log('[Outseta] Person UID:', personUid);
+    console.log('[Outseta] Activity Type:', activityType);
+    console.log('[Outseta] Request payload:', JSON.stringify(requestBody, null, 2));
 
     const response = await fetch(url, {
       method: 'POST',
@@ -97,24 +112,23 @@ const postOutsetaActivity = async (
         'Authorization': authHeader,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        EntityUid: personUid,
-        EntityType: 2, // 1 = Account, 2 = Person (needed for drip campaigns)
-        Title: activityType,
-        Description: description,
-        ActivityData: JSON.stringify(metadata),
-      }),
+      body: JSON.stringify(requestBody),
     });
 
+    console.log('[Outseta] Response status:', response.status, response.statusText);
+
+    const responseText = await response.text();
+    console.log('[Outseta] Response body:', responseText);
+
     if (!response.ok) {
-      console.error('[Outseta] Failed to post activity:', response.status);
+      console.error('[Outseta] ❌ Failed to post activity:', response.status, responseText);
       return false;
     }
 
-    console.log(`[Outseta] Activity ${activityType} posted successfully`);
+    console.log(`[Outseta] ✅ Activity ${activityType} posted successfully`);
     return true;
   } catch (err) {
-    console.error('[Outseta] Exception posting activity:', err);
+    console.error('[Outseta] ❌ Exception posting activity:', err);
     return false;
   }
 };

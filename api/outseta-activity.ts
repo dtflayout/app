@@ -135,8 +135,14 @@ async function postCustomActivity(
   baseUrl: string
 ): Promise<{ success: boolean; error?: string; data?: any }> {
   try {
-    const url = `${baseUrl}/activities/customactivity`;
-    console.log('[Outseta] Posting custom activity:', activityType, 'for person:', personUid);
+    // Try the /activities endpoint (not /activities/customactivity)
+    const url = `${baseUrl}/activities`;
+
+    console.log('[Outseta] ========== POST ACTIVITY DEBUG ==========');
+    console.log('[Outseta] Person UID:', personUid);
+    console.log('[Outseta] Activity Type:', activityType);
+    console.log('[Outseta] Full URL being called:', url);
+    console.log('[Outseta] HTTP Method: POST');
 
     // Build activity description from metadata
     let description = `Activity: ${activityType}`;
@@ -152,7 +158,8 @@ async function postCustomActivity(
       ActivityData: JSON.stringify(metadata),
     };
 
-    console.log('[Outseta] Activity request body:', JSON.stringify(requestBody, null, 2));
+    console.log('[Outseta] Request payload:', JSON.stringify(requestBody, null, 2));
+    console.log('[Outseta] Auth header prefix:', authHeader?.substring(0, 15) + '...');
 
     const response = await fetch(url, {
       method: 'POST',
@@ -163,23 +170,32 @@ async function postCustomActivity(
       body: JSON.stringify(requestBody),
     });
 
+    console.log('[Outseta] Response status:', response.status, response.statusText);
+    console.log('[Outseta] Response headers:', JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2));
+
+    // Always read the response body for logging
+    const responseText = await response.text();
+    console.log('[Outseta] Raw response body:', responseText);
+
     if (!response.ok) {
-      let errorText: string;
-      try {
-        const errorData = await response.json();
-        errorText = JSON.stringify(errorData);
-      } catch {
-        errorText = await response.text();
-      }
-      console.error('[Outseta] Failed to post activity:', response.status, errorText);
+      console.error('[Outseta] ❌ Failed to post activity');
+      console.error('[Outseta] Status:', response.status);
+      console.error('[Outseta] Response:', responseText);
       return {
         success: false,
-        error: `Failed to post activity: ${response.status} ${errorText}`,
+        error: `Failed to post activity: ${response.status} ${responseText}`,
       };
     }
 
-    const data = await response.json();
-    console.log('[Outseta] Activity posted successfully:', data.Uid || data.uid);
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      data = { rawResponse: responseText };
+    }
+
+    console.log('[Outseta] ✅ Activity posted successfully!');
+    console.log('[Outseta] Response data:', JSON.stringify(data, null, 2));
 
     return {
       success: true,
@@ -187,7 +203,8 @@ async function postCustomActivity(
     };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-    console.error('[Outseta] Exception posting activity:', errorMessage);
+    console.error('[Outseta] ❌ Exception posting activity:', errorMessage);
+    console.error('[Outseta] Full error:', err);
     return {
       success: false,
       error: `Network error: ${errorMessage}`,
