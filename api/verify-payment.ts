@@ -831,9 +831,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
 
       if (clearResult) {
-        // Step 2: Wait 500ms for segment to process removal
-        console.log('[Verify Payment] Step 2: Waiting 500ms for segment processing...');
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Step 2: Wait 3 seconds for segment to process removal
+        console.log('[Verify Payment] Step 2: Waiting 3 seconds for segment processing...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
 
         // Step 3: Set new timestamp to add back to segment (triggers drip)
         console.log('[Verify Payment] Step 3: Setting PaymentConfirmedAt to:', timestamp);
