@@ -447,7 +447,7 @@ const createRazorpayInvoice = async (
         },
       ],
       sms_notify: 0,
-      email_notify: 0, // We'll send our own email via Outseta
+      email_notify: 1, // Razorpay sends invoice email directly to customer
       currency: 'INR',
       receipt: razorpayPaymentId,
       notes: {
