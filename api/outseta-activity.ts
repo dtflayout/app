@@ -150,8 +150,8 @@ async function postCustomActivity(
   baseUrl: string
 ): Promise<{ success: boolean; error?: string; data?: any }> {
   try {
-    // Try the /activities endpoint (not /activities/customactivity)
-    const url = `${baseUrl}/activities`;
+    // Use the custom activity endpoint
+    const url = `${baseUrl}/activities/customactivity`;
 
     console.log('[Outseta] ========== POST ACTIVITY DEBUG ==========');
     console.log('[Outseta] Person UID:', personUid);

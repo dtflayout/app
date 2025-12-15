@@ -100,8 +100,8 @@ const postOutsetaActivity = async (
   baseUrl: string
 ): Promise<boolean> => {
   try {
-    // Use /activities endpoint (not /activities/customactivity)
-    const url = `${baseUrl}/activities`;
+    // Use the custom activity endpoint
+    const url = `${baseUrl}/activities/customactivity`;
     const description = `Activity: ${activityType} | ${JSON.stringify(metadata)}`;
 
     const requestBody = {
