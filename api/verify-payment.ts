@@ -66,14 +66,26 @@ const findOutsetaPersonByEmail = async (
     const items = data.items || data.Items || data.results || data.Results || [];
     console.log('[Outseta] Items array length:', items.length);
 
-    if (items.length > 0) {
-      console.log('[Outseta] First item:', JSON.stringify(items[0], null, 2));
-      console.log('[Outseta] Found person UID:', items[0].Uid);
-      return items[0].Uid;
+    if (items.length === 0) {
+      console.log('[Outseta] No items found in response');
+      return null;
     }
 
-    console.log('[Outseta] No items found in response');
-    return null;
+    // Find the person with matching email (case-insensitive)
+    console.log('[Outseta] Searching for exact email match:', email);
+    const matchingPerson = items.find(
+      (person: any) => person.Email?.toLowerCase() === email.toLowerCase()
+    );
+
+    if (!matchingPerson) {
+      console.log('[Outseta] No exact email match found. Available emails:',
+        items.map((p: any) => p.Email).join(', ')
+      );
+      return null;
+    }
+
+    console.log('[Outseta] Found matching person UID:', matchingPerson.Uid, 'Email:', matchingPerson.Email);
+    return matchingPerson.Uid;
   } catch (err) {
     console.error('[Outseta] Exception finding person:', err);
     return null;

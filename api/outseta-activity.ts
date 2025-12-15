@@ -102,16 +102,31 @@ async function findPersonByEmail(
       };
     }
 
-    const person = items[0];
-    console.log('[Outseta] First item:', JSON.stringify(person, null, 2));
-    console.log('[Outseta] Found person UID:', person.Uid, 'Email:', person.Email);
+    // Find the person with matching email (case-insensitive)
+    console.log('[Outseta] Searching for exact email match:', email);
+    const matchingPerson = items.find(
+      (person: any) => person.Email?.toLowerCase() === email.toLowerCase()
+    );
+
+    if (!matchingPerson) {
+      console.log('[Outseta] No exact email match found. Available emails:',
+        items.map((p: any) => p.Email).join(', ')
+      );
+      return {
+        success: false,
+        error: `No person found with exact email: ${email}`,
+      };
+    }
+
+    console.log('[Outseta] Found matching person:', JSON.stringify(matchingPerson, null, 2));
+    console.log('[Outseta] Matched person UID:', matchingPerson.Uid, 'Email:', matchingPerson.Email);
 
     return {
       success: true,
       person: {
-        Uid: person.Uid,
-        Email: person.Email,
-        FullName: person.FullName,
+        Uid: matchingPerson.Uid,
+        Email: matchingPerson.Email,
+        FullName: matchingPerson.FullName,
       },
     };
   } catch (err) {
