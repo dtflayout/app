@@ -92,6 +92,55 @@ const findOutsetaPersonByEmail = async (
   }
 };
 
+const updateOutsetaAccountField = async (
+  accountUid: string,
+  fieldName: string,
+  fieldValue: string,
+  authHeader: string,
+  baseUrl: string
+): Promise<boolean> => {
+  try {
+    // Use PUT to update the account record with the custom field
+    const url = `${baseUrl}/crm/accounts/${accountUid}`;
+
+    const requestBody = {
+      Uid: accountUid,
+      [fieldName]: fieldValue,
+    };
+
+    console.log('[Outseta] ========== UPDATE ACCOUNT FIELD DEBUG ==========');
+    console.log('[Outseta] URL:', url);
+    console.log('[Outseta] Account UID:', accountUid);
+    console.log('[Outseta] Field:', fieldName, '=', fieldValue);
+    console.log('[Outseta] Request payload:', JSON.stringify(requestBody, null, 2));
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log('[Outseta] Response status:', response.status, response.statusText);
+
+    const responseText = await response.text();
+    console.log('[Outseta] Response body:', responseText);
+
+    if (!response.ok) {
+      console.error('[Outseta] ❌ Failed to update account field:', response.status, responseText);
+      return false;
+    }
+
+    console.log(`[Outseta] ✅ Account field ${fieldName} updated successfully`);
+    return true;
+  } catch (err) {
+    console.error('[Outseta] ❌ Exception updating account field:', err);
+    return false;
+  }
+};
+
 const postOutsetaActivity = async (
   personUid: string,
   activityType: string,
@@ -625,15 +674,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('[Verify Payment] Success! New balance:', addResult.newBalance);
 
-    // Post Outseta activities for email campaigns (non-blocking)
-    // Look up Person by email and post activity to Person (EntityType=2)
+    // Update Outseta Account with payment confirmation (non-blocking)
+    // This triggers segment-based drip campaigns for email notifications
     const outsetaCredentials = getOutsetaCredentials();
     if (outsetaCredentials) {
-      console.log('[Verify Payment] ========== OUTSETA ACTIVITY DEBUG ==========');
-      console.log('[Verify Payment] Looking up Person by email:', user_email);
+      console.log('[Verify Payment] ========== OUTSETA ACCOUNT UPDATE ==========');
+      console.log('[Verify Payment] Account UID (from request):', outseta_account_id);
       console.log('[Verify Payment] Outseta subdomain:', process.env.OUTSETA_SUBDOMAIN);
       console.log('[Verify Payment] Base URL:', outsetaCredentials.baseUrl);
 
+      // PRIMARY METHOD: Update Account's PaymentConfirmedAt field
+      // This triggers segment-based drip campaigns
+      // User needs to:
+      // 1. Create custom Account field "PaymentConfirmedAt" (type: Text) in Outseta
+      // 2. Create a segment with filter: "PaymentConfirmedAt is not empty"
+      // 3. Create drip campaign triggered by "Account added to segment"
+      const timestamp = new Date().toISOString();
+      console.log('[Verify Payment] Updating PaymentConfirmedAt to:', timestamp);
+
+      const accountUpdated = await updateOutsetaAccountField(
+        outseta_account_id,
+        'PaymentConfirmedAt',
+        timestamp,
+        outsetaCredentials.authHeader,
+        outsetaCredentials.baseUrl
+      );
+
+      if (accountUpdated) {
+        console.log('[Verify Payment] ✅ Account PaymentConfirmedAt updated - segment trigger should fire');
+      } else {
+        console.log('[Verify Payment] ⚠️ Failed to update Account PaymentConfirmedAt field');
+      }
+
+      // FALLBACK: Also post custom activities to Person (in case they start working)
       const personUid = await findOutsetaPersonByEmail(
         user_email,
         outsetaCredentials.authHeader,
@@ -641,7 +714,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
 
       if (personUid) {
-        console.log('[Verify Payment] Found Person UID:', personUid);
+        console.log('[Verify Payment] Found Person UID for activity:', personUid);
 
         const activityMetadata = {
           amount: amount || PLAN_PRICES[plan_id],
@@ -659,20 +732,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           outsetaCredentials.authHeader,
           outsetaCredentials.baseUrl
         );
-
-        // Post invoice_created activity to Person
-        await postOutsetaActivity(
-          personUid,
-          'invoice_created',
-          activityMetadata,
-          outsetaCredentials.authHeader,
-          outsetaCredentials.baseUrl
-        );
-      } else {
-        console.log('[Verify Payment] Person not found in Outseta, skipping activities');
       }
     } else {
-      console.log('[Verify Payment] Outseta not configured, skipping activities');
+      console.log('[Verify Payment] Outseta not configured, skipping account update');
     }
 
     return res.status(200).json({
