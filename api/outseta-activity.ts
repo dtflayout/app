@@ -146,7 +146,7 @@ async function postCustomActivity(
 
     const requestBody = {
       EntityUid: personUid,
-      EntityType: 1, // 1 = Person in Outseta
+      EntityType: 2, // 1 = Account, 2 = Person (needed for drip campaigns)
       Title: activityType,
       Description: description,
       ActivityData: JSON.stringify(metadata),
