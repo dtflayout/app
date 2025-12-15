@@ -22,7 +22,6 @@ export interface ActivityMetadata {
 
 export interface PostActivityParams {
   email: string;
-  accountUid?: string; // Account UID for direct posting (preferred)
   activityType: OutsetaActivityType;
   metadata?: ActivityMetadata;
 }
@@ -43,9 +42,9 @@ export interface PostActivityResponse {
 export async function postOutsetaActivity(
   params: PostActivityParams
 ): Promise<PostActivityResponse> {
-  const { email, accountUid, activityType, metadata } = params;
+  const { email, activityType, metadata } = params;
 
-  console.log(`[OutsetaActivity] Posting activity: ${activityType} for ${email}`, accountUid ? `(Account: ${accountUid})` : '');
+  console.log(`[OutsetaActivity] Posting activity: ${activityType} for ${email}`);
 
   try {
     const response = await fetch('/api/outseta-activity', {
@@ -55,7 +54,6 @@ export async function postOutsetaActivity(
       },
       body: JSON.stringify({
         email,
-        accountUid,
         activityType,
         metadata: metadata || {},
       }),
@@ -129,12 +127,10 @@ export async function postInvoiceCreatedActivity(
  */
 export async function postLowCreditsActivity(
   email: string,
-  currentBalance: number,
-  accountUid?: string
+  currentBalance: number
 ): Promise<PostActivityResponse> {
   return postOutsetaActivity({
     email,
-    accountUid,
     activityType: 'low_credits',
     metadata: { currentBalance },
   });

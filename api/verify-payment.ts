@@ -105,8 +105,8 @@ const postOutsetaActivity = async (
     const description = `Activity: ${activityType} | ${JSON.stringify(metadata)}`;
 
     const requestBody = {
-      EntityUid: personUid, // This is now the Account UID
-      EntityType: 1, // 1 = Account (Person is linked to Account)
+      EntityUid: personUid,
+      EntityType: 2, // 2 = Person (required for "Person performs custom activity" trigger)
       Title: activityType,
       Description: description,
       ActivityData: JSON.stringify(metadata),
@@ -114,7 +114,7 @@ const postOutsetaActivity = async (
 
     console.log('[Outseta] ========== POST ACTIVITY DEBUG ==========');
     console.log('[Outseta] URL:', url);
-    console.log('[Outseta] Account UID:', personUid);
+    console.log('[Outseta] Person UID:', personUid);
     console.log('[Outseta] Activity Type:', activityType);
     console.log('[Outseta] Request payload:', JSON.stringify(requestBody, null, 2));
 
@@ -626,42 +626,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('[Verify Payment] Success! New balance:', addResult.newBalance);
 
     // Post Outseta activities for email campaigns (non-blocking)
-    // Use the Account UID directly instead of looking up Person
+    // Look up Person by email and post activity to Person (EntityType=2)
     const outsetaCredentials = getOutsetaCredentials();
-    if (outsetaCredentials && outseta_account_id) {
+    if (outsetaCredentials) {
       console.log('[Verify Payment] ========== OUTSETA ACTIVITY DEBUG ==========');
-      console.log('[Verify Payment] Using Account UID directly:', outseta_account_id);
-      console.log('[Verify Payment] user_email:', user_email);
+      console.log('[Verify Payment] Looking up Person by email:', user_email);
       console.log('[Verify Payment] Outseta subdomain:', process.env.OUTSETA_SUBDOMAIN);
       console.log('[Verify Payment] Base URL:', outsetaCredentials.baseUrl);
 
-      const activityMetadata = {
-        amount: amount || PLAN_PRICES[plan_id],
-        planName: PLAN_NAMES[plan_id],
-        creditsAdded: creditsToAdd,
-        transactionId: razorpay_payment_id,
-        userEmail: user_email,
-      };
-
-      // Post payment_successful activity using Account UID
-      await postOutsetaActivity(
-        outseta_account_id, // Use Account UID directly
-        'payment_successful',
-        activityMetadata,
+      const personUid = await findOutsetaPersonByEmail(
+        user_email,
         outsetaCredentials.authHeader,
         outsetaCredentials.baseUrl
       );
 
-      // Post invoice_created activity using Account UID
-      await postOutsetaActivity(
-        outseta_account_id, // Use Account UID directly
-        'invoice_created',
-        activityMetadata,
-        outsetaCredentials.authHeader,
-        outsetaCredentials.baseUrl
-      );
+      if (personUid) {
+        console.log('[Verify Payment] Found Person UID:', personUid);
+
+        const activityMetadata = {
+          amount: amount || PLAN_PRICES[plan_id],
+          planName: PLAN_NAMES[plan_id],
+          creditsAdded: creditsToAdd,
+          transactionId: razorpay_payment_id,
+          userEmail: user_email,
+        };
+
+        // Post payment_successful activity to Person
+        await postOutsetaActivity(
+          personUid,
+          'payment_successful',
+          activityMetadata,
+          outsetaCredentials.authHeader,
+          outsetaCredentials.baseUrl
+        );
+
+        // Post invoice_created activity to Person
+        await postOutsetaActivity(
+          personUid,
+          'invoice_created',
+          activityMetadata,
+          outsetaCredentials.authHeader,
+          outsetaCredentials.baseUrl
+        );
+      } else {
+        console.log('[Verify Payment] Person not found in Outseta, skipping activities');
+      }
     } else {
-      console.log('[Verify Payment] Outseta not configured or no account_id, skipping activities');
+      console.log('[Verify Payment] Outseta not configured, skipping activities');
     }
 
     return res.status(200).json({

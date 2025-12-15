@@ -112,10 +112,9 @@ export const CreditsProvider = ({ children }: CreditsProviderProps) => {
       const alertCheck = await shouldSendLowCreditsAlert(userId, result.newBalance);
       if (alertCheck.shouldSend) {
         console.log("[CreditsContext] Sending low credits alert...");
-        console.log("[CreditsContext] Using Account UID:", userId);
 
-        // Send the alert (non-blocking) - pass Account UID directly
-        postLowCreditsActivity(email, result.newBalance, userId)
+        // Send the alert (non-blocking) - looks up Person by email
+        postLowCreditsActivity(email, result.newBalance)
           .then(async (activityResult) => {
             if (activityResult.success) {
               // Update the timestamp to prevent duplicate alerts
