@@ -5,7 +5,7 @@ import { ImageUploader } from "./ImageUploader";
 import { ImageManager } from "./ImageManager";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Download, Eye, HelpCircle } from "lucide-react";
+import { Download, Eye, HelpCircle, Info } from "lucide-react";
 import { generateLayout, ImageDimension, PositionedImage } from "@/utils/layoutAlgorithm";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -869,8 +869,13 @@ export const CollageCreator = ({
               className="h-11 px-4 rounded-lg border border-gray-300 bg-background text-base shadow-sm hover:border-gray-400 transition-colors focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
           </div>
-          {/* Empty space for remaining 50% */}
-          <div className="col-span-2" />
+          {/* Max sheet height info - aligned right */}
+          <div className="col-span-2 flex items-end justify-end">
+            <div className="text-base text-slate-500 font-medium flex items-center gap-1.5">
+              <Info className="w-4 h-4" />
+              Max sheet height: {maxHeight}" ({mode === 'hd' ? '300' : '150'} DPI)
+            </div>
+          </div>
         </div>
 
         {/* Separator line */}

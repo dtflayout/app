@@ -62,12 +62,11 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
-                <span className="text-white font-bold text-base">DC</span>
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                DTF Collage Creator
-              </span>
+              <img
+                src="/logo.png"
+                alt="DTF Layout"
+                className="h-10 group-hover:scale-110 transition-all duration-300"
+              />
             </Link>
 
             <nav className="hidden md:flex items-center gap-10">

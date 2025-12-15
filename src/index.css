@@ -143,6 +143,48 @@
   animation-delay: 4s;
 }
 
+/* Override Outseta widget padding */
+.o--Widget--widgetBody {
+  padding: 32px !important;
+}
+
+/* Outseta auth widget button styling */
+.outseta-widget button,
+.outseta-widget input[type="submit"],
+[data-o-auth] button,
+[data-o-auth] button[type="submit"],
+[data-o-auth] .btn,
+[data-o-auth] .btn-primary,
+[data-o-auth] .o-btn,
+[data-o-auth] .o-btn-primary,
+.o-auth-module button,
+.o-auth-module .btn-primary,
+.o-widget button[type="submit"],
+.o-widget .btn-primary {
+  background: linear-gradient(to right, #059669, #0d9488) !important;
+  background-color: #059669 !important;
+  border: none !important;
+  border-color: transparent !important;
+  transition: all 0.2s ease !important;
+}
+
+.outseta-widget button:hover,
+.outseta-widget input[type="submit"]:hover,
+[data-o-auth] button:hover,
+[data-o-auth] button[type="submit"]:hover,
+[data-o-auth] .btn:hover,
+[data-o-auth] .btn-primary:hover,
+[data-o-auth] .o-btn:hover,
+[data-o-auth] .o-btn-primary:hover,
+.o-auth-module button:hover,
+.o-auth-module .btn-primary:hover,
+.o-widget button[type="submit"]:hover,
+.o-widget .btn-primary:hover {
+  background: linear-gradient(to right, #047857, #0f766e) !important;
+  background-color: #047857 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
 @keyframes progress-bar {
   0% {
     width: 0%;

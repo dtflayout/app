@@ -133,9 +133,11 @@ export const AppSidebar = () => {
           onClick={() => navigate("/")}
           className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
         >
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg flex-shrink-0">
-            <span className="text-white font-bold text-lg">DC</span>
-          </div>
+          <img
+            src="/logo.png"
+            alt="DTF Layout"
+            className="h-10 flex-shrink-0"
+          />
           <div className={cn(
             "transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap text-left",
             isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
@@ -325,9 +327,11 @@ export const AppSidebar = () => {
           onClick={() => handleNavigation("/")}
           className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
         >
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-lg">DC</span>
-          </div>
+          <img
+            src="/logo.png"
+            alt="DTF Layout"
+            className="h-10"
+          />
           <div className="text-left">
             <h1 className="font-bold text-lg">DTF Collage</h1>
             <p className="text-xs text-slate-400">Creator</p>
