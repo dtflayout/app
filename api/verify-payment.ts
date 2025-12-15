@@ -811,21 +811,58 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // 1. Create custom Account field "PaymentConfirmedAt" (type: Text) in Outseta
       // 2. Create a segment with filter: "PaymentConfirmedAt is not empty"
       // 3. Create drip campaign triggered by "Account added to segment"
+      //
+      // TWO-STEP PROCESS: Segment triggers only fire when someone is ADDED to segment.
+      // If they're already in (PaymentConfirmedAt has value), we need to:
+      // 1. Clear the field (removes from segment)
+      // 2. Wait briefly
+      // 3. Set new value (adds back to segment, triggers drip)
       const timestamp = new Date().toISOString();
-      console.log('[Verify Payment] Updating PaymentConfirmedAt to:', timestamp);
+      console.log('[Verify Payment] Updating PaymentConfirmedAt with two-step process...');
 
-      const accountUpdated = await updateOutsetaAccountField(
+      // Step 1: Clear PaymentConfirmedAt to remove from segment
+      console.log('[Verify Payment] Step 1: Clearing PaymentConfirmedAt to remove from segment...');
+      const clearResult = await updateOutsetaAccountField(
         outseta_account_id,
         'PaymentConfirmedAt',
-        timestamp,
+        '',
         outsetaCredentials.authHeader,
         outsetaCredentials.baseUrl
       );
 
-      if (accountUpdated) {
-        console.log('[Verify Payment] ✅ Account PaymentConfirmedAt updated - segment trigger should fire');
+      if (clearResult) {
+        // Step 2: Wait 500ms for segment to process removal
+        console.log('[Verify Payment] Step 2: Waiting 500ms for segment processing...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Step 3: Set new timestamp to add back to segment (triggers drip)
+        console.log('[Verify Payment] Step 3: Setting PaymentConfirmedAt to:', timestamp);
+        const accountUpdated = await updateOutsetaAccountField(
+          outseta_account_id,
+          'PaymentConfirmedAt',
+          timestamp,
+          outsetaCredentials.authHeader,
+          outsetaCredentials.baseUrl
+        );
+
+        if (accountUpdated) {
+          console.log('[Verify Payment] ✅ Account PaymentConfirmedAt updated - segment trigger should fire');
+        } else {
+          console.log('[Verify Payment] ⚠️ Failed to set PaymentConfirmedAt timestamp');
+        }
       } else {
-        console.log('[Verify Payment] ⚠️ Failed to update Account PaymentConfirmedAt field');
+        console.log('[Verify Payment] ⚠️ Failed to clear PaymentConfirmedAt field, trying direct update...');
+        // Fallback: try direct update anyway
+        const accountUpdated = await updateOutsetaAccountField(
+          outseta_account_id,
+          'PaymentConfirmedAt',
+          timestamp,
+          outsetaCredentials.authHeader,
+          outsetaCredentials.baseUrl
+        );
+        if (accountUpdated) {
+          console.log('[Verify Payment] ✅ Direct update succeeded (may not trigger segment)');
+        }
       }
 
       // Update Account with invoice URL for use in email templates
