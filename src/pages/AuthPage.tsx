@@ -154,10 +154,10 @@ const AuthPage = () => {
           />
         </Link>
 
-        {/* Centered Auth Card */}
+        {/* Centered Login Card */}
         <div className="min-h-screen flex items-center justify-center px-4 py-12">
           <div className="w-full max-w-lg">
-            {/* Auth Card with Border Beam */}
+            {/* Login Card with Border Beam */}
             <div className="relative bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
 
               {/* First animated border beam - EMERALD GREEN */}
@@ -197,15 +197,29 @@ const AuthPage = () => {
                 {/* Header */}
                 <div className="text-center mb-2">
                   <h1 className="text-2xl font-bold text-slate-900 mb-2">
-                    Welcome to DTF Layout
+                    Welcome back
                   </h1>
-                  <p className="text-slate-500">Sign in or create an account to continue</p>
+                  <p className="text-slate-500">Sign in to your account to continue</p>
                 </div>
 
-                {/* Outseta auth widget will render here */}
-                <div id="outseta-auth-widget" className="min-h-[400px]">
-                  {/* The Outseta widget will populate this area */}
+                {/* Outseta auth widget embedded here */}
+                <div className="overflow-hidden">
+                  <div
+                    id="outseta-auth-widget"
+                    className="w-full min-h-[280px]"
+                  ></div>
                 </div>
+
+                {/* Footer link */}
+                <p className="text-center mt-1 text-slate-600">
+                  Don't have an account?{" "}
+                  <Link
+                    to="/signup"
+                    className="text-slate-900 font-semibold hover:text-slate-700 transition-colors underline underline-offset-2"
+                  >
+                    Sign up
+                  </Link>
+                </p>
               </div>
             </div>
 
