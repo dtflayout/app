@@ -131,20 +131,16 @@ export const AppSidebar = () => {
       )}>
         <button
           onClick={() => navigate("/")}
-          className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+          className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
         >
           <img
-            src="/DTF-Layout-WHITE-logo-text.png"
+            src={isExpanded ? "/DTF-Layout-WHITE-logo-text.png" : "/logo-white.png"}
             alt="DTF Layout"
-            className="h-10 flex-shrink-0"
+            className={cn(
+              "transition-all duration-300 ease-in-out",
+              isExpanded ? "h-10" : "h-8"
+            )}
           />
-          <div className={cn(
-            "transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap text-left",
-            isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
-          )}>
-            <h1 className="font-bold text-lg">DTF Collage</h1>
-            <p className="text-xs text-slate-400">Creator</p>
-          </div>
         </button>
       </div>
 
@@ -325,17 +321,13 @@ export const AppSidebar = () => {
       <div className="p-6 border-b border-slate-700">
         <button
           onClick={() => handleNavigation("/")}
-          className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+          className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
         >
           <img
             src="/DTF-Layout-WHITE-logo-text.png"
             alt="DTF Layout"
             className="h-10"
           />
-          <div className="text-left">
-            <h1 className="font-bold text-lg">DTF Collage</h1>
-            <p className="text-xs text-slate-400">Creator</p>
-          </div>
         </button>
       </div>
 
