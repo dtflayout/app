@@ -23,14 +23,14 @@ const PLANS = [
       id: "free_trial",
       price: "Rs. 0",
       priceValue: 0,
-      credits: "5,000 sq.inch",
-      creditsValue: 5000,
+      credits: "10,000 sq.inch",
+      creditsValue: 10000,
       rate: "0 paisa/sq.inch",
       gradient: "linear-gradient(to bottom, #f0f9ff 0%, #f0f9ff 20%, white 50%, white 100%)",  // lightest
       badge: "Free Trial",
       description: "Experience the platform for free before you commit.",
       features: [
-        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>5,000 sq. inch</strong></Highlighter> in credit with this recharge.</>,
+        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>10,000 sq. inch</strong></Highlighter> in credit with this recharge.</>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Image Enhancer & Trimmer and many other tools included.",
       ],

@@ -76,11 +76,11 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: 'free_trial',
     name: 'Free Trial',
     price: 0,
-    credits: 5000,
+    credits: 10000,
     badge: 'Free',
     description: 'Try our service with complimentary credits.',
     features: [
-      '5,000 sq.inch credits',
+      '10,000 sq.inch credits',
       'Full access to all features',
       'No credit card required',
     ],

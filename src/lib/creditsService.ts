@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient';
 
-const FREE_TRIAL_CREDITS = 5000;
+const FREE_TRIAL_CREDITS = 10000;
 const LOW_CREDITS_THRESHOLD = 1000; // sq.inches
 const LOW_CREDITS_ALERT_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 

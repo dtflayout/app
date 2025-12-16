@@ -114,7 +114,7 @@ const faqSections: FaqSection[] = [
         answer: (
           <div>
             <ul className="space-y-2 text-slate-600">
-              <li><strong>Free:</strong> ₹0 (5,000 sq. inches)</li>
+              <li><strong>Free:</strong> ₹0 (10,000 sq. inches)</li>
               <li><strong>Lite:</strong> ₹1,000 (1,00,000 sq. inches)</li>
               <li><strong>Advanced:</strong> ₹4,000 (5,00,000 sq. inches)</li>
               <li><strong>Enterprise:</strong> ₹8,000 (20,00,000 sq. inches)</li>
@@ -145,7 +145,7 @@ const faqSections: FaqSection[] = [
       {
         question: "Is there a free trial?",
         answer:
-          "Yes! New users get a free trial for one week to experience all the tools, plus free credits of 5,000 square inches.",
+          "Yes! New users get a free trial for one week to experience all the tools, plus free credits of 10,000 square inches.",
       },
       {
         question: "What payment methods do you accept?",
@@ -256,7 +256,7 @@ const faqSections: FaqSection[] = [
       {
         question: "Do I need to pay to try DTF Layout?",
         answer:
-          "No, you get a one-week free trial plus 5,000 free square inches.",
+          "No, you get a one-week free trial plus 10,000 free square inches.",
       },
     ],
   },

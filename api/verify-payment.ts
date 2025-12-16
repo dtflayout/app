@@ -196,7 +196,7 @@ const postOutsetaActivity = async (
 
 // Plan credits mapping (in sq.inches)
 const PLAN_CREDITS: Record<string, number> = {
-  free_trial: 5000,
+  free_trial: 10000,
   lite: 100000,
   pro: 500000,
   enterprise: 1600000,
