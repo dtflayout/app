@@ -16,6 +16,7 @@ import Dashboard from "./pages/Dashboard";
 import Billing from "./pages/Billing";
 import Support from "./pages/Support";
 import ImageEnhancerPage from "./pages/ImageEnhancerPage";
+import ReferralPage from "./pages/ReferralPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 import Home from "./pages/marketing/Home";
@@ -103,6 +104,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ImageEnhancerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/referral"
+              element={
+                <ProtectedRoute>
+                  <ReferralPage />
                 </ProtectedRoute>
               }
             />

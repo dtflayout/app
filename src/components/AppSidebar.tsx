@@ -18,6 +18,7 @@ import {
   User,
   Sparkles,
   PlusCircle,
+  Gift,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +62,11 @@ const menuItems: MenuItem[] = [
     label: "Buy Credits",
     icon: <PlusCircle className="w-5 h-5 flex-shrink-0" />,
     path: "/pricing",
+  },
+  {
+    label: "Referral",
+    icon: <Gift className="w-5 h-5 flex-shrink-0" />,
+    path: "/referral",
   },
   {
     label: "Help & Support",
