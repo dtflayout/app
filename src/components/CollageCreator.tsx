@@ -873,7 +873,7 @@ export const CollageCreator = ({
           <div className="col-span-2 flex items-end justify-end">
             <div className="text-base text-slate-500 font-medium flex items-center gap-1.5">
               <Info className="w-4 h-4" />
-              Max sheet height: {maxHeight}" ({mode === 'hd' ? '300' : '150'} DPI)
+              Max sheet height: {maxHeight} inches ({mode === 'hd' ? '300' : '150'} DPI)
             </div>
           </div>
         </div>

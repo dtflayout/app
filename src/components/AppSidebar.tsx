@@ -134,7 +134,7 @@ export const AppSidebar = () => {
           className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
         >
           <img
-            src="/logo.png"
+            src="/DTF-Layout-WHITE-logo-text.png"
             alt="DTF Layout"
             className="h-10 flex-shrink-0"
           />
@@ -328,7 +328,7 @@ export const AppSidebar = () => {
           className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
         >
           <img
-            src="/logo.png"
+            src="/DTF-Layout-WHITE-logo-text.png"
             alt="DTF Layout"
             className="h-10"
           />

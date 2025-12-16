@@ -101,10 +101,10 @@ const Pricing3 = () => {
 
   // Handle plan purchase
   const handleGetStarted = async (plan: typeof PLANS[number]) => {
-    // If user is not logged in, redirect to auth
+    // If user is not logged in, redirect to signup
     if (!user) {
-      toast.info("Please sign in to purchase a plan");
-      navigate("/auth");
+      toast.info("Please sign up to get started");
+      navigate("/signup");
       return;
     }
 
