@@ -40,7 +40,7 @@ const outsetaStyles = `
 
 const AuthPage = () => {
   const navigate = useNavigate();
-  const { outseta, user, refreshUser } = useOutseta();
+  const { user, refreshUser } = useOutseta();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -51,20 +51,9 @@ const AuthPage = () => {
   }, [user, navigate]);
 
   useEffect(() => {
-    // Initialize Outseta auth widget in embedded mode
-    if (outseta) {
-      outseta.auth.open({
-        mode: 'embed',
-        selector: '#outseta-auth-widget',
-        widgetMode: 'login|register',
-        authenticationCallbackUrl: window.location.origin + "/app",
-        planUid: 'rmk5109g', // Free Trial plan
-      });
-    }
-
     // Handle successful signup - set initial credits
-    const handleSignup = async (data: any) => {
-      console.log("Signup event triggered", data);
+    const handleSignup = async () => {
+      console.log("Signup event triggered");
 
       try {
         // Get the newly created user
@@ -115,9 +104,8 @@ const AuthPage = () => {
     return () => {
       window.removeEventListener("signup", handleSignup);
       window.removeEventListener("accessToken.set", handleLogin);
-      // Don't close in embed mode, just clean up
     };
-  }, [outseta, navigate, refreshUser, toast]);
+  }, [navigate, refreshUser, toast]);
 
   return (
     <>
@@ -202,10 +190,13 @@ const AuthPage = () => {
                   <p className="text-slate-500">Sign in to your account to continue</p>
                 </div>
 
-                {/* Outseta auth widget embedded here */}
+                {/* Outseta auth widget embedded here - using data attributes for inline embedding */}
                 <div className="overflow-hidden">
                   <div
-                    id="outseta-auth-widget"
+                    data-o-auth="1"
+                    data-mode="embed"
+                    data-widget-mode="login|register"
+                    data-plan-uid="rmk5109g"
                     className="w-full min-h-[280px]"
                   ></div>
                 </div>
