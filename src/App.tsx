@@ -17,6 +17,7 @@ import Billing from "./pages/Billing";
 import Support from "./pages/Support";
 import ImageEnhancerPage from "./pages/ImageEnhancerPage";
 import ReferralPage from "./pages/ReferralPage";
+import CreditHistory from "./pages/CreditHistory";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 import Home from "./pages/marketing/Home";
@@ -112,6 +113,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ReferralPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/credit-history"
+              element={
+                <ProtectedRoute>
+                  <CreditHistory />
                 </ProtectedRoute>
               }
             />

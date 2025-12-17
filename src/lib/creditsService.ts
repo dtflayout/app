@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { logCreditTransaction } from './creditLedgerService';
 
 const FREE_TRIAL_CREDITS = 10000;
 const LOW_CREDITS_THRESHOLD = 1000; // sq.inches
@@ -48,16 +49,16 @@ export async function getOrCreateUserCredits(
       };
     }
 
-    // User doesn't exist, create with 0 credits (free trial must be claimed via pricing page)
-    console.log('[Credits] New user, creating with 0 credits');
+    // User doesn't exist, create with 10,000 free trial credits automatically
+    console.log('[Credits] New user, creating with 10,000 free trial credits');
 
     const { error: insertError } = await supabase
       .from('user_credits')
       .insert({
         user_id: userId,
         email: email,
-        credit_balance: 0,
-        free_trial_claimed: false,
+        credit_balance: FREE_TRIAL_CREDITS,
+        free_trial_claimed: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
@@ -67,8 +68,18 @@ export async function getOrCreateUserCredits(
       return { success: false, error: insertError.message };
     }
 
-    console.log('[Credits] New user created with 0 credits');
-    return { success: true, credits: 0, freeTrialClaimed: false, isNewUser: true };
+    // Log the free trial credit transaction
+    await logCreditTransaction(
+      userId,
+      email,
+      'free_trial',
+      FREE_TRIAL_CREDITS,
+      FREE_TRIAL_CREDITS,
+      'Welcome bonus - Free trial credits'
+    );
+
+    console.log('[Credits] New user created with 10,000 free trial credits');
+    return { success: true, credits: FREE_TRIAL_CREDITS, freeTrialClaimed: true, isNewUser: true };
   } catch (err: any) {
     console.error('[Credits] Exception:', err);
     return { success: false, error: err.message };
@@ -178,6 +189,16 @@ export async function deductCredits(
       console.error('[Credits] Update error:', updateError);
       return { success: false, error: updateError.message };
     }
+
+    // Log the usage deduction transaction
+    await logCreditTransaction(
+      userId,
+      email,
+      'usage',
+      -amount,
+      newBalance,
+      'Sheet generation'
+    );
 
     console.log('[Credits] Deduction successful. New balance:', newBalance);
     return { success: true, newBalance };
@@ -313,6 +334,16 @@ export async function addCredits(
         return { success: false, error: updateError.message };
       }
 
+      // Log the recharge transaction
+      await logCreditTransaction(
+        userId,
+        email,
+        'recharge',
+        amount,
+        newBalance,
+        'Plan recharge'
+      );
+
       console.log('[Credits] Credits added. New balance:', newBalance);
       return { success: true, newBalance };
     } else {
@@ -331,6 +362,16 @@ export async function addCredits(
         console.error('[Credits] Insert error:', insertError);
         return { success: false, error: insertError.message };
       }
+
+      // Log the recharge transaction for new user
+      await logCreditTransaction(
+        userId,
+        email,
+        'recharge',
+        amount,
+        amount,
+        'Plan recharge'
+      );
 
       console.log('[Credits] New user created with', amount, 'credits');
       return { success: true, newBalance: amount };

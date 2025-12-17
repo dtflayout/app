@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { logCreditTransaction } from './creditLedgerService';
 
 // Types
 export interface ReferralCode {
@@ -266,6 +267,16 @@ export async function claimReferralBonus(
       earnings: earningsForReferrer,
       bonus_given: bonusAmount,
     });
+
+  // Log the referral bonus transaction to credit ledger
+  await logCreditTransaction(
+    userId,
+    email,
+    'referral_bonus',
+    bonusAmount,
+    newBalance,
+    `Referral bonus from code ${normalizedCode}`
+  );
 
   // Update referrer's totals
   const { data: referralCode } = await supabase

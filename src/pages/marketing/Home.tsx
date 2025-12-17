@@ -232,9 +232,6 @@ const Home = () => {
                   Learn More
                 </GradientButton>
               </div>
-              <p className="mt-6 text-white/80 text-sm">
-                No credit card required • 14-day free trial • Cancel anytime
-              </p>
             </div>
 
             {/* Right: Hero Visual - Portrait Browser Mockup */}

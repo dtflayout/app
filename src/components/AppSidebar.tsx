@@ -19,6 +19,7 @@ import {
   Sparkles,
   PlusCircle,
   Gift,
+  Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +58,11 @@ const menuItems: MenuItem[] = [
     label: "Billing",
     icon: <CreditCard className="w-5 h-5 flex-shrink-0" />,
     path: "/billing",
+  },
+  {
+    label: "Credit History",
+    icon: <Receipt className="w-5 h-5 flex-shrink-0" />,
+    path: "/credit-history",
   },
   {
     label: "Buy Credits",
