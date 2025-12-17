@@ -124,7 +124,7 @@ const ReferralPage = () => {
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-2xl mx-auto space-y-6">
+      <div className="p-6 max-w-3xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Referral Program</h1>
           <p className="text-muted-foreground mt-1">
@@ -225,7 +225,7 @@ const ReferralPage = () => {
                 <CardTitle className="text-lg">Referral History</CardTitle>
               </div>
               <CardDescription>
-                Users who used your referral code
+                Complete log of all referrals
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -233,26 +233,24 @@ const ReferralPage = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
+                      <th className="text-left py-2 px-2 font-medium text-muted-foreground">Date</th>
                       <th className="text-left py-2 px-2 font-medium text-muted-foreground">User</th>
                       <th className="text-right py-2 px-2 font-medium text-muted-foreground">Recharge Value</th>
                       <th className="text-right py-2 px-2 font-medium text-muted-foreground">Earnings</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {status.referralHistory.map((claim, index) => (
-                      <tr key={index} className="border-b last:border-0">
-                        <td className="py-3 px-2">{claim.user_email}</td>
+                    {status.referralHistory.map((log, index) => (
+                      <tr key={log.id || index} className="border-b last:border-0">
+                        <td className="py-3 px-2 text-muted-foreground">
+                          {formatDateTime(log.created_at)}
+                        </td>
+                        <td className="py-3 px-2">{log.referred_email}</td>
                         <td className="py-3 px-2 text-right">
-                          {claim.recharge_value
-                            ? formatRupee(claim.recharge_value)
-                            : '-'
-                          }
+                          {formatRupee(log.recharge_value)}
                         </td>
                         <td className="py-3 px-2 text-right font-medium text-green-600">
-                          {claim.earnings
-                            ? formatRupee(claim.earnings)
-                            : '-'
-                          }
+                          {formatRupee(log.earnings)}
                         </td>
                       </tr>
                     ))}

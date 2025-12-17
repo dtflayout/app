@@ -14,11 +14,14 @@ export interface ReferralCode {
   updated_at: string;
 }
 
-export interface ReferralClaim {
-  user_email: string;
-  recharge_value: number | null;
-  earnings: number | null;
-  claimed_at: string | null;
+export interface ReferralLog {
+  id: string;
+  referral_code: string;
+  referred_email: string;
+  recharge_value: number;
+  earnings: number;
+  bonus_given: number;
+  created_at: string;
 }
 
 export interface ReferralStatus {
@@ -28,7 +31,7 @@ export interface ReferralStatus {
   claimedCode: string | null;
   bonusAmountClaimed: number | null;
   bonusClaimedAt: string | null;
-  referralHistory: ReferralClaim[];
+  referralHistory: ReferralLog[];
 }
 
 // Constants
@@ -53,22 +56,17 @@ export async function getReferralStatus(userId: string): Promise<ReferralStatus>
     .eq('user_id', userId)
     .single();
 
-  // Get referral history if user has a referral code
-  let referralHistory: ReferralClaim[] = [];
+  // Get referral history from referral_logs table
+  let referralHistory: ReferralLog[] = [];
   if (referralCode?.code) {
-    const { data: claims } = await supabase
-      .from('user_credits')
-      .select('email, referral_recharge_value, referral_earnings, bonus_claimed_at')
-      .eq('referred_by_code', referralCode.code)
-      .order('bonus_claimed_at', { ascending: false });
+    const { data: logs } = await supabase
+      .from('referral_logs')
+      .select('*')
+      .eq('referral_code', referralCode.code)
+      .order('created_at', { ascending: false });
 
-    if (claims) {
-      referralHistory = claims.map(claim => ({
-        user_email: claim.email,
-        recharge_value: claim.referral_recharge_value,
-        earnings: claim.referral_earnings,
-        claimed_at: claim.bonus_claimed_at,
-      }));
+    if (logs) {
+      referralHistory = logs;
     }
   }
 
@@ -199,6 +197,22 @@ export async function claimReferralBonus(
     return { success: false, error: validation.error };
   }
 
+  // Get referral code details (for logging)
+  const { data: referralCodeData } = await supabase
+    .from('referral_codes')
+    .select('user_id, user_email')
+    .eq('code', normalizedCode)
+    .single();
+
+  if (!referralCodeData) {
+    return { success: false, error: 'Invalid referral code' };
+  }
+
+  // Prevent using own referral code
+  if (referralCodeData.user_id === userId) {
+    return { success: false, error: 'You cannot use your own referral code' };
+  }
+
   // Get user's last successful transaction to calculate bonus
   const { data: lastTransaction } = await supabase
     .from('transactions')
@@ -239,7 +253,21 @@ export async function claimReferralBonus(
     return { success: false, error: 'Failed to claim bonus. Please try again.' };
   }
 
-  // Update referrer's stats
+  // Insert into referral_logs for complete history
+  await supabase
+    .from('referral_logs')
+    .insert({
+      referral_code: normalizedCode,
+      referrer_user_id: referralCodeData.user_id,
+      referrer_email: referralCodeData.user_email,
+      referred_user_id: userId,
+      referred_email: email,
+      recharge_value: rechargeValue,
+      earnings: earningsForReferrer,
+      bonus_given: bonusAmount,
+    });
+
+  // Update referrer's totals
   const { data: referralCode } = await supabase
     .from('referral_codes')
     .select('total_referrals, total_recharge_value, total_earnings')
