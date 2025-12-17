@@ -414,6 +414,19 @@ const Pricing3 = () => {
           </div>
         </div>
       </section>
+
+      {/* Full-screen overlay when processing payment */}
+      {processingPlanId && (
+        <div className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 max-w-sm mx-4">
+            <Loader2 className="h-12 w-12 animate-spin text-emerald-600" />
+            <div className="text-center">
+              <p className="text-lg font-semibold text-slate-900">Processing payment...</p>
+              <p className="text-sm text-slate-500 mt-1">Please wait, do not close this page</p>
+            </div>
+          </div>
+        </div>
+      )}
     </MarketingLayout>
   );
 };
