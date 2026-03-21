@@ -71,7 +71,7 @@ const MobileTooltip = ({ children, content, contentClassName }: MobileTooltipPro
         </TooltipTrigger>
         <TooltipContent
           className={cn(
-            "z-[100] bg-slate-900 text-white px-3 py-2 rounded-md shadow-lg border-0 max-w-[280px]",
+            "z-[100] bg-gray-900 text-white px-3 py-2 rounded-md shadow-lg border-0 max-w-[280px]",
             contentClassName
           )}
           side="top"

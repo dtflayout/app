@@ -1,12 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
-import { useOutseta } from "./OutsetaContext";
-import {
-  getOrCreateUserCredits,
-  deductCredits as deductCreditsService,
-  shouldSendLowCreditsAlert,
-  updateLowCreditAlertTimestamp,
-} from "@/lib/creditsService";
-import { postLowCreditsActivity } from "@/services/outsetaActivityService";
+import { useAuth } from "./AuthContext";
+import { supabase } from "@/lib/supabaseClient";
+
+const FREE_TRIAL_CREDITS = 10000;
 
 interface CreditsContextType {
   credits: number;
@@ -14,7 +10,7 @@ interface CreditsContextType {
   isLoading: boolean;
   error: string | null;
   refreshCredits: () => Promise<void>;
-  deductCredits: (amount: number) => Promise<{ success: boolean; newBalance?: number; error?: string }>;
+  deductCredits: (amount: number, description?: string) => Promise<{ success: boolean; newBalance?: number; error?: string }>;
 }
 
 const CreditsContext = createContext<CreditsContextType>({
@@ -39,103 +35,195 @@ interface CreditsProviderProps {
 }
 
 export const CreditsProvider = ({ children }: CreditsProviderProps) => {
-  const { user, isLoading: outsetaLoading } = useOutseta();
+  const { user, isLoading: authLoading } = useAuth();
   const [credits, setCredits] = useState<number>(0);
   const [freeTrialClaimed, setFreeTrialClaimed] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get user ID from Outseta - this is used as the key in Supabase
-  const getUserId = useCallback(() => {
-    return user?.Account?.Uid || user?.Uid || null;
-  }, [user]);
-
-  const getUserEmail = useCallback(() => {
-    return user?.Email || null;
-  }, [user]);
-
-  // Fetch or create credits for the logged-in user
+  // Fetch credits for the logged-in user
   const refreshCredits = useCallback(async () => {
-    const userId = getUserId();
-    const email = getUserEmail();
-
-    if (!userId || !email) {
-      console.log("[CreditsContext] No user logged in, setting credits to 0");
+    if (!user) {
+      console.log("[Credits] No user logged in, setting credits to 0");
       setCredits(0);
       setFreeTrialClaimed(false);
       setIsLoading(false);
       return;
     }
 
-    console.log("[CreditsContext] Refreshing credits for user:", userId);
+    console.log("[Credits] Refreshing credits for user:", user.id);
     setIsLoading(true);
     setError(null);
 
-    const result = await getOrCreateUserCredits(userId, email);
+    try {
+      // Try to get existing credits record
+      const { data, error: fetchError } = await supabase
+        .from("credits")
+        .select("balance, free_trial_claimed")
+        .eq("user_id", user.id)
+        .single();
 
-    if (result.success) {
-      console.log("[CreditsContext] Credits loaded:", result.credits, "freeTrialClaimed:", result.freeTrialClaimed, result.isNewUser ? "(new user)" : "");
-      setCredits(result.credits ?? 0);
-      setFreeTrialClaimed(result.freeTrialClaimed ?? false);
-    } else {
-      console.error("[CreditsContext] Failed to load credits:", result.error);
-      setError(result.error || "Failed to load credits");
+      if (fetchError && fetchError.code !== "PGRST116") {
+        // PGRST116 = no rows returned (might happen if trigger didn't fire)
+        console.error("[Credits] Fetch error:", fetchError);
+        setError(fetchError.message);
+        setCredits(0);
+        setFreeTrialClaimed(false);
+        setIsLoading(false);
+        return;
+      }
+
+      if (data) {
+        // User has credits record
+        console.log("[Credits] Credits loaded:", data.balance, "freeTrialClaimed:", data.free_trial_claimed);
+        setCredits(data.balance ?? 0);
+        setFreeTrialClaimed(data.free_trial_claimed ?? false);
+      } else {
+        // No credits record found - this shouldn't happen with our trigger
+        // But just in case, create one
+        console.log("[Credits] No credits record found, creating one");
+        
+        const { error: insertError } = await supabase
+          .from("credits")
+          .insert({
+            user_id: user.id,
+            email: user.email,
+            balance: 0,
+            free_trial_claimed: false,
+          });
+
+        if (insertError) {
+          console.error("[Credits] Insert error:", insertError);
+          setError(insertError.message);
+        }
+
+        setCredits(0);
+        setFreeTrialClaimed(false);
+      }
+    } catch (err: any) {
+      console.error("[Credits] Exception:", err);
+      setError(err.message);
       setCredits(0);
       setFreeTrialClaimed(false);
     }
 
     setIsLoading(false);
-  }, [getUserId, getUserEmail]);
+  }, [user]);
 
   // Deduct credits from the user's balance
-  const deductCredits = useCallback(async (amount: number): Promise<{ success: boolean; newBalance?: number; error?: string }> => {
-    const userId = getUserId();
-    const email = getUserEmail();
+  const deductCredits = useCallback(
+    async (
+      amount: number,
+      description: string = "Sheet generation"
+    ): Promise<{ success: boolean; newBalance?: number; error?: string }> => {
+      if (!user) {
+        return { success: false, error: "User not logged in" };
+      }
 
-    if (!userId || !email) {
+      if (credits < amount) {
+        return { success: false, error: "Insufficient credits" };
+      }
+
+      console.log("[Credits] Deducting", amount, "credits");
+
+      try {
+        const newBalance = credits - amount;
+
+        // Update the balance
+        const { error: updateError } = await supabase
+          .from("credits")
+          .update({ balance: newBalance })
+          .eq("user_id", user.id);
+
+        if (updateError) {
+          console.error("[Credits] Update error:", updateError);
+          return { success: false, error: updateError.message };
+        }
+
+        // Log the transaction
+        const { error: txError } = await supabase
+          .from("credit_transactions")
+          .insert({
+            user_id: user.id,
+            type: "deduction",
+            amount: -amount,
+            balance_after: newBalance,
+            description: description,
+          });
+
+        if (txError) {
+          console.error("[Credits] Transaction log error:", txError);
+          // Don't fail the whole operation for logging error
+        }
+
+        setCredits(newBalance);
+        console.log("[Credits] Deduction successful. New balance:", newBalance);
+        return { success: true, newBalance };
+      } catch (err: any) {
+        console.error("[Credits] Exception:", err);
+        return { success: false, error: err.message };
+      }
+    },
+    [user, credits]
+  );
+
+  // Claim free trial credits
+  const claimFreeTrial = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+    if (!user) {
       return { success: false, error: "User not logged in" };
     }
 
-    if (credits < amount) {
-      return { success: false, error: "Insufficient credits" };
+    if (freeTrialClaimed) {
+      return { success: false, error: "Free trial already claimed" };
     }
 
-    console.log("[CreditsContext] Deducting", amount, "credits");
+    console.log("[Credits] Claiming free trial credits");
 
-    const result = await deductCreditsService(userId, amount, email);
+    try {
+      const newBalance = credits + FREE_TRIAL_CREDITS;
 
-    if (result.success && result.newBalance !== undefined) {
-      setCredits(result.newBalance);
-      console.log("[CreditsContext] Credits updated to:", result.newBalance);
+      // Update balance and mark free trial as claimed
+      const { error: updateError } = await supabase
+        .from("credits")
+        .update({
+          balance: newBalance,
+          free_trial_claimed: true,
+        })
+        .eq("user_id", user.id);
 
-      // Check if we should send a low credits alert
-      const alertCheck = await shouldSendLowCreditsAlert(userId, result.newBalance);
-      if (alertCheck.shouldSend) {
-        console.log("[CreditsContext] Sending low credits alert...");
-
-        // Send the alert (non-blocking) - looks up Person by email
-        postLowCreditsActivity(email, result.newBalance)
-          .then(async (activityResult) => {
-            if (activityResult.success) {
-              // Update the timestamp to prevent duplicate alerts
-              await updateLowCreditAlertTimestamp(userId);
-              console.log("[CreditsContext] Low credits alert sent successfully");
-            } else {
-              console.error("[CreditsContext] Failed to send low credits alert:", activityResult.error);
-            }
-          })
-          .catch((err) => {
-            console.error("[CreditsContext] Exception sending low credits alert:", err);
-          });
+      if (updateError) {
+        console.error("[Credits] Update error:", updateError);
+        return { success: false, error: updateError.message };
       }
-    }
 
-    return result;
-  }, [getUserId, getUserEmail, credits]);
+      // Log the transaction
+      const { error: txError } = await supabase
+        .from("credit_transactions")
+        .insert({
+          user_id: user.id,
+          type: "free_trial",
+          amount: FREE_TRIAL_CREDITS,
+          balance_after: newBalance,
+          description: "Welcome bonus - Free trial credits",
+        });
+
+      if (txError) {
+        console.error("[Credits] Transaction log error:", txError);
+      }
+
+      setCredits(newBalance);
+      setFreeTrialClaimed(true);
+      console.log("[Credits] Free trial claimed. New balance:", newBalance);
+      return { success: true };
+    } catch (err: any) {
+      console.error("[Credits] Exception:", err);
+      return { success: false, error: err.message };
+    }
+  }, [user, credits, freeTrialClaimed]);
 
   // Load credits when user changes
   useEffect(() => {
-    if (!outsetaLoading) {
+    if (!authLoading) {
       if (user) {
         refreshCredits();
       } else {
@@ -144,7 +232,7 @@ export const CreditsProvider = ({ children }: CreditsProviderProps) => {
         setIsLoading(false);
       }
     }
-  }, [user, outsetaLoading, refreshCredits]);
+  }, [user, authLoading, refreshCredits]);
 
   const value = {
     credits,

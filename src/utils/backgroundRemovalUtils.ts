@@ -328,3 +328,55 @@ export const hexToRgb = (hex: string): RGBColor | null => {
       }
     : null;
 };
+
+/**
+ * Generate a preview of multiple color REPLACEMENT (not removal)
+ * Matching pixels are replaced with the given replacement color instead of made transparent
+ * @param imageUrl URL of the source image
+ * @param targetColors Array of colors with individual tolerances to replace
+ * @param replacementColor The RGB color to replace matched pixels with
+ * @returns Canvas with the preview
+ */
+export const generateReplacementPreviewMultiple = async (
+  imageUrl: string,
+  targetColors: ColorWithTolerance[],
+  replacementColor: RGBColor
+): Promise<HTMLCanvasElement> => {
+  const img = await loadImage(imageUrl);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width;
+  canvas.height = img.height;
+
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) {
+    throw new Error('Could not get canvas context');
+  }
+
+  ctx.drawImage(img, 0, 0);
+
+  if (targetColors.length === 0) {
+    return canvas;
+  }
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const pixel: RGBColor = {
+      r: data[i],
+      g: data[i + 1],
+      b: data[i + 2],
+    };
+
+    if (isColorWithinIndividualTolerances(pixel, targetColors)) {
+      data[i] = replacementColor.r;
+      data[i + 1] = replacementColor.g;
+      data[i + 2] = replacementColor.b;
+      // Keep original alpha
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  return canvas;
+};

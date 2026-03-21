@@ -18,7 +18,7 @@ export function NeonGradientCard({
   borderSize = 2,
   borderRadius = 20,
   neonColors = {
-    firstColor: "#10b981",
+    firstColor: "#4F46E5",
     secondColor: "#3b82f6",
   },
 }: NeonGradientCardProps) {

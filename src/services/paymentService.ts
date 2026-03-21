@@ -142,7 +142,7 @@ export interface UserInfo {
   name?: string;
   email?: string;
   phone?: string;
-  outsetaAccountId?: string;
+  userId?: string; // Supabase user ID (formerly outsetaAccountId)
 }
 
 // Payment result
@@ -169,10 +169,10 @@ interface CreateOrderResponse {
 const createRazorpayOrder = async (
   planId: string,
   userEmail: string,
-  outsetaAccountId: string
+  userId: string
 ): Promise<CreateOrderResponse> => {
   try {
-    console.log('[Payment] Creating Razorpay order...', { planId, userEmail, outsetaAccountId });
+    console.log('[Payment] Creating Razorpay order...', { planId, userEmail, userId });
 
     const response = await fetch('/api/create-order', {
       method: 'POST',
@@ -182,7 +182,7 @@ const createRazorpayOrder = async (
       body: JSON.stringify({
         plan_id: planId,
         user_email: userEmail,
-        outseta_account_id: outsetaAccountId,
+        user_id: userId, // Backend may still expect outseta_account_id - update backend if needed
       }),
     });
 
@@ -233,7 +233,7 @@ export const initiateRazorpayCheckout = async (
   const orderResult = await createRazorpayOrder(
     plan.id,
     userInfo.email || '',
-    userInfo.outsetaAccountId || ''
+    userInfo.userId || ''
   );
 
   if (!orderResult.success || !orderResult.order_id) {
@@ -264,10 +264,10 @@ export const initiateRazorpayCheckout = async (
           plan_id: plan.id,
           plan_name: plan.name,
           credits: plan.credits.toString(),
-          outseta_account_id: userInfo.outsetaAccountId || '',
+          user_id: userInfo.userId || '', // Backend may still expect outseta_account_id - update backend if needed
         },
         theme: {
-          color: '#10b981', // Emerald green to match our UI
+          color: '#4F46E5', // Emerald green to match our UI
         },
         handler: (response: RazorpaySuccessResponse) => {
           console.log('[Payment] Razorpay success callback:', {
@@ -357,7 +357,7 @@ export interface VerifyPaymentParams {
   razorpay_order_id?: string;
   razorpay_signature?: string;
   plan_id: string;
-  outseta_account_id: string;
+  user_id: string; // Supabase user ID (backend may still expect outseta_account_id - update backend if needed)
   user_email: string;
   amount: number;
 }

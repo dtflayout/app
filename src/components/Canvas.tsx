@@ -416,13 +416,13 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
           </Badge>
           {/* Background Preview (Hold to preview) */}
           <div className="flex items-center gap-2 border rounded-md px-2 py-1" title="Hold to preview background">
-            <span className="text-xs text-slate-500">Press & hold to preview:</span>
+            <span className="text-xs text-gray-500">Press & hold to preview:</span>
             <div
               className="h-6 w-6 rounded flex items-center justify-center bg-blue-50 ring-1 ring-blue-300"
               title="Default (checkered)"
             >
               <div
-                className="w-4 h-4 rounded-sm border border-slate-300"
+                className="w-4 h-4 rounded-sm border border-gray-300"
                 style={{
                   backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
                   backgroundSize: '6px 6px',
@@ -437,11 +437,11 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
               className={`h-6 w-6 rounded flex items-center justify-center transition-colors select-none ${
                 previewBg === 'grey'
                   ? 'bg-gray-200 ring-2 ring-gray-400'
-                  : 'hover:bg-slate-100'
+                  : 'hover:bg-gray-100'
               }`}
               title="Hold to preview grey background"
             >
-              <div className="w-4 h-4 rounded-sm bg-gray-500 border border-slate-300" />
+              <div className="w-4 h-4 rounded-sm bg-gray-500 border border-gray-300" />
             </button>
             <button
               onMouseDown={() => setPreviewBg('black')}
@@ -450,11 +450,11 @@ export const Canvas = forwardRef<any, CanvasProps>(({ images, layout, canvasHeig
               className={`h-6 w-6 rounded flex items-center justify-center transition-colors select-none ${
                 previewBg === 'black'
                   ? 'bg-gray-700 ring-2 ring-gray-500'
-                  : 'hover:bg-slate-100'
+                  : 'hover:bg-gray-100'
               }`}
               title="Hold to preview black background"
             >
-              <div className="w-4 h-4 rounded-sm bg-black border border-slate-300" />
+              <div className="w-4 h-4 rounded-sm bg-black border border-gray-300" />
             </button>
           </div>
           {/* Zoom Controls */}

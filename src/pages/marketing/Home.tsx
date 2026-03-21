@@ -28,14 +28,14 @@ const testimonials = [
 // Testimonials - Cards in a Row
 const Testimonials = () => {
   return (
-    <section className="py-20 bg-gradient-to-b from-white to-slate-50">
+    <section className="py-20 bg-gradient-to-b from-white to-gray-50">
       <div className="container max-w-7xl mx-auto px-6">
         {/* Section Header */}
         <div className="text-center mb-12">
-          <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+          <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
             What Our Customers Say
           </h2>
-          <p className="text-lg text-slate-600">
+          <p className="text-lg text-gray-600">
             Trusted by print professionals across India
           </p>
         </div>
@@ -45,17 +45,17 @@ const Testimonials = () => {
           {testimonials.map((testimonial, index) => (
             <div
               key={index}
-              className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8 hover:shadow-xl transition-shadow"
+              className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 hover:shadow-xl transition-shadow"
             >
               {/* Quote Icon */}
               <div className="mb-6">
-                <svg className="w-10 h-10 text-emerald-500 opacity-50" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-10 h-10 text-indigo-500 opacity-50" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
                 </svg>
               </div>
 
               {/* Quote */}
-              <p className="text-slate-700 text-lg leading-relaxed mb-6">
+              <p className="text-gray-700 text-lg leading-relaxed mb-6">
                 "{testimonial.quote}"
               </p>
 
@@ -64,11 +64,11 @@ const Testimonials = () => {
                 <img
                   src={testimonial.photo}
                   alt={testimonial.name}
-                  className="w-14 h-14 rounded-full object-cover border-2 border-emerald-200"
+                  className="w-14 h-14 rounded-full object-cover border-2 border-indigo-200"
                 />
                 <div>
-                  <h4 className="font-bold text-slate-900">{testimonial.name}</h4>
-                  <p className="text-sm text-slate-600">{testimonial.role}</p>
+                  <h4 className="font-bold text-gray-900">{testimonial.name}</h4>
+                  <p className="text-sm text-gray-600">{testimonial.role}</p>
                 </div>
               </div>
             </div>
@@ -85,38 +85,38 @@ const LockAspectRatioCard = () => {
   const [isLocked, setIsLocked] = useState(true);
 
   return (
-    <div className="relative bg-white rounded-2xl shadow-xl border border-slate-200 p-8 hover:shadow-2xl transition-shadow">
+    <div className="relative bg-white rounded-2xl shadow-xl border border-gray-200 p-8 hover:shadow-2xl transition-shadow">
       {/* Step Number Badge */}
-      <div className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg">
+      <div className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg">
         2
       </div>
 
       {/* Visual - Mini Image Handler */}
       <div className="mb-6 mt-4">
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
           {/* File Header */}
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg"></div>
             <div>
-              <p className="text-sm font-semibold text-slate-900">Your Design File.png</p>
-              <p className="text-xs text-slate-500">PNG Image</p>
+              <p className="text-sm font-semibold text-gray-900">Your Design File.png</p>
+              <p className="text-xs text-gray-500">PNG Image</p>
             </div>
           </div>
 
           {/* Dimensions */}
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <p className="text-xs text-slate-500 uppercase mb-1 font-medium">Width</p>
-              <p className="text-xl font-bold text-slate-900">12.00 <span className="text-sm font-normal text-slate-600">inches</span></p>
+              <p className="text-xs text-gray-500 uppercase mb-1 font-medium">Width</p>
+              <p className="text-xl font-bold text-gray-900">12.00 <span className="text-sm font-normal text-gray-600">inches</span></p>
             </div>
             <div>
-              <p className="text-xs text-slate-500 uppercase mb-1 font-medium">Height</p>
-              <p className="text-xl font-bold text-slate-900">18.00 <span className="text-sm font-normal text-slate-600">inches</span></p>
+              <p className="text-xs text-gray-500 uppercase mb-1 font-medium">Height</p>
+              <p className="text-xl font-bold text-gray-900">18.00 <span className="text-sm font-normal text-gray-600">inches</span></p>
             </div>
           </div>
 
           {/* Original Size */}
-          <p className="text-xs text-slate-500 mb-3">
+          <p className="text-xs text-gray-500 mb-3">
             Original: <span className="font-mono">3600 × 5400 px</span>
           </p>
 
@@ -130,20 +130,20 @@ const LockAspectRatioCard = () => {
             >
               <div className={`w-11 h-6 rounded-full shadow-sm transition-all duration-200 ${
                 isLocked
-                  ? 'bg-emerald-500 group-hover:bg-emerald-600'
-                  : 'bg-slate-300 group-hover:bg-slate-400'
+                  ? 'bg-indigo-500 group-hover:bg-indigo-600'
+                  : 'bg-gray-300 group-hover:bg-gray-400'
               }`}>
                 <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all duration-200 ${
                   isLocked ? 'translate-x-5' : 'translate-x-0.5'
                 }`}></div>
               </div>
             </button>
-            <span className="text-sm text-slate-700 select-none">Lock Aspect Ratio</span>
+            <span className="text-sm text-gray-700 select-none">Lock Aspect Ratio</span>
           </div>
 
           {/* DPI Badge */}
           <div>
-            <span className="inline-block px-3 py-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold rounded-full">
+            <span className="inline-block px-3 py-1 bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-xs font-bold rounded-full">
               300 DPI
             </span>
           </div>
@@ -151,12 +151,12 @@ const LockAspectRatioCard = () => {
       </div>
 
       {/* Title */}
-      <h3 className="text-2xl font-bold text-slate-900 mb-3">
+      <h3 className="text-2xl font-bold text-gray-900 mb-3">
         Set the Dimensions
       </h3>
 
       {/* Description */}
-      <p className="text-slate-600 leading-relaxed">
+      <p className="text-gray-600 leading-relaxed">
         Enter your required width and height — the aspect ratio stays perfectly maintained for accurate print sizing.
       </p>
     </div>
@@ -172,7 +172,7 @@ const Home = () => {
       <section
         className="relative py-20 overflow-hidden animate-gradient-slow"
         style={{
-          backgroundImage: 'linear-gradient(135deg, #10b981, #14b8a6, #2dd4bf, #06b6d4, #0ea5e9, #3b82f6)',
+          backgroundImage: 'linear-gradient(135deg, #4F46E5, #6366F1, #A78BFA, #7C3AED, #8B5CF6, #3b82f6)',
           backgroundSize: '400% 400%',
         }}
       >
@@ -189,7 +189,7 @@ const Home = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-transparent" />
 
         {/* Animated Gradient Orbs */}
-        <div className="absolute top-20 left-10 w-64 h-64 bg-emerald-400/30 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-20 left-10 w-64 h-64 bg-indigo-400/30 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-20 right-10 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-700" />
 
         <div className="relative container max-w-7xl mx-auto px-6">
@@ -241,60 +241,60 @@ const Home = () => {
                 <div className="animate-float">
 
                   {/* Browser Window - Portrait orientation */}
-                  <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden w-[600px] h-[750px] xl:w-[600px] xl:h-[750px] lg:w-[500px] lg:h-[650px]">
+                  <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden w-[600px] h-[750px] xl:w-[600px] xl:h-[750px] lg:w-[500px] lg:h-[650px]">
 
                     {/* Browser Title Bar */}
-                    <div className="bg-slate-100 px-4 py-3 border-b border-slate-200 flex items-center gap-2">
+                    <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
                       {/* macOS dots */}
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-red-500"></div>
                         <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
                       </div>
                       {/* Title */}
                       <div className="flex-1 text-center">
-                        <span className="text-sm text-slate-600 font-medium">DTF Collage Creator</span>
+                        <span className="text-sm text-gray-600 font-medium">DTF Collage Creator</span>
                       </div>
                     </div>
 
                     {/* Print Sheet Content Area */}
-                    <div className="relative h-full bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+                    <div className="relative h-full bg-gradient-to-br from-gray-50 to-slate-100 p-8">
 
                       {/* Print Sheet - CHECKERBOARD BACKGROUND with flex layout */}
-                      <div className="relative w-full h-[calc(100%-40px)] checkerboard-print-sheet rounded-xl shadow-lg border-2 border-slate-200 p-6 flex flex-col">
+                      <div className="relative w-full h-[calc(100%-40px)] checkerboard-print-sheet rounded-xl shadow-lg border-2 border-gray-200 p-6 flex flex-col">
 
-                        {/* Grid of mint/emerald gradient boxes */}
+                        {/* Grid of indigo gradient boxes */}
                         <div className="relative w-full flex-1 flex flex-col gap-4 mb-4">
 
                           {/* Row 1 */}
                           <div className="flex gap-4 h-[25%]">
-                            <div className="w-[40%] bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
-                            <div className="flex-1 bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
+                            <div className="w-[40%] bg-gradient-to-br from-indigo-100 to-violet-200 rounded-xl shadow-md"></div>
+                            <div className="flex-1 bg-gradient-to-br from-indigo-100 to-violet-200 rounded-xl shadow-md"></div>
                           </div>
 
                           {/* Row 2 */}
                           <div className="h-[20%]">
-                            <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
+                            <div className="w-full h-full bg-gradient-to-br from-indigo-100 to-violet-200 rounded-xl shadow-md"></div>
                           </div>
 
                           {/* Row 3 */}
                           <div className="flex gap-4 h-[30%]">
-                            <div className="w-[30%] bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
-                            <div className="w-[45%] bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
-                            <div className="flex-1 bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
+                            <div className="w-[30%] bg-gradient-to-br from-indigo-100 to-violet-200 rounded-xl shadow-md"></div>
+                            <div className="w-[45%] bg-gradient-to-br from-indigo-100 to-violet-200 rounded-xl shadow-md"></div>
+                            <div className="flex-1 bg-gradient-to-br from-indigo-100 to-violet-200 rounded-xl shadow-md"></div>
                           </div>
 
                           {/* Row 4 */}
                           <div className="flex gap-4 flex-1">
-                            <div className="flex-1 bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
-                            <div className="w-[35%] bg-gradient-to-br from-emerald-100 to-teal-200 rounded-xl shadow-md"></div>
+                            <div className="flex-1 bg-gradient-to-br from-indigo-100 to-violet-200 rounded-xl shadow-md"></div>
+                            <div className="w-[35%] bg-gradient-to-br from-indigo-100 to-violet-200 rounded-xl shadow-md"></div>
                           </div>
 
                         </div>
 
                         {/* Button - INSIDE WHITE CARD, DIRECTLY BELOW BOXES */}
                         <div className="w-full">
-                          <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-4 px-6 rounded-xl shadow-lg flex items-center justify-center">
+                          <div className="bg-gradient-to-r from-indigo-500 to-violet-500 text-white py-4 px-6 rounded-xl shadow-lg flex items-center justify-center">
                             <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
@@ -311,8 +311,8 @@ const Home = () => {
                 </div>
 
                 {/* Decorative gradient blobs - ALL SOFT MINT/EMERALD */}
-                <div className="absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br from-cyan-100 to-emerald-200 rounded-full blur-3xl opacity-40 -z-10"></div>
-                <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-gradient-to-br from-cyan-100 to-emerald-200 rounded-full blur-3xl opacity-40 -z-10"></div>
+                <div className="absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br from-indigo-100 to-violet-200 rounded-full blur-3xl opacity-40 -z-10"></div>
+                <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-gradient-to-br from-indigo-100 to-violet-200 rounded-full blur-3xl opacity-40 -z-10"></div>
               </div>
             </div>
           </div>
@@ -331,10 +331,10 @@ const Home = () => {
 
           {/* Section Header */}
           <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
               How It Works - 3 Simple Steps
             </h2>
-            <p className="text-xl text-slate-600">
+            <p className="text-xl text-gray-600">
               Create Your DTF Print Sheet in Minutes
             </p>
           </div>
@@ -343,45 +343,45 @@ const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-7xl mx-auto">
 
             {/* CARD 1: Upload Your Files */}
-            <div className="relative bg-white rounded-2xl shadow-xl border border-slate-200 p-8 hover:shadow-2xl transition-shadow">
+            <div className="relative bg-white rounded-2xl shadow-xl border border-gray-200 p-8 hover:shadow-2xl transition-shadow">
 
               {/* Step Number Badge */}
-              <div className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg">
+              <div className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg">
                 1
               </div>
 
               {/* Visual - Upload Zone */}
               <div className="mb-6 mt-4">
-                <div className="relative bg-slate-50 border-2 border-dashed border-emerald-400 rounded-xl p-8 h-64 flex flex-col items-center">
+                <div className="relative bg-gray-50 border-2 border-dashed border-indigo-400 rounded-xl p-8 h-64 flex flex-col items-center">
 
                   {/* Content positioned at TOP - PULLED UP */}
                   <div className="flex flex-col items-center pt-2">
                     {/* Upload Icon */}
                     <div className="mb-3">
-                      <svg className="w-14 h-14 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-14 h-14 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                       </svg>
                     </div>
-                    <p className="text-emerald-600 font-bold text-base mb-1.5">DROP FILES HERE</p>
-                    <p className="text-slate-700 text-sm font-semibold">or click to browse</p>
+                    <p className="text-indigo-600 font-bold text-base mb-1.5">DROP FILES HERE</p>
+                    <p className="text-gray-700 text-sm font-semibold">or click to browse</p>
                   </div>
 
                   {/* Floating Image Thumbnails - KEEP SAME POSITION */}
                   <div className="absolute bottom-4 left-4 right-4 flex gap-2 justify-center">
                     <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg shadow-md transform -rotate-6"></div>
                     <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg shadow-md transform rotate-3"></div>
-                    <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg shadow-md transform -rotate-3"></div>
+                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-400 to-violet-500 rounded-lg shadow-md transform -rotate-3"></div>
                   </div>
                 </div>
               </div>
 
               {/* Title */}
-              <h3 className="text-2xl font-bold text-slate-900 mb-3">
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
                 Upload Your Files
               </h3>
 
               {/* Description */}
-              <p className="text-slate-600 leading-relaxed">
+              <p className="text-gray-600 leading-relaxed">
                 Simply drag and drop your PNG artwork — instant previews make it effortless to get started.
               </p>
             </div>
@@ -390,28 +390,28 @@ const Home = () => {
             <LockAspectRatioCard />
 
             {/* CARD 3: Generate Sheet */}
-            <div className="relative bg-white rounded-2xl shadow-xl border border-slate-200 p-8 hover:shadow-2xl transition-shadow">
+            <div className="relative bg-white rounded-2xl shadow-xl border border-gray-200 p-8 hover:shadow-2xl transition-shadow">
 
               {/* Step Number Badge */}
-              <div className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg">
+              <div className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg">
                 3
               </div>
 
               {/* Visual - Mini Collage Preview */}
               <div className="mb-6 mt-4">
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
 
                   {/* Mini Grid Layout */}
                   <div className="grid grid-cols-3 gap-2 mb-4 h-40">
-                    <div className="bg-gradient-to-br from-emerald-100 to-teal-200 rounded-lg"></div>
-                    <div className="bg-gradient-to-br from-emerald-100 to-teal-200 rounded-lg col-span-2"></div>
-                    <div className="bg-gradient-to-br from-emerald-100 to-teal-200 rounded-lg col-span-2"></div>
-                    <div className="bg-gradient-to-br from-emerald-100 to-teal-200 rounded-lg"></div>
-                    <div className="bg-gradient-to-br from-emerald-100 to-teal-200 rounded-lg col-span-3"></div>
+                    <div className="bg-gradient-to-br from-indigo-100 to-violet-200 rounded-lg"></div>
+                    <div className="bg-gradient-to-br from-indigo-100 to-violet-200 rounded-lg col-span-2"></div>
+                    <div className="bg-gradient-to-br from-indigo-100 to-violet-200 rounded-lg col-span-2"></div>
+                    <div className="bg-gradient-to-br from-indigo-100 to-violet-200 rounded-lg"></div>
+                    <div className="bg-gradient-to-br from-indigo-100 to-violet-200 rounded-lg col-span-3"></div>
                   </div>
 
                   {/* Generate Button */}
-                  <button className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center gap-2">
+                  <button className="w-full bg-gradient-to-r from-indigo-500 to-violet-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center gap-2">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
@@ -422,12 +422,12 @@ const Home = () => {
               </div>
 
               {/* Title */}
-              <h3 className="text-2xl font-bold text-slate-900 mb-3">
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
                 Generate Sheet
               </h3>
 
               {/* Description */}
-              <p className="text-slate-600 leading-relaxed">
+              <p className="text-gray-600 leading-relaxed">
                 With one click, your images are arranged into a clean, print-ready sheet ready to download.
               </p>
             </div>
@@ -439,11 +439,11 @@ const Home = () => {
 
       {/* CTA Section with Gradient and Pattern */}
       <section
-        className="relative bg-gradient-to-br from-emerald-400 via-teal-500 to-blue-600 py-24 mt-8"
+        className="relative bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 py-24 mt-8"
         style={{
           backgroundImage: `
             radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-            linear-gradient(to bottom right, #34d399, #14b8a6, #2563eb)
+            linear-gradient(to bottom right, #6366F1, #7C3AED, #4F46E5)
           `,
           backgroundSize: '24px 24px, 100% 100%',
         }}
@@ -491,13 +491,13 @@ const Home = () => {
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Text Column */}
             <div>
-              <div className="inline-block px-4 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium mb-4">
+              <div className="inline-block px-4 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium mb-4">
                 Simple & Fast
               </div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
                 Upload Your Images in Seconds
               </h2>
-              <p className="text-lg text-slate-600 leading-relaxed">
+              <p className="text-lg text-gray-600 leading-relaxed">
                 Drag and drop your images or upload in bulk. Supports all major image formats with instant processing. No technical knowledge required.
               </p>
             </div>
@@ -509,7 +509,7 @@ const Home = () => {
                 <div className="animate-float">
                   <div className="relative max-w-md mx-auto">
                     {/* Card container with border beams */}
-                    <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 overflow-hidden">
+                    <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 overflow-hidden">
 
                         {/* First animated border beam - EMERALD GREEN with transparency */}
                         <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
@@ -542,7 +542,7 @@ const Home = () => {
                       <div className="flex items-center gap-4 mb-6">
                         <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-purple-400 to-pink-500 flex-shrink-0 shadow-lg"></div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold text-slate-900 truncate">
+                          <h3 className="text-lg font-semibold text-gray-900 truncate">
                             Your Design File.png
                           </h3>
                         </div>
@@ -551,23 +551,23 @@ const Home = () => {
                       {/* Dimensions Grid */}
                       <div className="grid grid-cols-2 gap-6 mb-4">
                         <div>
-                          <div className="text-xs text-slate-500 uppercase font-medium mb-1">WIDTH</div>
+                          <div className="text-xs text-gray-500 uppercase font-medium mb-1">WIDTH</div>
                           <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-bold text-slate-900">12.00</span>
-                            <span className="text-sm text-slate-600">inches</span>
+                            <span className="text-2xl font-bold text-gray-900">12.00</span>
+                            <span className="text-sm text-gray-600">inches</span>
                           </div>
                         </div>
                         <div>
-                          <div className="text-xs text-slate-500 uppercase font-medium mb-1">HEIGHT</div>
+                          <div className="text-xs text-gray-500 uppercase font-medium mb-1">HEIGHT</div>
                           <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-bold text-slate-900">18.00</span>
-                            <span className="text-sm text-slate-600">inches</span>
+                            <span className="text-2xl font-bold text-gray-900">18.00</span>
+                            <span className="text-sm text-gray-600">inches</span>
                           </div>
                         </div>
                       </div>
 
                       {/* Original dimensions */}
-                      <div className="text-sm text-slate-500 mb-3">
+                      <div className="text-sm text-gray-500 mb-3">
                         Original: <span className="font-mono">3600 × 5400 px</span>
                       </div>
 
@@ -575,21 +575,21 @@ const Home = () => {
                       <label className="flex items-center gap-2 cursor-pointer mb-4">
                         <div className="relative">
                           <input type="checkbox" className="sr-only peer" defaultChecked />
-                          <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                          <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
                         </div>
-                        <span className="text-sm text-slate-700">Lock Aspect Ratio</span>
+                        <span className="text-sm text-gray-700">Lock Aspect Ratio</span>
                       </label>
 
                       {/* DPI Badge */}
                       <div className="mb-6">
-                        <span className="inline-block px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-bold rounded-full shadow-md">
+                        <span className="inline-block px-4 py-1.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-sm font-bold rounded-full shadow-md">
                           300 DPI
                         </span>
                       </div>
 
                       {/* Action Buttons */}
                       <div className="flex gap-3">
-                        <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors">
+                        <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                           </svg>
@@ -623,13 +623,13 @@ const Home = () => {
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Text Column */}
             <div className="lg:order-2">
-              <div className="inline-block px-4 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium mb-4">
+              <div className="inline-block px-4 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium mb-4">
                 AI-Powered
               </div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
                 Intelligent Auto-Arrangement
               </h2>
-              <p className="text-lg text-slate-600 leading-relaxed">
+              <p className="text-lg text-gray-600 leading-relaxed">
                 Our smart algorithm automatically arranges images efficiently, maximizing space usage and minimizing waste. Save time and material costs.
               </p>
             </div>
@@ -639,7 +639,7 @@ const Home = () => {
               <div className="relative">
                 {/* Before/After Container */}
                 <div className="animate-float">
-                <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 p-8 max-w-xl mx-auto overflow-hidden">
+                <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 p-8 max-w-xl mx-auto overflow-hidden">
 
                   {/* Border beams */}
                   <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
@@ -676,16 +676,16 @@ const Home = () => {
                           <span className="text-sm font-semibold text-red-600 bg-red-100 px-3 py-1.5 rounded-full">
                             Before
                           </span>
-                          <span className="text-sm text-slate-600 font-medium">Wasted Space</span>
+                          <span className="text-sm text-gray-600 font-medium">Wasted Space</span>
                         </div>
 
                         {/* Messy grid with gaps */}
-                        <div className="relative h-80 bg-slate-50 rounded-xl border-2 border-dashed border-slate-300 p-4">
+                        <div className="relative h-80 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 p-4">
                           {/* Random scattered boxes */}
                           <div className="absolute top-6 left-6 w-20 h-20 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg shadow-md transform rotate-12"></div>
                           <div className="absolute top-20 right-10 w-16 h-24 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg shadow-md transform -rotate-6"></div>
-                          <div className="absolute bottom-16 left-14 w-24 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg shadow-md transform rotate-3"></div>
-                          <div className="absolute top-36 left-10 w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg shadow-md transform -rotate-12"></div>
+                          <div className="absolute bottom-16 left-14 w-24 h-16 bg-gradient-to-br from-indigo-400 to-violet-500 rounded-lg shadow-md transform rotate-3"></div>
+                          <div className="absolute top-36 left-10 w-16 h-16 bg-gradient-to-br from-indigo-400 to-indigo-500 rounded-lg shadow-md transform -rotate-12"></div>
                           <div className="absolute bottom-6 right-6 w-20 h-20 bg-gradient-to-br from-pink-400 to-purple-500 rounded-lg shadow-md transform rotate-6"></div>
 
                           {/* Empty space indicator - bottom center with white background */}
@@ -695,7 +695,7 @@ const Home = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 text-sm text-slate-600 pt-2">
+                        <div className="flex items-center gap-2 text-sm text-gray-600 pt-2">
                           <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
@@ -705,8 +705,8 @@ const Home = () => {
 
                       {/* Arrow between */}
                       <div className="hidden md:block absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
-                        <div className="bg-white rounded-full p-3 shadow-xl border-2 border-emerald-200">
-                          <svg className="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="bg-white rounded-full p-3 shadow-xl border-2 border-indigo-200">
+                          <svg className="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                           </svg>
                         </div>
@@ -715,33 +715,33 @@ const Home = () => {
                       {/* AFTER - Optimized Layout */}
                       <div className="space-y-4">
                         <div className="flex items-center justify-between mb-4">
-                          <span className="text-sm font-semibold text-emerald-600 bg-emerald-100 px-3 py-1.5 rounded-full">
+                          <span className="text-sm font-semibold text-indigo-600 bg-indigo-100 px-3 py-1.5 rounded-full">
                             After
                           </span>
-                          <span className="text-sm text-slate-600 font-medium">Optimized</span>
+                          <span className="text-sm text-gray-600 font-medium">Optimized</span>
                         </div>
 
                         {/* Organized grid - perfectly packed */}
-                        <div className="relative h-80 bg-gradient-to-br from-emerald-50 to-cyan-50 rounded-xl border-2 border-emerald-300 p-4">
+                        <div className="relative h-80 bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl border-2 border-indigo-300 p-4">
                           {/* Perfectly arranged boxes */}
                           <div className="grid grid-cols-3 gap-2 h-full">
                             <div className="bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg shadow-md"></div>
                             <div className="bg-gradient-to-br from-orange-400 to-red-500 rounded-lg shadow-md col-span-2"></div>
-                            <div className="bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg shadow-md col-span-2"></div>
-                            <div className="bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg shadow-md"></div>
+                            <div className="bg-gradient-to-br from-indigo-400 to-violet-500 rounded-lg shadow-md col-span-2"></div>
+                            <div className="bg-gradient-to-br from-indigo-400 to-indigo-500 rounded-lg shadow-md"></div>
                             <div className="bg-gradient-to-br from-pink-400 to-purple-500 rounded-lg shadow-md col-span-3"></div>
                           </div>
 
                           {/* Checkmark overlay */}
                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm rounded-full p-3 shadow-lg">
-                            <svg className="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                             </svg>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 text-sm text-slate-600 pt-2">
-                          <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex items-center gap-2 text-sm text-gray-600 pt-2">
+                          <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
                           <span>~95% space utilization</span>
@@ -751,19 +751,19 @@ const Home = () => {
                     </div>
 
                     {/* Stats Bar */}
-                    <div className="mt-8 pt-6 border-t border-slate-200">
+                    <div className="mt-8 pt-6 border-t border-gray-200">
                       <div className="grid grid-cols-3 gap-6 text-center">
                         <div>
-                          <div className="text-2xl font-bold text-emerald-600">~95%</div>
-                          <div className="text-sm text-slate-600 mt-2 font-medium">Space Used</div>
+                          <div className="text-2xl font-bold text-indigo-600">~95%</div>
+                          <div className="text-sm text-gray-600 mt-2 font-medium">Space Used</div>
                         </div>
                         <div>
                           <div className="text-2xl font-bold text-blue-600">3 sec</div>
-                          <div className="text-sm text-slate-600 mt-2 font-medium">Processing Time</div>
+                          <div className="text-sm text-gray-600 mt-2 font-medium">Processing Time</div>
                         </div>
                         <div>
                           <div className="text-2xl font-bold text-purple-600">Rs. 1000</div>
-                          <div className="text-sm text-slate-600 mt-2 font-medium">Saved</div>
+                          <div className="text-sm text-gray-600 mt-2 font-medium">Saved</div>
                         </div>
                       </div>
                     </div>
@@ -773,7 +773,7 @@ const Home = () => {
                 </div>
 
                 {/* Decorative element */}
-                <div className="absolute -z-10 -top-10 -left-10 w-72 h-72 bg-gradient-to-br from-teal-200 to-cyan-200 rounded-full blur-3xl opacity-30"></div>
+                <div className="absolute -z-10 -top-10 -left-10 w-72 h-72 bg-gradient-to-br from-indigo-200 to-violet-200 rounded-full blur-3xl opacity-30"></div>
               </div>
             </div>
           </div>
@@ -791,39 +791,39 @@ const Home = () => {
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Text Column */}
             <div>
-              <div className="inline-block px-4 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium mb-4">
+              <div className="inline-block px-4 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium mb-4">
                 Lightning Fast
               </div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
                 150x Faster Than Manual Arrangement
               </h2>
-              <p className="text-lg text-slate-600 leading-relaxed mb-6">
+              <p className="text-lg text-gray-600 leading-relaxed mb-6">
                 What takes hours manually takes just seconds with DTF Collage Creator. Eliminate tedious manual work and focus on growing your business.
               </p>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <span className="text-slate-700">Save 2.75 hours per batch</span>
+                  <span className="text-gray-700">Save 2.75 hours per batch</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <span className="text-slate-700">Zero errors, perfect every time</span>
+                  <span className="text-gray-700">Zero errors, perfect every time</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <span className="text-slate-700">Fully automated workflow</span>
+                  <span className="text-gray-700">Fully automated workflow</span>
                 </div>
               </div>
             </div>
@@ -832,7 +832,7 @@ const Home = () => {
             <div className="relative">
               <div className="animate-float">
               <div className="relative max-w-6xl mx-auto">
-                <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 px-10 py-8">
+                <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 px-10 py-8">
 
                   {/* Border beams */}
                   <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
@@ -928,49 +928,49 @@ const Home = () => {
                       </div>
 
                       {/* RIGHT: DTF LAYOUT */}
-                      <div className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border-2 border-emerald-300">
+                      <div className="p-6 bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl border-2 border-indigo-300">
 
                         {/* Header */}
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3">
                             <span className="text-3xl">✨</span>
-                            <h3 className="text-xl font-bold text-emerald-700">DTF LAYOUT</h3>
+                            <h3 className="text-xl font-bold text-indigo-700">DTF LAYOUT</h3>
                           </div>
                         </div>
                         <div className="mb-3">
-                          <span className="text-sm font-semibold text-emerald-600 bg-emerald-100 px-3 py-1.5 rounded-full">
+                          <span className="text-sm font-semibold text-indigo-600 bg-indigo-100 px-3 py-1.5 rounded-full">
                             Automated
                           </span>
                         </div>
 
                         {/* Timer */}
-                        <div className="mb-3 p-4 bg-white rounded-lg border border-emerald-300">
+                        <div className="mb-3 p-4 bg-white rounded-lg border border-indigo-300">
                           <div className="flex items-center justify-center gap-2 mb-1.5">
-                            <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
-                            <span className="text-3xl font-mono font-bold text-emerald-600 tabular-nums animate-pulse">
+                            <span className="text-3xl font-mono font-bold text-indigo-600 tabular-nums animate-pulse">
                               00:00:15
                             </span>
                           </div>
-                          <p className="text-sm text-center text-emerald-600 font-medium">Lightning fast processing</p>
+                          <p className="text-sm text-center text-indigo-600 font-medium">Lightning fast processing</p>
                         </div>
 
                         {/* Benefits */}
                         <div className="space-y-2 mb-3">
-                          <div className="flex items-center gap-3 text-sm text-emerald-700">
+                          <div className="flex items-center gap-3 text-sm text-indigo-700">
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                             <span>Perfect arrangement every time</span>
                           </div>
-                          <div className="flex items-center gap-3 text-sm text-emerald-700">
+                          <div className="flex items-center gap-3 text-sm text-indigo-700">
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                             <span>Fully automated process</span>
                           </div>
-                          <div className="flex items-center gap-3 text-sm text-emerald-700">
+                          <div className="flex items-center gap-3 text-sm text-indigo-700">
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
@@ -980,22 +980,22 @@ const Home = () => {
 
                         {/* Progress Bar */}
                         <div className="space-y-2">
-                          <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                          <div className="flex justify-between text-sm text-indigo-600 font-medium">
                             <span>Progress</span>
                             <span className="animate-pulse">100%</span>
                           </div>
-                          <div className="h-2.5 bg-emerald-200 rounded-full overflow-hidden">
-                            <div className="h-full w-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full animate-progress-bar"></div>
+                          <div className="h-2.5 bg-indigo-200 rounded-full overflow-hidden">
+                            <div className="h-full w-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full animate-progress-bar"></div>
                           </div>
                         </div>
                       </div>
 
                       {/* VS Badge - centered between panels */}
                       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 hidden lg:block">
-                        <div className="bg-white px-5 py-2.5 rounded-full border-2 border-slate-300 shadow-xl">
+                        <div className="bg-white px-5 py-2.5 rounded-full border-2 border-gray-300 shadow-xl">
                           <div className="flex items-center gap-2">
                             <span className="text-xl animate-bounce">⚡</span>
-                            <span className="text-base font-bold text-slate-700">VS</span>
+                            <span className="text-base font-bold text-gray-700">VS</span>
                             <span className="text-xl animate-bounce" style={{ animationDelay: '0.2s' }}>⚡</span>
                           </div>
                         </div>
@@ -1004,19 +1004,19 @@ const Home = () => {
                     </div>
 
                     {/* Stats Footer */}
-                    <div className="pt-6 border-t-2 border-slate-200">
+                    <div className="pt-6 border-t-2 border-gray-200">
                       <div className="grid grid-cols-3 gap-10 text-center">
                         <div>
-                          <div className="text-3xl font-bold text-emerald-600 mb-1.5">2.75 hrs</div>
-                          <div className="text-base text-slate-600 font-medium">Time Saved</div>
+                          <div className="text-3xl font-bold text-indigo-600 mb-1.5">2.75 hrs</div>
+                          <div className="text-base text-gray-600 font-medium">Time Saved</div>
                         </div>
                         <div>
                           <div className="text-3xl font-bold text-blue-600 mb-1.5">150x</div>
-                          <div className="text-base text-slate-600 font-medium">Faster</div>
+                          <div className="text-base text-gray-600 font-medium">Faster</div>
                         </div>
                         <div>
                           <div className="text-3xl font-bold text-purple-600 mb-1.5">100%</div>
-                          <div className="text-base text-slate-600 font-medium">Accurate</div>
+                          <div className="text-base text-gray-600 font-medium">Accurate</div>
                         </div>
                       </div>
                     </div>
@@ -1045,13 +1045,13 @@ const Home = () => {
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Text Column */}
             <div className="lg:order-2">
-              <div className="inline-block px-4 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium mb-4">
+              <div className="inline-block px-4 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium mb-4">
                 Print Perfect
               </div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
                 Download Print-Ready Files
               </h2>
-              <p className="text-lg text-slate-600 leading-relaxed">
+              <p className="text-lg text-gray-600 leading-relaxed">
                 Get precise measurements, cutting guides, and custom DPI. Files are optimized for DTF printing with professional quality guaranteed.
               </p>
             </div>
@@ -1063,7 +1063,7 @@ const Home = () => {
                 <div className="animate-float">
 
                   {/* Main export card - INCREASED PADDING */}
-                  <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 p-14">
+                  <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 p-14">
 
                     {/* Border beams */}
                     <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
@@ -1093,7 +1093,7 @@ const Home = () => {
                     <div className="relative z-10">
                       {/* Ready to Print Badge - Top Right */}
                       <div className="absolute -top-3 -right-3 z-20">
-                        <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+                        <div className="bg-gradient-to-r from-indigo-500 to-violet-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
@@ -1109,15 +1109,15 @@ const Home = () => {
                           <div className="grid grid-cols-3 gap-2 w-full h-full p-3">
                             <div className="bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg shadow-md"></div>
                             <div className="bg-gradient-to-br from-orange-400 to-red-500 rounded-lg shadow-md col-span-2"></div>
-                            <div className="bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg shadow-md col-span-2"></div>
-                            <div className="bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg shadow-md"></div>
+                            <div className="bg-gradient-to-br from-indigo-400 to-violet-500 rounded-lg shadow-md col-span-2"></div>
+                            <div className="bg-gradient-to-br from-indigo-400 to-indigo-500 rounded-lg shadow-md"></div>
                             <div className="bg-gradient-to-br from-pink-400 to-purple-500 rounded-lg shadow-md col-span-3"></div>
                           </div>
 
                           {/* Animated Checkmark Overlay */}
-                          <div className="absolute inset-0 bg-emerald-500/10 backdrop-blur-[2px] flex items-center justify-center">
+                          <div className="absolute inset-0 bg-indigo-500/10 backdrop-blur-[2px] flex items-center justify-center">
                             <div className="bg-white rounded-full p-4 shadow-2xl animate-bounce">
-                              <svg className="w-16 h-16 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-16 h-16 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                               </svg>
                             </div>
@@ -1135,10 +1135,10 @@ const Home = () => {
                             </svg>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-bold text-slate-900 truncate">
+                            <h3 className="text-lg font-bold text-gray-900 truncate">
                               DTF_Collage_Layout_Final.png
                             </h3>
-                            <p className="text-sm text-slate-500">PNG Image</p>
+                            <p className="text-sm text-gray-500">PNG Image</p>
                           </div>
                         </div>
 
@@ -1146,50 +1146,50 @@ const Home = () => {
                         <div className="grid grid-cols-2 gap-3 mb-3">
 
                           {/* Dimensions - UPDATED VALUES */}
-                          <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                            <div className="text-xs text-slate-500 uppercase font-medium mb-1">Dimensions</div>
-                            <div className="text-lg font-bold text-slate-900">23" × 150"</div>
-                            <div className="text-xs text-slate-600 font-mono mt-1">6900 × 45000 px</div>
+                          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            <div className="text-xs text-gray-500 uppercase font-medium mb-1">Dimensions</div>
+                            <div className="text-lg font-bold text-gray-900">23" × 150"</div>
+                            <div className="text-xs text-gray-600 font-mono mt-1">6900 × 45000 px</div>
                           </div>
 
                           {/* DPI - UPDATED TO SHOW BOTH */}
-                          <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                            <div className="text-xs text-slate-500 uppercase font-medium mb-1">Resolution</div>
-                            <div className="text-lg font-bold text-slate-900">150 DPI / 300 DPI</div>
-                            <div className="text-xs text-slate-600 mt-1">Print Quality</div>
+                          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            <div className="text-xs text-gray-500 uppercase font-medium mb-1">Resolution</div>
+                            <div className="text-lg font-bold text-gray-900">150 DPI / 300 DPI</div>
+                            <div className="text-xs text-gray-600 mt-1">Print Quality</div>
                           </div>
 
                           {/* File Size */}
-                          <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                            <div className="text-xs text-slate-500 uppercase font-medium mb-1">File Size</div>
-                            <div className="text-lg font-bold text-slate-900">35.4 MB</div>
-                            <div className="text-xs text-slate-600 mt-1">Optimized</div>
+                          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            <div className="text-xs text-gray-500 uppercase font-medium mb-1">File Size</div>
+                            <div className="text-lg font-bold text-gray-900">35.4 MB</div>
+                            <div className="text-xs text-gray-600 mt-1">Optimized</div>
                           </div>
 
                           {/* Format */}
-                          <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                            <div className="text-xs text-slate-500 uppercase font-medium mb-1">Format</div>
-                            <div className="text-lg font-bold text-slate-900">PNG</div>
-                            <div className="text-xs text-slate-600 mt-1">High Quality</div>
+                          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            <div className="text-xs text-gray-500 uppercase font-medium mb-1">Format</div>
+                            <div className="text-lg font-bold text-gray-900">PNG</div>
+                            <div className="text-xs text-gray-600 mt-1">High Quality</div>
                           </div>
 
                         </div>
 
                         {/* Features List - REVERTED to original spacing */}
                         <div className="space-y-1.5 mb-3">
-                          <div className="flex items-center gap-2 text-sm text-emerald-700">
+                          <div className="flex items-center gap-2 text-sm text-indigo-700">
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                             <span>Precise measurements & cutting guides</span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-emerald-700">
+                          <div className="flex items-center gap-2 text-sm text-indigo-700">
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                             <span>Optimized for DTF printing</span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-emerald-700">
+                          <div className="flex items-center gap-2 text-sm text-indigo-700">
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
@@ -1199,7 +1199,7 @@ const Home = () => {
                       </div>
 
                       {/* Download Button - REDUCED PADDING */}
-                      <button className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-[1.02] flex items-center justify-center gap-3">
+                      <button className="w-full bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-[1.02] flex items-center justify-center gap-3">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>

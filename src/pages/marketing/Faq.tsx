@@ -34,7 +34,7 @@ const faqSections: FaqSection[] = [
         answer: (
           <div>
             <p className="mb-3">DTF Layout is built for:</p>
-            <ul className="list-disc list-inside space-y-1 text-slate-600">
+            <ul className="list-disc list-inside space-y-1 text-gray-600">
               <li>DTF print shop owners</li>
               <li>Commercial printing operations</li>
               <li>Custom apparel businesses</li>
@@ -48,7 +48,7 @@ const faqSections: FaqSection[] = [
         answer: (
           <div>
             <p className="mb-3">DTF Layout offers a complete toolkit for DTF printing:</p>
-            <ul className="list-disc list-inside space-y-1 text-slate-600">
+            <ul className="list-disc list-inside space-y-1 text-gray-600">
               <li><strong>Layout Generator</strong> - Automatically arrange multiple designs on your print sheet</li>
               <li><strong>Background Remover</strong> - Remove unwanted backgrounds from images</li>
               <li><strong>Auto Detect Image Trimmer</strong> - Trim empty space around designs</li>
@@ -113,7 +113,7 @@ const faqSections: FaqSection[] = [
         question: "What pricing plans are available?",
         answer: (
           <div>
-            <ul className="space-y-2 text-slate-600">
+            <ul className="space-y-2 text-gray-600">
               <li><strong>Free:</strong> ₹0 (10,000 sq. inches)</li>
               <li><strong>Lite:</strong> ₹1,000 (1,00,000 sq. inches)</li>
               <li><strong>Advanced:</strong> ₹4,000 (5,00,000 sq. inches)</li>
@@ -160,7 +160,7 @@ const faqSections: FaqSection[] = [
       {
         question: "Is there a limit to how many images I can upload?",
         answer:
-          "You can upload up to 40 images per generation. There's no limit on how many layout files you can create.",
+          "You can upload up to 80 images per session. For best performance on devices with limited memory, we recommend keeping batches under 60 images. There's no limit on how many layout files you can create.",
       },
       {
         question: "What are the sheet length limits?",
@@ -240,7 +240,7 @@ const faqSections: FaqSection[] = [
         question: "How do I start using DTF Layout?",
         answer: (
           <div>
-            <ol className="list-decimal list-inside space-y-1 text-slate-600">
+            <ol className="list-decimal list-inside space-y-1 text-gray-600">
               <li>Visit dtflayout.com</li>
               <li>Create a free account</li>
               <li>Start with your free trial or purchase credits</li>
@@ -267,11 +267,11 @@ const Faq = () => {
     <MarketingLayout>
       {/* Hero Section with Gradient and Pattern */}
       <section
-        className="relative bg-gradient-to-br from-emerald-400 via-teal-500 to-blue-600 py-24 md:py-32 overflow-hidden"
+        className="relative bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 py-24 md:py-32 overflow-hidden"
         style={{
           backgroundImage: `
             radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-            linear-gradient(to bottom right, #34d399, #14b8a6, #2563eb)
+            linear-gradient(to bottom right, #818CF8, #6366F1, #2563eb)
           `,
           backgroundSize: "24px 24px, 100% 100%",
         }}
@@ -279,7 +279,7 @@ const Faq = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-transparent" />
 
         {/* Animated Gradient Orbs */}
-        <div className="absolute top-20 left-10 w-64 h-64 bg-emerald-400/30 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-20 left-10 w-64 h-64 bg-indigo-400/30 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-20 right-10 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
 
         <div className="relative container max-w-7xl mx-auto px-6">
@@ -306,7 +306,7 @@ const Faq = () => {
         <div className="container max-w-4xl mx-auto px-6">
           {faqSections.map((section, sectionIndex) => (
             <div key={sectionIndex} className="mb-12 last:mb-0">
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 pb-3 border-b-2 border-emerald-500">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-indigo-500">
                 {section.title}
               </h2>
               <Accordion type="single" collapsible className="space-y-3">
@@ -314,12 +314,12 @@ const Faq = () => {
                   <AccordionItem
                     key={itemIndex}
                     value={`${sectionIndex}-${itemIndex}`}
-                    className="bg-slate-50 rounded-xl border border-slate-200 px-6 data-[state=open]:bg-white data-[state=open]:shadow-lg data-[state=open]:border-emerald-200 transition-all duration-200"
+                    className="bg-gray-50 rounded-xl border border-gray-200 px-6 data-[state=open]:bg-white data-[state=open]:shadow-lg data-[state=open]:border-indigo-200 transition-all duration-200"
                   >
-                    <AccordionTrigger className="text-left text-base md:text-lg font-semibold text-slate-900 hover:text-emerald-600 hover:no-underline py-5">
+                    <AccordionTrigger className="text-left text-base md:text-lg font-semibold text-gray-900 hover:text-indigo-600 hover:no-underline py-5">
                       {item.question}
                     </AccordionTrigger>
-                    <AccordionContent className="text-slate-600 text-base leading-relaxed pb-5">
+                    <AccordionContent className="text-gray-600 text-base leading-relaxed pb-5">
                       {item.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -331,20 +331,20 @@ const Faq = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-slate-50">
+      <section className="py-20 bg-gray-50">
         <div className="container max-w-4xl mx-auto px-6 text-center">
-          <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-10 md:p-14">
-            <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <Mail className="w-8 h-8 text-emerald-600" />
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-10 md:p-14">
+            <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <Mail className="w-8 h-8 text-indigo-600" />
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Still have questions?
             </h2>
-            <p className="text-xl text-slate-600 mb-8">
+            <p className="text-xl text-gray-600 mb-8">
               Contact us at{" "}
               <a
                 href="mailto:support@dtflayout.com"
-                className="text-emerald-600 font-semibold hover:underline"
+                className="text-indigo-600 font-semibold hover:underline"
               >
                 support@dtflayout.com
               </a>

@@ -5,6 +5,7 @@ export interface ImageDimension {
   widthInches: number;
   heightInches: number;
   rotated?: boolean;
+  quantity?: number;  // For multi-sheet support
 }
 
 export interface PositionedImage extends ImageDimension {
@@ -12,6 +13,30 @@ export interface PositionedImage extends ImageDimension {
   y: number;
   rotated: boolean;
 }
+
+// Import Maxrects packer
+import { packImages, PackingImage, PlacedImage, canFitInBin } from './maxrects';
+
+// Import Multi-sheet packer
+import {
+  packMultipleSheets,
+  MultiSheetImage,
+  MultiSheetResult,
+  PackedSheet,
+  PackedImage as MultiSheetPackedImage,
+  getSheetLimits,
+  validateImages,
+  MAX_SHEETS,
+  MAX_IMAGE_HEIGHT_INCHES,
+} from './multiSheetPacker';
+
+// Re-export multi-sheet types for convenience
+export type {
+  MultiSheetResult,
+  PackedSheet,
+  MultiSheetPackedImage,
+};
+export { getSheetLimits, MAX_SHEETS, MAX_IMAGE_HEIGHT_INCHES };
 
 // Spacing between images (set by generateLayout)
 let SPACING_INCHES = 0.3;
@@ -625,7 +650,7 @@ const simpleVerticalStack = (
 };
 
 // ============================================================================
-// MODIFIED: Main generateLayout function now uses pre-analysis
+// MODIFIED: Main generateLayout function now uses Maxrects algorithm
 // ============================================================================
 
 export const generateLayout = (
@@ -640,8 +665,9 @@ export const generateLayout = (
     return { positionedImages: [], totalHeightInches: 0 };
   }
 
-  console.log("Layout algorithm received images:", images);
+  console.log("[Layout] Received", images.length, "images for layout");
 
+  // Filter invalid images
   const validImages = images.filter(img => {
     const isValid = img.widthInches > 0 && img.heightInches > 0 &&
                     isFinite(img.widthInches) && isFinite(img.heightInches);
@@ -660,7 +686,97 @@ export const generateLayout = (
     console.warn(`[Layout] Filtered ${images.length - validImages.length} images with invalid dimensions`);
   }
 
-  // NEW: Pre-analyze orientations for groups of identical images
+  // Check if any image is too wide for the sheet (even when rotated)
+  const oversizedImages = validImages.filter(img => 
+    !canFitInBin(img.widthInches, img.heightInches, sheetWidthInches - EDGE_MARGIN * 2, true)
+  );
+  
+  if (oversizedImages.length > 0) {
+    console.warn(`[Layout] ${oversizedImages.length} images are too large for sheet width, will need scaling`);
+  }
+
+  // Try Maxrects algorithm first
+  const maxrectsResult = tryMaxrectsPacking(validImages, sheetWidthInches, spacingInches);
+  
+  if (maxrectsResult) {
+    console.log(`[Layout] Maxrects succeeded: ${maxrectsResult.totalHeightInches.toFixed(2)}" height`);
+    
+    // Validate no overlaps
+    const validation = validateNoOverlaps(maxrectsResult.positionedImages);
+    if (validation.valid) {
+      return maxrectsResult;
+    } else {
+      console.warn("[Layout] Maxrects result has overlaps, falling back to legacy algorithm");
+    }
+  }
+
+  // Fallback to legacy algorithm
+  console.log("[Layout] Using legacy packing algorithm");
+  return legacyGenerateLayout(validImages, sheetWidthInches, spacingInches);
+};
+
+/**
+ * Try packing with Maxrects algorithm
+ */
+function tryMaxrectsPacking(
+  images: ImageDimension[],
+  sheetWidthInches: number,
+  spacingInches: number
+): { positionedImages: PositionedImage[]; totalHeightInches: number } | null {
+  try {
+    // Convert to PackingImage format
+    // Subtract edge margin from sheet width for packing area
+    const packingWidth = sheetWidthInches - EDGE_MARGIN * 2;
+    
+    // Create packing images (without spacing - maxrects adds it)
+    const packingImages: PackingImage[] = images.map(img => ({
+      id: img.id,
+      width: img.widthInches,
+      height: img.heightInches,
+      originalWidth: img.widthInches,
+      originalHeight: img.heightInches,
+    }));
+
+    // Use a very large max height - we just want the natural packed height
+    const maxHeight = 10000; // 10,000 inches should be enough for any layout
+    
+    const result = packImages(packingImages, packingWidth, maxHeight, spacingInches, true);
+    
+    if (!result || result.placed.length !== images.length) {
+      console.warn("[Layout] Maxrects could not place all images");
+      return null;
+    }
+
+    // Convert PlacedImage to PositionedImage format
+    // Add edge margin offset to all positions
+    const positionedImages: PositionedImage[] = result.placed.map(placed => ({
+      id: placed.id,
+      x: placed.x + EDGE_MARGIN,
+      y: placed.y + EDGE_MARGIN,
+      widthInches: placed.width,
+      heightInches: placed.height,
+      rotated: placed.rotated,
+    }));
+
+    // Calculate total height including bottom edge margin
+    const totalHeightInches = result.usedHeight + EDGE_MARGIN * 2;
+
+    return { positionedImages, totalHeightInches };
+  } catch (error) {
+    console.error("[Layout] Maxrects packing failed:", error);
+    return null;
+  }
+}
+
+/**
+ * Legacy layout algorithm (fallback)
+ */
+function legacyGenerateLayout(
+  validImages: ImageDimension[],
+  sheetWidthInches: number,
+  spacingInches: number
+): { positionedImages: PositionedImage[]; totalHeightInches: number } {
+  // Pre-analyze orientations for groups of identical images
   const orientationHints = preAnalyzeOrientations(validImages, sheetWidthInches, spacingInches);
 
   const strategies: Array<'area' | 'width' | 'height' | 'perimeter'> = ['area', 'width', 'height', 'perimeter'];
@@ -680,39 +796,165 @@ export const generateLayout = (
     }
   }
 
-  console.log(`Best strategy: ${bestStrategy} with height ${bestHeight.toFixed(2)} inches`);
-  console.log("Generated positions:", bestLayout);
+  console.log(`[Layout] Legacy best strategy: ${bestStrategy} with height ${bestHeight.toFixed(2)} inches`);
 
   const validation = validateNoOverlaps(bestLayout);
 
   if (!validation.valid) {
-    console.error(`CRITICAL: Layout has ${validation.overlappingPairs.length} overlapping pairs! Attempting to fix...`);
-    console.error('Overlapping pairs:', validation.overlappingPairs);
+    console.error(`[Layout] CRITICAL: Layout has ${validation.overlappingPairs.length} overlapping pairs! Attempting to fix...`);
 
     bestLayout = fixOverlaps(bestLayout, sheetWidthInches);
     bestHeight = calculateTotalHeight(bestLayout);
 
     const revalidation = validateNoOverlaps(bestLayout);
     if (!revalidation.valid) {
-      console.error('CRITICAL: Failed to fix overlaps after repositioning!', revalidation.overlappingPairs);
-      console.warn('Falling back to simple vertical stacking...');
+      console.error('[Layout] Failed to fix overlaps, using simple vertical stacking');
       bestLayout = simpleVerticalStack(validImages, sheetWidthInches);
       bestHeight = calculateTotalHeight(bestLayout);
-    } else {
-      console.log('Successfully fixed all overlaps');
     }
-  }
-
-  const layoutVisualization = visualizeLayout(bestLayout, sheetWidthInches, bestHeight);
-  console.log("Layout validation:\n" + layoutVisualization);
-
-  const finalCheck = validateNoOverlaps(bestLayout);
-  if (!finalCheck.valid) {
-    console.error('FINAL CHECK FAILED: Layout still has overlaps!', finalCheck.overlappingPairs);
   }
 
   return {
     positionedImages: bestLayout,
     totalHeightInches: bestHeight
+  };
+}
+
+// ============================================================================
+// NEW: Multi-Sheet Layout Generation
+// ============================================================================
+
+/**
+ * Generate layout across multiple sheets when content exceeds max height
+ * 
+ * This function automatically:
+ * - Validates image heights (max 100")
+ * - Expands quantities (qty:5 → 5 separate images)
+ * - Determines max height based on sheet width (110" for wide, 220" for narrow)
+ * - Distributes images across sheets optimally
+ * - Never cuts images across sheets
+ * 
+ * @param images - Array of images with dimensions and optional quantities
+ * @param sheetWidthInches - Width of sheet (determines max height limit)
+ * @param spacingInches - Spacing between images (default 0.3)
+ * @returns MultiSheetResult with packed sheets or error
+ */
+export const generateMultiSheetLayout = (
+  images: ImageDimension[],
+  sheetWidthInches: number,
+  spacingInches: number = 0.3,
+  overrides?: { maxHeightInches?: number; maxSheets?: number }
+): MultiSheetResult => {
+  console.log(`[MultiSheetLayout] Starting with ${images.length} images on ${sheetWidthInches}" wide sheet`);
+  
+  if (images.length === 0) {
+    return {
+      success: true,
+      sheets: [],
+      totalImages: 0,
+      totalSheets: 0,
+    };
+  }
+
+  // Filter invalid images
+  const validImages = images.filter(img => {
+    const isValid = img.widthInches > 0 && img.heightInches > 0 &&
+                    isFinite(img.widthInches) && isFinite(img.heightInches);
+    if (!isValid) {
+      console.warn(`[MultiSheetLayout] Skipping image ${img.id} with invalid dimensions`);
+    }
+    return isValid;
+  });
+
+  if (validImages.length === 0) {
+    return {
+      success: false,
+      sheets: [],
+      totalImages: 0,
+      totalSheets: 0,
+      error: 'No valid images to layout',
+    };
+  }
+
+  // Get sheet limits
+  const limits = getSheetLimits(sheetWidthInches);
+  console.log(`[MultiSheetLayout] Sheet limits: ${limits.widthInches}" x ${limits.maxHeightInches}" max`);
+
+  // Validate images (height limit, fit check)
+  const validation = validateImages(
+    validImages.map(img => ({
+      id: img.id,
+      widthInches: img.widthInches,
+      heightInches: img.heightInches,
+      quantity: img.quantity,
+    })),
+    sheetWidthInches - spacingInches * 2  // Account for edge margins
+  );
+
+  if (!validation.valid) {
+    return {
+      success: false,
+      sheets: [],
+      totalImages: 0,
+      totalSheets: 0,
+      error: validation.errors.join('\n'),
+    };
+  }
+
+  // Convert to MultiSheetImage format
+  const multiSheetImages: MultiSheetImage[] = validImages.map(img => ({
+    id: img.id,
+    widthInches: img.widthInches,
+    heightInches: img.heightInches,
+    quantity: img.quantity,
+  }));
+
+  // Pack across multiple sheets (pass overrides from builder settings)
+  const result = packMultipleSheets(
+    multiSheetImages,
+    sheetWidthInches,
+    spacingInches,
+    undefined,  // edgeMargin
+    overrides
+  );
+
+  if (result.success) {
+    console.log(`[MultiSheetLayout] Success: ${result.totalSheets} sheet(s), ${result.totalImages} images`);
+    result.sheets.forEach(sheet => {
+      console.log(`  Sheet ${sheet.sheetNumber}: ${sheet.heightInches.toFixed(2)}" (${sheet.images.length} images, ${sheet.utilizationPercent.toFixed(1)}%)`);
+    });
+  } else {
+    console.error(`[MultiSheetLayout] Failed: ${result.error}`);
+  }
+
+  return result;
+};
+
+/**
+ * Convert MultiSheetResult to the legacy single-sheet format
+ * Only works if result has exactly 1 sheet
+ * 
+ * Useful for backwards compatibility when you need to use the old format
+ */
+export const convertToLegacyFormat = (
+  result: MultiSheetResult
+): { positionedImages: PositionedImage[]; totalHeightInches: number } | null => {
+  if (!result.success || result.sheets.length !== 1) {
+    return null;
+  }
+
+  const sheet = result.sheets[0];
+  const positionedImages: PositionedImage[] = sheet.images.map(img => ({
+    id: img.id,
+    x: img.x,
+    y: img.y,
+    widthInches: img.widthInches,
+    heightInches: img.heightInches,
+    rotated: img.rotated,
+  }));
+
+  return {
+    positionedImages,
+    totalHeightInches: sheet.heightInches,
   };
 };

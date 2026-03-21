@@ -1,0 +1,251 @@
+# Quick Store Implementation - Conversation Transcript
+## DTF Layout Project
+
+---
+
+## CONTEXT
+
+Alok is building DTF Layout, a SaaS platform for DTF printing businesses. This conversation covers implementing the "Quick Store" feature - mini-websites for printers without their own websites.
+
+---
+
+## WHAT WAS DECIDED
+
+### Feature Overview
+- **Quick Store**: Hosted mini-storefronts at `{store-slug}.dtflayout.com`
+- **Purpose**: Printers without websites can receive orders from customers
+- **Flow**: Customer designs sheet → Submits order → Printer downloads (credits deducted) → Fulfills offline
+
+### Key Technical Decisions
+1. **URL**: Subdomain-based (`mumbai-prints.dtflayout.com`)
+2. **Pricing**: Flexible system
+   - Per length OR per area
+   - Flat OR tiered rates
+   - 7 currencies (INR, USD, EUR, GBP, AED, AUD, CAD)
+   - 4 measurement units (inch, cm, meter, feet)
+   - Slab OR incremental tier calculation
+3. **Credits**: Single balance across all DTF Layout products
+4. **Customer**: Anonymous (only name + phone at checkout)
+5. **Order Flow**: Submit → Pending → Downloaded (credits deducted) → Completed
+6. **Rate Limiting**: 50 orders/store/day, 10 orders/phone/day
+7. **Storage**: Tiered limits with auto-cleanup
+
+### Database Tables Created
+- `quick_stores` - Store identity, contact, appearance, settings
+- `quick_store_testimonials` - Customer reviews
+- `quick_store_products` - Product catalog with pricing config
+- `quick_store_orders` - Customer orders
+- `quick_store_analytics` - Event tracking
+- `reserved_slugs` - System-reserved names
+
+---
+
+## FILES CREATED IN THIS SESSION
+
+### Database
+```
+src/db/migrations/007_quick_store_tables.sql
+```
+
+### Types
+```
+src/types/quickStore.ts
+```
+
+### Hooks
+```
+src/hooks/useSubdomain.ts
+```
+
+### Services
+```
+src/services/quickStoreService.ts
+src/services/qsProductService.ts
+src/services/qsOrderService.ts
+src/services/storefrontService.ts
+```
+
+### Printer Dashboard Pages
+```
+src/pages/quick-store/index.ts
+src/pages/quick-store/QuickStoreLayout.tsx
+src/pages/quick-store/StoreSetup.tsx
+src/pages/quick-store/HomepageEditor.tsx
+src/pages/quick-store/QSProducts.tsx
+src/pages/quick-store/QSProductForm.tsx
+src/pages/quick-store/QSOrders.tsx
+src/pages/quick-store/QSOrderDetail.tsx
+src/pages/quick-store/QSAnalytics.tsx
+src/pages/quick-store/QSSettings.tsx
+```
+
+### Public Storefront Pages
+```
+src/pages/storefront/index.ts
+src/pages/storefront/StorefrontApp.tsx
+src/pages/storefront/StorefrontLayout.tsx
+src/pages/storefront/StoreHome.tsx
+src/pages/storefront/StoreProducts.tsx
+src/pages/storefront/StoreProductDetail.tsx
+```
+
+---
+
+## FILES STILL NEEDED
+
+### Storefront Pages
+```
+src/pages/storefront/StoreBuilder.tsx
+src/pages/storefront/StoreContact.tsx
+src/pages/storefront/StoreOrderStatus.tsx
+src/pages/storefront/StoreNotFound.tsx
+```
+
+### Quick Store Components
+```
+src/components/quick-store/index.ts
+src/components/quick-store/QSOnboardingWizard.tsx
+src/components/quick-store/PricingConfigurator.tsx
+src/components/quick-store/HomepageSectionEditor.tsx
+src/components/quick-store/SectionReorder.tsx
+src/components/quick-store/TestimonialEditor.tsx
+src/components/quick-store/OrderCard.tsx
+src/components/quick-store/QSProductCard.tsx
+src/components/quick-store/StorePreviewButton.tsx
+```
+
+### Storefront Components
+```
+src/components/storefront/index.ts
+src/components/storefront/StoreHeader.tsx
+src/components/storefront/StoreFooter.tsx
+src/components/storefront/HeroSection.tsx
+src/components/storefront/AboutSection.tsx
+src/components/storefront/ProductsGrid.tsx
+src/components/storefront/ProductCard.tsx
+src/components/storefront/TestimonialsSection.tsx
+src/components/storefront/ContactSection.tsx
+src/components/storefront/PricingTable.tsx
+src/components/storefront/OrderSummaryPanel.tsx
+src/components/storefront/OrderSubmitModal.tsx
+src/components/storefront/OrderStatusTracker.tsx
+src/components/storefront/BusinessHoursDisplay.tsx
+src/components/storefront/GoogleMapEmbed.tsx
+```
+
+### Files to Modify
+```
+src/App.tsx - Add Quick Store routes + storefront routing
+src/components/AppSidebar.tsx - Add Quick Store menu item
+src/components/CollageCreator.tsx - Add Quick Store builder mode
+```
+
+---
+
+## MANUAL TASKS REQUIRED
+
+### Supabase
+1. Run migration `007_quick_store_tables.sql` in SQL Editor
+2. Create storage bucket `quick-store-assets` (public, 10MB limit)
+3. Run storage policies SQL
+
+### DNS
+1. Add CNAME record: `* → cname.vercel-dns.com`
+
+### Vercel
+1. Add wildcard domain: `*.dtflayout.com`
+
+---
+
+## TECHNICAL SPEC LOCATION
+
+Full detailed spec with all code patterns is in:
+```
+/mnt/transcripts/2026-02-24-18-16-35-quick-store-technical-spec.txt
+```
+
+---
+
+## PROJECT TECH STACK
+
+- React + TypeScript
+- Vite
+- Tailwind CSS
+- shadcn/ui components
+- Supabase (Auth, Database, Storage)
+- React Router
+- Fabric.js (canvas)
+- Vercel (deployment)
+
+---
+
+## HOW TO CONTINUE
+
+Tell the new chat:
+
+"I'm continuing Quick Store implementation for DTF Layout. Here's the conversation transcript with context. Please:
+
+1. Read the status to see what files were created
+2. Continue creating the remaining files directly in my project
+3. Create files exactly as we were doing - complete, ready to use
+
+Start with the remaining storefront pages (StoreBuilder, StoreContact, StoreOrderStatus, StoreNotFound)."
+
+---
+
+## KEY PATTERNS USED
+
+### Service Pattern
+```typescript
+export async function functionName(params): Promise<{ success: boolean; data?: Type; error?: string }> {
+  try {
+    const { data, error } = await supabase...
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+```
+
+### Page Pattern
+```typescript
+const PageName: React.FC = () => {
+  const { store } = useOutletContext<OutletContextType>();
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => { loadData(); }, []);
+  
+  if (loading) return <Loader2 />;
+  if (!store) return <div>Please complete store setup first</div>;
+  
+  return <div>...</div>;
+};
+
+export default PageName;
+```
+
+### Storefront Page Pattern
+```typescript
+interface Props {
+  store: QuickStore;
+}
+
+const StorefrontPage: React.FC<Props> = ({ store }) => {
+  const location = useLocation();
+  const basePath = location.pathname.startsWith('/s/') ? `/s/${store.slug}` : '';
+  
+  return <div>...</div>;
+};
+```
+
+---
+
+## IMPORTANT NOTES
+
+1. All files created are complete and ready to use - just copy to project
+2. Uses existing project patterns (AuthContext, CreditsContext, etc.)
+3. Customer storefront is PUBLIC (no auth)
+4. Printer dashboard requires auth
+5. Credits deducted on DOWNLOAD, not on order submit
+6. Pricing calculation happens client-side using `calculatePrice()` from types

@@ -440,7 +440,7 @@ export const BackgroundRemoverModal = ({
           {/* Image preview with zoom controls */}
           <div ref={containerRef} className="relative">
             {/* Zoom controls */}
-            <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-slate-200 p-1">
+            <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-gray-200 p-1">
               <Button
                 type="button"
                 variant="ghost"
@@ -464,7 +464,7 @@ export const BackgroundRemoverModal = ({
               >
                 <ZoomIn className="h-4 w-4" />
               </Button>
-              <div className="w-px h-5 bg-slate-300 mx-0.5" />
+              <div className="w-px h-5 bg-gray-300 mx-0.5" />
               <Button
                 type="button"
                 variant="ghost"
@@ -501,8 +501,8 @@ export const BackgroundRemoverModal = ({
 
             {/* Processing indicator */}
             {isProcessing && (
-              <div className="absolute top-14 left-2 z-10 bg-white/90 rounded-lg px-3 py-1.5 text-sm text-slate-600 flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-600"></div>
+              <div className="absolute top-14 left-2 z-10 bg-white/90 rounded-lg px-3 py-1.5 text-sm text-gray-600 flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
                 Processing...
               </div>
             )}
@@ -510,7 +510,7 @@ export const BackgroundRemoverModal = ({
             {/* Scrollable container for zoomed image */}
             <div
               ref={scrollContainerRef}
-              className="overflow-auto rounded-lg border border-slate-200"
+              className="overflow-auto rounded-lg border border-gray-200"
               style={{
                 maxHeight: '468px',
                 cursor: getCursorStyle(),
@@ -523,7 +523,7 @@ export const BackgroundRemoverModal = ({
               <div className="flex justify-center items-center p-4 min-h-[300px]">
                 {isLoading ? (
                   <div className="flex flex-col items-center gap-2">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                     <span className="text-sm text-muted-foreground">Loading image...</span>
                   </div>
                 ) : (
@@ -542,7 +542,7 @@ export const BackgroundRemoverModal = ({
           </div>
 
           {/* Selected colors with individual tolerance controls */}
-          <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+          <div className="p-4 bg-gray-50 rounded-lg space-y-3">
             {/* Header */}
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Colors to remove:</Label>
@@ -565,15 +565,15 @@ export const BackgroundRemoverModal = ({
                 {selectedColors.map(({ color, tolerance }, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-3 bg-white rounded-lg border border-slate-200 px-3 py-2 shadow-sm"
+                    className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 px-3 py-2 shadow-sm"
                   >
                     {/* Color swatch */}
                     <div
-                      className="w-8 h-8 rounded border border-slate-300 flex-shrink-0"
+                      className="w-8 h-8 rounded border border-gray-300 flex-shrink-0"
                       style={{ backgroundColor: rgbToHex(color) }}
                     />
                     {/* Hex code */}
-                    <span className="text-xs font-mono text-slate-600 w-16 flex-shrink-0">
+                    <span className="text-xs font-mono text-gray-600 w-16 flex-shrink-0">
                       {rgbToHex(color)}
                     </span>
                     {/* Tolerance slider */}
@@ -586,7 +586,7 @@ export const BackgroundRemoverModal = ({
                         step={1}
                         className="flex-1"
                       />
-                      <span className="text-xs font-mono text-slate-500 w-10 text-right flex-shrink-0">
+                      <span className="text-xs font-mono text-gray-500 w-10 text-right flex-shrink-0">
                         {tolerance}%
                       </span>
                     </div>
@@ -594,7 +594,7 @@ export const BackgroundRemoverModal = ({
                     <button
                       type="button"
                       onClick={() => handleRemoveColor(index)}
-                      className="p-1 rounded hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors flex-shrink-0"
+                      className="p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-600 transition-colors flex-shrink-0"
                       title="Remove this color"
                     >
                       <X className="h-4 w-4" />
@@ -603,13 +603,13 @@ export const BackgroundRemoverModal = ({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-400 italic">
+              <p className="text-sm text-gray-400 italic">
                 Click on the image to select colors to remove
               </p>
             )}
 
             {selectedColors.length > 0 && (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-gray-500">
                 Adjust each color's tolerance individually. Higher values remove more similar colors.
               </p>
             )}
@@ -617,11 +617,11 @@ export const BackgroundRemoverModal = ({
 
           {/* Image info */}
           <div className="flex flex-wrap gap-4 text-sm">
-            <div className="bg-slate-100 rounded-lg px-3 py-2">
+            <div className="bg-gray-100 rounded-lg px-3 py-2">
               <span className="text-muted-foreground">Size: </span>
               <span className="font-medium">{imageSize.width} x {imageSize.height} px</span>
             </div>
-            <div className="bg-slate-100 rounded-lg px-3 py-2">
+            <div className="bg-gray-100 rounded-lg px-3 py-2">
               <span className="text-muted-foreground">File: </span>
               <span className="font-medium">{image.file.name}</span>
             </div>
@@ -671,7 +671,7 @@ export const BackgroundRemoverModal = ({
               type="button"
               onClick={handleApply}
               disabled={isLoading || selectedColors.length === 0}
-              className="flex-1 sm:flex-none bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+              className="flex-1 sm:flex-none bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700"
             >
               <Eraser className="h-4 w-4 mr-2" />
               Apply

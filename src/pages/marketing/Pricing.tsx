@@ -7,7 +7,7 @@ import { Check, Info, Loader2 } from "lucide-react";
 import { Highlighter } from "@/components/ui/highlighter";
 import { MobileTooltip } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { useOutseta } from "@/contexts/OutsetaContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/contexts/CreditsContext";
 import {
   initiateRazorpayCheckout,
@@ -48,7 +48,7 @@ const PLANS = [
       badge: "Lite",
       description: "More savings with a balanced, budget-smart plan.",
       features: [
-        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>1,00,000 sq. inch</strong></Highlighter> in credit with this recharge—<br />equivalent to a rate of <Highlighter action="underline" color="#10b981"><strong>1 paisa per sq. inch</strong></Highlighter>.</>,
+        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>1,00,000 sq. inch</strong></Highlighter> in credit with this recharge—<br />equivalent to a rate of <Highlighter action="underline" color="#4F46E5"><strong>1 paisa per sq. inch</strong></Highlighter>.</>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Image Enhancer & Trimmer and many other tools included.",
       ],
@@ -66,7 +66,7 @@ const PLANS = [
       badge: "Pro",
       description: "Significantly cheaper per-inch pricing for heavy users.",
       features: [
-        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>5,00,000 sq. inch</strong></Highlighter> in credit with this recharge—<br />equivalent to a rate of <Highlighter action="underline" color="#10b981"><strong>0.8 paisa per sq. inch</strong></Highlighter>.</>,
+        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>5,00,000 sq. inch</strong></Highlighter> in credit with this recharge—<br />equivalent to a rate of <Highlighter action="underline" color="#4F46E5"><strong>0.8 paisa per sq. inch</strong></Highlighter>.</>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Image Enhancer & Trimmer and many other tools included.",
       ],
@@ -84,7 +84,7 @@ const PLANS = [
       badge: "Enterprise",
       description: "Our lowest per-inch rates — maximum savings unlocked.",
       features: [
-        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>16,00,000 sq. inch</strong></Highlighter> in credit with this recharge—<br />equivalent to a rate of <Highlighter action="underline" color="#10b981"><strong>0.5 paisa per sq. inch</strong></Highlighter>.</>,
+        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>16,00,000 sq. inch</strong></Highlighter> in credit with this recharge—<br />equivalent to a rate of <Highlighter action="underline" color="#4F46E5"><strong>0.5 paisa per sq. inch</strong></Highlighter>.</>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Image Enhancer & Trimmer and many other tools included.",
       ],
@@ -95,7 +95,7 @@ const PLANS = [
 
 const Pricing3 = () => {
   const navigate = useNavigate();
-  const { user, refreshUser } = useOutseta();
+  const { user } = useAuth();
   const { refreshCredits, freeTrialClaimed } = useCredits();
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
 
@@ -116,10 +116,10 @@ const Pricing3 = () => {
     try {
       // Prepare user info for Razorpay
       const userInfo: UserInfo = {
-        name: `${user.FirstName || ''} ${user.LastName || ''}`.trim() || user.Email,
-        email: user.Email,
-        phone: user.PhoneNumber || undefined,
-        outsetaAccountId: user.Account?.Uid,
+        name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
+        email: user?.email || '',
+        phone: user?.user_metadata?.phone || undefined,
+        userId: user?.id,
       };
 
       // Convert plan to PricingPlan format for payment service
@@ -146,7 +146,7 @@ const Pricing3 = () => {
         const verifyResult = await verifyPaymentAndAddCredits({
           razorpay_payment_id: `free_trial_${Date.now()}`,
           plan_id: plan.id,
-          outseta_account_id: userInfo.outsetaAccountId || '',
+          user_id: userInfo.userId || '',
           user_email: userInfo.email || '',
           amount: 0,
         });
@@ -182,7 +182,7 @@ const Pricing3 = () => {
           razorpay_order_id: result.orderId,
           razorpay_signature: result.signature,
           plan_id: plan.id,
-          outseta_account_id: userInfo.outsetaAccountId || '',
+          user_id: userInfo.userId || '',
           user_email: userInfo.email || '',
           amount: plan.priceValue,
         });
@@ -218,11 +218,11 @@ const Pricing3 = () => {
         <section className="pt-12 md:pt-16 pb-8 md:pb-12">
           <div className="container max-w-7xl mx-auto px-6">
             <div className="max-w-5xl mx-auto text-center">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold mb-6 text-slate-900 leading-snug">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold mb-6 text-gray-900 leading-snug">
                 No Fixed Cost<br />
                 Just Recharge & Get Going!
               </h1>
-              <p className="text-xl md:text-2xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
                 Pick a plan based on your needs — the higher you go, the less you pay per unit.
               </p>
             </div>
@@ -242,7 +242,7 @@ const Pricing3 = () => {
                   className={`relative h-full p-10 rounded-3xl shadow-2xl hover:-translate-y-2 transition-transform duration-300 ${
                     plan.popular
                       ? "border-0 border-teal-200"
-                      : "bg-white border border-slate-100"
+                      : "bg-white border border-gray-100"
                   }`}
                 >
                   {/* Border beam effect - First beam (GREEN) with staggered delay */}
@@ -286,14 +286,14 @@ const Pricing3 = () => {
                     <div className="text-left mb-4">
                       <h3
                         className={`text-[2.5rem] font-[800] mb-1 ${
-                          plan.popular ? "text-slate-900" : "text-slate-900"
+                          plan.popular ? "text-gray-900" : "text-gray-900"
                         }`}
                       >
                         {plan.price}
                       </h3>
                       <p
                         className={`font-semibold mb-2 ${
-                          plan.popular ? "text-slate-600" : "text-slate-600"
+                          plan.popular ? "text-gray-600" : "text-gray-600"
                         }`}
                       >
                         {plan.description}
@@ -301,31 +301,31 @@ const Pricing3 = () => {
                       <div className="mb-1 flex items-baseline justify-between">
                         <span
                           className={`text-[2.8rem] font-[800] ${
-                            plan.popular ? "text-slate-900" : "text-slate-900"
+                            plan.popular ? "text-gray-900" : "text-gray-900"
                           }`}
                         >
                           {plan.credits}
                         </span>
                         <span className="text-gray-500 text-[1.75rem] font-[700]">
-                          <Highlighter action="underline" color="#10b981">{plan.rate}</Highlighter>
+                          <Highlighter action="underline" color="#4F46E5">{plan.rate}</Highlighter>
                         </span>
                       </div>
                     </div>
 
                     {/* Divider between price and features */}
-                    <div className="h-px mt-0 mb-6 bg-teal-200"></div>
+                    <div className="h-px mt-0 mb-6 bg-indigo-200"></div>
 
                     <ul className="space-y-4 mb-10">
                       {plan.features.map((feature, idx) => (
                         <li key={`${plan.price}-feature-${idx}`} className="flex items-start">
                           <Check
                             className={`w-6 h-6 mr-3 flex-shrink-0 mt-0.5 ${
-                              plan.popular ? "text-teal-600" : "text-emerald-600"
+                              plan.popular ? "text-indigo-600" : "text-indigo-600"
                             }`}
                           />
                           <span
                             className={`${
-                              plan.popular ? "text-slate-700" : "text-slate-600"
+                              plan.popular ? "text-gray-700" : "text-gray-600"
                             }`}
                           >
                             {feature}
@@ -362,51 +362,51 @@ const Pricing3 = () => {
       </div>
 
       {/* FAQ Section */}
-      <section className="py-24 bg-slate-50">
+      <section className="py-24 bg-gray-50">
         <div className="container max-w-7xl mx-auto px-6">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4 leading-tight">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
                 Frequently Asked Questions
               </h2>
-              <p className="text-xl text-slate-600 leading-relaxed">
+              <p className="text-xl text-gray-600 leading-relaxed">
                 Everything you need to know about our pricing
               </p>
             </div>
 
             <div className="space-y-6">
-              <Card className="p-8 bg-white rounded-2xl shadow-lg border border-slate-100">
-                <h3 className="text-xl font-bold text-slate-900 mb-3">
+              <Card className="p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
                   Is there a free trial?
                 </h3>
-                <p className="text-slate-600 leading-relaxed">
+                <p className="text-gray-600 leading-relaxed">
                   Yes! All plans come with a 14-day free trial. No credit card required to get started. You'll have full access to all features during your trial period.
                 </p>
               </Card>
 
-              <Card className="p-8 bg-white rounded-2xl shadow-lg border border-slate-100">
-                <h3 className="text-xl font-bold text-slate-900 mb-3">
+              <Card className="p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
                   Can I change plans later?
                 </h3>
-                <p className="text-slate-600 leading-relaxed">
+                <p className="text-gray-600 leading-relaxed">
                   Absolutely. You can upgrade, downgrade, or cancel your plan at any time from your account settings. Changes take effect immediately, and we'll prorate any differences.
                 </p>
               </Card>
 
-              <Card className="p-8 bg-white rounded-2xl shadow-lg border border-slate-100">
-                <h3 className="text-xl font-bold text-slate-900 mb-3">
+              <Card className="p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
                   What payment methods do you accept?
                 </h3>
-                <p className="text-slate-600 leading-relaxed">
+                <p className="text-gray-600 leading-relaxed">
                   We accept all major credit cards (Visa, Mastercard, American Express), PayPal, and bank transfers for Enterprise plans. All payments are processed securely.
                 </p>
               </Card>
 
-              <Card className="p-8 bg-white rounded-2xl shadow-lg border border-slate-100">
-                <h3 className="text-xl font-bold text-slate-900 mb-3">
+              <Card className="p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
                   Do you offer refunds?
                 </h3>
-                <p className="text-slate-600 leading-relaxed">
+                <p className="text-gray-600 leading-relaxed">
                   Yes, we offer a 30-day money-back guarantee. If you're not satisfied with our service, contact us within 30 days of purchase for a full refund, no questions asked.
                 </p>
               </Card>
@@ -419,10 +419,10 @@ const Pricing3 = () => {
       {processingPlanId && (
         <div className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center">
           <div className="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 max-w-sm mx-4">
-            <Loader2 className="h-12 w-12 animate-spin text-emerald-600" />
+            <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
             <div className="text-center">
-              <p className="text-lg font-semibold text-slate-900">Processing payment...</p>
-              <p className="text-sm text-slate-500 mt-1">Please wait, do not close this page</p>
+              <p className="text-lg font-semibold text-gray-900">Processing payment...</p>
+              <p className="text-sm text-gray-500 mt-1">Please wait, do not close this page</p>
             </div>
           </div>
         </div>

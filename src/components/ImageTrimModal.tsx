@@ -834,7 +834,7 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
           {/* Image preview with zoom controls */}
           <div ref={containerRef} className="relative">
             {/* Zoom controls - positioned at top right */}
-            <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-slate-200 p-1">
+            <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-gray-200 p-1">
               <Button
                 type="button"
                 variant="ghost"
@@ -858,7 +858,7 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
               >
                 <ZoomIn className="h-4 w-4" />
               </Button>
-              <div className="w-px h-5 bg-slate-300 mx-0.5" />
+              <div className="w-px h-5 bg-gray-300 mx-0.5" />
               <Button
                 type="button"
                 variant="ghost"
@@ -898,7 +898,7 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
               <div className="flex justify-center items-center p-4 min-h-[300px]">
                 {isLoading ? (
                   <div className="flex flex-col items-center gap-2">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                     <span className="text-sm text-muted-foreground">Analyzing image...</span>
                   </div>
                 ) : (
@@ -943,15 +943,15 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
           {/* Image info */}
           {detectionResult && cropBounds && (
             <div className="flex flex-wrap gap-4 text-sm">
-              <div className="bg-slate-100 rounded-lg px-3 py-2">
+              <div className="bg-gray-100 rounded-lg px-3 py-2">
                 <span className="text-muted-foreground">Original: </span>
                 <span className="font-medium">{detectionResult.originalWidth} × {detectionResult.originalHeight} px</span>
               </div>
-              <div className="bg-emerald-100 rounded-lg px-3 py-2">
+              <div className="bg-indigo-100 rounded-lg px-3 py-2">
                 <span className="text-muted-foreground">Output: </span>
-                <span className="font-medium text-emerald-700">
+                <span className="font-medium text-indigo-700">
                   {cropBounds.width + (padding * 2)} × {cropBounds.height + (padding * 2)} px
-                  {padding > 0 && <span className="text-emerald-600 ml-1">(+{padding}px padding)</span>}
+                  {padding > 0 && <span className="text-indigo-600 ml-1">(+{padding}px padding)</span>}
                 </span>
               </div>
               <div className="bg-blue-100 rounded-lg px-3 py-2">
@@ -964,7 +964,7 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
           )}
 
           {/* Settings */}
-          <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+          <div className="p-4 bg-gray-50 rounded-lg space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Detect Transparent</Label>
               <Switch
@@ -1004,10 +1004,10 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
                     onClick={() => setCurrentIndex(idx)}
                     className={`w-2 h-2 rounded-full transition-colors ${
                       idx === currentIndex
-                        ? 'bg-emerald-600'
+                        ? 'bg-indigo-600'
                         : trimmedImages.has(images[idx].id)
-                          ? 'bg-emerald-300'
-                          : 'bg-slate-300'
+                          ? 'bg-indigo-300'
+                          : 'bg-gray-300'
                     }`}
                   />
                 ))}
@@ -1094,7 +1094,7 @@ export const ImageTrimModal = ({ isOpen, onClose, images, onTrimComplete }: Imag
               type="button"
               onClick={handleApplyTrim}
               disabled={isLoading || hasNoReduction}
-              className="flex-1 sm:flex-none bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+              className="flex-1 sm:flex-none bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700"
             >
               <Scissors className="h-4 w-4 mr-2" />
               Apply Trim

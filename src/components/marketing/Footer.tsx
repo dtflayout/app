@@ -9,14 +9,14 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-slate-900 text-white">
+    <footer className="bg-gray-900 text-white">
       <div className="container mx-auto px-4 py-12">
         <div className="flex flex-wrap justify-center gap-6 md:gap-8 mb-8">
           {footerLinks.map((link) => (
             <Link
               key={link.label}
               to={link.href}
-              className="text-slate-400 hover:text-white transition-colors text-sm"
+              className="text-gray-400 hover:text-white transition-colors text-sm"
             >
               {link.label}
             </Link>
@@ -24,13 +24,13 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-slate-400 text-sm mb-4 md:mb-0">
+          <p className="text-gray-400 text-sm mb-4 md:mb-0">
             © 2025 Data Canvas Tech • Made in India
           </p>
           <div className="flex gap-6">
             <a
               href="#"
-              className="text-slate-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white transition-colors"
               aria-label="Instagram"
             >
               <svg
@@ -48,7 +48,7 @@ const Footer = () => {
             </a>
             <a
               href="#"
-              className="text-slate-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white transition-colors"
               aria-label="YouTube"
             >
               <svg

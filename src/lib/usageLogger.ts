@@ -1,8 +1,10 @@
 import { supabase } from './supabaseClient';
 
+export type UsageSource = 'standalone' | 'website_integration' | 'quick_store';
+
 export interface UsageLogData {
+  user_id: string;
   user_email: string;
-  outseta_account_id?: string | null;
   sq_inches_used: number;
   sheet_width: number;
   sheet_height: number;
@@ -10,11 +12,15 @@ export interface UsageLogData {
   credits_before: number;
   credits_after: number;
   error_message?: string | null;
+  source?: UsageSource;
+  design_code?: string | null;
 }
 
 export interface UsageLogRecord extends UsageLogData {
   id: string;
   created_at: string;
+  source: UsageSource;
+  design_code: string | null;
 }
 
 export interface UsageStats {
@@ -62,8 +68,8 @@ export async function logSheetGeneration(
  */
 export async function logSheetGenerationError(
   data: {
+    user_id: string;
     user_email: string;
-    outseta_account_id?: string | null;
     error_message: string;
     sq_inches_used?: number;
     sheet_width?: number;
@@ -75,8 +81,8 @@ export async function logSheetGenerationError(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const logData: UsageLogData = {
+      user_id: data.user_id,
       user_email: data.user_email,
-      outseta_account_id: data.outseta_account_id,
       sq_inches_used: data.sq_inches_used ?? 0,
       sheet_width: data.sheet_width ?? 0,
       sheet_height: data.sheet_height ?? 0,

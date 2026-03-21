@@ -22,7 +22,7 @@ interface ConfirmLayoutDialogProps {
 
 /**
  * Confirmation dialog for layout generation.
- * Credits are deducted when user confirms and generates the layout.
+ * Credits are deducted when user downloads the sheet (not on generation).
  */
 export const ConfirmLayoutDialog: React.FC<ConfirmLayoutDialogProps> = ({
   open,
@@ -43,6 +43,7 @@ export const ConfirmLayoutDialog: React.FC<ConfirmLayoutDialogProps> = ({
   };
 
   const handleConfirm = async () => {
+    console.log("[ConfirmDialog] Confirm button clicked");
     setIsConfirming(true);
     try {
       await onConfirm();
@@ -71,6 +72,7 @@ export const ConfirmLayoutDialog: React.FC<ConfirmLayoutDialogProps> = ({
                   <span className="font-bold text-gray-900">
                     {formatNumber(sqInchesUsed)} sq.inches
                   </span>
+                  {" "}when you download
                 </p>
 
                 <div className="bg-gray-50 rounded-lg p-4 space-y-2">
@@ -81,7 +83,7 @@ export const ConfirmLayoutDialog: React.FC<ConfirmLayoutDialogProps> = ({
                     </span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
-                    <span className="text-base text-gray-600">After generation:</span>
+                    <span className="text-base text-gray-600">After download:</span>
                     <span className="text-lg font-semibold text-blue-700">
                       {formatNumber(currentCredits - sqInchesUsed)} sq.in
                     </span>
@@ -101,7 +103,7 @@ export const ConfirmLayoutDialog: React.FC<ConfirmLayoutDialogProps> = ({
             Cancel
           </Button>
           <Button
-            className="h-11 px-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-lg font-semibold rounded-xl shadow-md hover:shadow-xl transition-all duration-200"
+            className="h-11 px-6 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-lg font-semibold rounded-xl shadow-md hover:shadow-xl transition-all duration-200"
             onClick={handleConfirm}
             disabled={isConfirming}
           >

@@ -1,12 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
-import { Copy, Trash2, Scissors, Eraser } from "lucide-react";
+import { Copy, Trash2, Pencil, Grid3X3, LayoutGrid, List, ChevronDown, Info } from "lucide-react";
 import { ImageObject } from "./CollageCreator";
 import { toast } from "sonner";
 import { ImageDimension } from "@/utils/layoutAlgorithm";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PreviewBackgroundToggle, PreviewBackground } from "./PreviewBackgroundToggle";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+type ViewMode = 'grid-4' | 'grid-3' | 'grid-5' | 'list';
 
 interface ImageManagerProps {
   images: ImageObject[];
@@ -16,8 +24,29 @@ interface ImageManagerProps {
   onGenerateLayout: () => void;
   onTrimImage: (image: ImageObject) => void;
   onRemoveBackground: (image: ImageObject) => void;
+  onEditImage?: (image: ImageObject) => void;
   canvasWidthInches: number;
   spacingInches: number;
+  // Optional: existing dimensions from parent (used during session restoration)
+  existingDimensions?: ImageDimension[];
+  // Optional: DPI resolution thresholds from builder settings
+  resolutionThresholds?: {
+    optimal: number;
+    good: number;
+    bad: number;
+    terrible: number;
+    hideTerrible: boolean;
+  };
+  // Optional: minimum DPI floor — prevents resizing images below this DPI
+  minimumResolutionDpi?: number;
+  // Optional: display unit for measurements (inch/cm/mm)
+  sizeUnit?: 'inch' | 'cm' | 'mm';
+  // Optional: default placement DPI (300 when auto-resize is on, 150 when off)
+  defaultPlacementDpi?: number;
+  // Optional: primary brand color for toggles and accents
+  primaryColor?: string;
+  // Optional: image card background color
+  cardBackgroundColor?: string;
 }
 
 export const ImageManager = ({
@@ -28,9 +57,24 @@ export const ImageManager = ({
   onGenerateLayout,
   onTrimImage,
   onRemoveBackground,
+  onEditImage,
   canvasWidthInches,
-  spacingInches
+  spacingInches,
+  existingDimensions,
+  resolutionThresholds,
+  minimumResolutionDpi,
+  sizeUnit = 'inch',
+  defaultPlacementDpi = 300,
+  primaryColor,
+  cardBackgroundColor
 }: ImageManagerProps) => {
+
+  // Conversion helpers: internal state is always inches
+  const conversionFactor = sizeUnit === 'cm' ? 2.54 : sizeUnit === 'mm' ? 25.4 : 1;
+  const unitLabel = sizeUnit === 'cm' ? 'cm' : sizeUnit === 'mm' ? 'mm' : 'inches';
+  const unitDecimals = sizeUnit === 'mm' ? 1 : 2;
+  const inchesToDisplay = (inches: number): string => (inches * conversionFactor).toFixed(unitDecimals);
+  const displayToInches = (val: number): number => val / conversionFactor;
   const [imageDimensions, setImageDimensions] = useState<Map<string, { 
     width: number; 
     height: number; 
@@ -42,6 +86,7 @@ export const ImageManager = ({
   const [dimensionErrors, setDimensionErrors] = useState<Map<string, { width: boolean; height: boolean }>>(new Map());
   const [inputValues, setInputValues] = useState<Map<string, { width: string; height: string }>>(new Map());
   const [thumbnailBg, setThumbnailBg] = useState<PreviewBackground>('transparent');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid-4');
   // Use ref to track image URLs (avoids stale closure issues)
   const imageUrlsRef = useRef<Map<string, string>>(new Map());
   // Track temporary URLs created from File objects (for cleanup)
@@ -83,6 +128,58 @@ export const ImageManager = ({
       // When URL is cleared after layout generation, we should preserve user-entered dimensions
       const wasMemoryOptimizationClear = urlChanged && previousUrl && (!img.url || img.url === '');
 
+      // Check if we have existing dimensions from parent (e.g., during session restoration)
+      const existingDim = existingDimensions?.find(d => d.id === img.id);
+      
+      // If we have existing dimensions from parent for a new image, use those instead of calculating
+      if (isNewImage && existingDim && !urlChanged) {
+        console.log(`[ImageManager] Using existing dimensions for ${img.id}:`, existingDim);
+        
+        // Update the ref with the effective URL
+        imageUrlsRef.current.set(img.id, effectiveUrl);
+        
+        // We still need pixel dimensions for DPI calculation - load image to get them
+        const imageEl = new Image();
+        imageEl.onload = () => {
+          const widthPixels = imageEl.naturalWidth;
+          const heightPixels = imageEl.naturalHeight;
+          
+          // Calculate DPI based on existing dimensions
+          const dpiWidth = widthPixels / existingDim.widthInches;
+          const dpiHeight = heightPixels / existingDim.heightInches;
+          const dpi = Math.round((dpiWidth + dpiHeight) / 2);
+          
+          setImageDimensions(prev => {
+            const updated = new Map(prev);
+            updated.set(img.id, {
+              width: existingDim.widthInches,
+              height: existingDim.heightInches,
+              widthPixels,
+              heightPixels,
+              dpi
+            });
+            return updated;
+          });
+          
+          setAspectRatioLocked(prev => {
+            const updated = new Map(prev);
+            updated.set(img.id, true);
+            return updated;
+          });
+          
+          setInputValues(prev => {
+            const updated = new Map(prev);
+            updated.set(img.id, {
+              width: inchesToDisplay(existingDim.widthInches),
+              height: inchesToDisplay(existingDim.heightInches)
+            });
+            return updated;
+          });
+        };
+        imageEl.src = effectiveUrl;
+        return; // Skip default calculation
+      }
+
       // Need to recalculate if it's a new image OR if the URL changed due to actual image modification
       // (e.g., after trimming/bg removal), but NOT if URL was just cleared for memory optimization
       if (isNewImage || (urlChanged && !wasMemoryOptimizationClear)) {
@@ -116,8 +213,8 @@ export const ImageManager = ({
             return;
           }
 
-          // Assume 150 DPI as standard for calculating initial inch dimensions (matches export resolution)
-          const standardDpi = 150;
+          // Use configured placement DPI for calculating initial inch dimensions
+          const standardDpi = defaultPlacementDpi;
           const widthInches = parseFloat((widthPixels / standardDpi).toFixed(2));
           const heightInches = parseFloat((heightPixels / standardDpi).toFixed(2));
 
@@ -142,8 +239,8 @@ export const ImageManager = ({
           setInputValues(prev => {
             const updated = new Map(prev);
             updated.set(img.id, {
-              width: widthInches.toFixed(2),
-              height: heightInches.toFixed(2)
+              width: inchesToDisplay(widthInches),
+              height: inchesToDisplay(heightInches)
             });
             return updated;
           });
@@ -279,6 +376,30 @@ export const ImageManager = ({
     }
   }, [imageDimensions, images, onImageDimensionsChanged]);
 
+  // Recalculate dimension errors when canvas width changes
+  // An image only "exceeds canvas" if its SMALLER dimension is too large
+  // (because the layout algorithm can rotate images to fit)
+  useEffect(() => {
+    if (images.length === 0 || imageDimensions.size === 0) return;
+
+    const PADDING_INCHES = 0.3;
+    const maxAllowedDimension = canvasWidthInches - (PADDING_INCHES * 2);
+
+    const newErrors = new Map<string, { width: boolean; height: boolean }>();
+
+    imageDimensions.forEach((dims, imgId) => {
+      // Image can be rotated, so only the SMALLER dimension needs to fit
+      const smallerDimension = Math.min(dims.width, dims.height);
+      const exceedsCanvas = smallerDimension > maxAllowedDimension;
+      
+      // If image exceeds canvas, mark both dimensions as error (for visual consistency)
+      // If it fits, no errors
+      newErrors.set(imgId, { width: exceedsCanvas, height: exceedsCanvas });
+    });
+
+    setDimensionErrors(newErrors);
+  }, [canvasWidthInches, imageDimensions, images.length]);
+
   const handleCopyImage = (id: string) => {
     const imageToCopy = images.find(img => img.id === id);
     if (!imageToCopy) return;
@@ -320,8 +441,8 @@ export const ImageManager = ({
     
     const newInputValues = new Map(inputValues);
     newInputValues.set(newId, {
-      width: dimensions.width.toFixed(2),
-      height: dimensions.height.toFixed(2)
+      width: inchesToDisplay(dimensions.width),
+      height: inchesToDisplay(dimensions.height)
     });
     setInputValues(newInputValues);
     
@@ -359,20 +480,23 @@ export const ImageManager = ({
     if (!inputValue) return;
     
     const value = dimension === 'width' ? inputValue.width : inputValue.height;
-    const numValue = parseFloat(value);
+    const numValueDisplay = parseFloat(value);
     
-    if (isNaN(numValue) || numValue <= 0) {
+    if (isNaN(numValueDisplay) || numValueDisplay <= 0) {
       const currentDim = imageDimensions.get(id);
       if (currentDim) {
         const newInputValues = new Map(inputValues);
         newInputValues.set(id, {
-          width: currentDim.width.toFixed(2),
-          height: currentDim.height.toFixed(2)
+          width: inchesToDisplay(currentDim.width),
+          height: inchesToDisplay(currentDim.height)
         });
         setInputValues(newInputValues);
       }
       return;
     }
+
+    // Convert user input from display unit to inches for internal processing
+    const numValue = displayToInches(numValueDisplay);
     
     const PADDING_INCHES = spacingInches;
     const maxAllowedDimension = canvasWidthInches - (PADDING_INCHES * 2);
@@ -404,15 +528,50 @@ export const ImageManager = ({
       }
       
       const newErrors = new Map(dimensionErrors);
-      const widthExceeds = newWidth > maxAllowedDimension;
-      const heightExceeds = newHeight > maxAllowedDimension;
+      // Image can be rotated, so only the SMALLER dimension needs to fit
+      const smallerDimension = Math.min(newWidth, newHeight);
+      const exceedsCanvas = smallerDimension > maxAllowedDimension;
       
-      newErrors.set(id, { width: widthExceeds, height: heightExceeds });
+      // If image exceeds canvas, mark both dimensions as error
+      newErrors.set(id, { width: exceedsCanvas, height: exceedsCanvas });
       setDimensionErrors(newErrors);
       
       // Recalculate DPI based on new dimensions
       const currentDims = imageDimensions.get(id);
       if (currentDims) {
+        // === DPI floor enforcement: clamp size so DPI doesn't drop below minimum ===
+        if (minimumResolutionDpi && minimumResolutionDpi > 0) {
+          const maxWidthForMinDpi = currentDims.widthPixels / minimumResolutionDpi;
+          const maxHeightForMinDpi = currentDims.heightPixels / minimumResolutionDpi;
+          
+          if (newWidth > maxWidthForMinDpi || newHeight > maxHeightForMinDpi) {
+            // Clamp to maximum allowed size
+            const isLocked = aspectRatioLocked.get(id);
+            if (isLocked) {
+              const aspectRatio = currentDims.width / currentDims.height;
+              // Clamp based on whichever dimension exceeds the limit
+              const clampedWidth = Math.min(newWidth, maxWidthForMinDpi);
+              const clampedHeight = Math.min(newHeight, maxHeightForMinDpi);
+              // Recalculate the other dimension to maintain aspect ratio
+              if (dimension === 'width') {
+                newWidth = parseFloat(clampedWidth.toFixed(2));
+                newHeight = parseFloat((newWidth / aspectRatio).toFixed(2));
+              } else {
+                newHeight = parseFloat(clampedHeight.toFixed(2));
+                newWidth = parseFloat((newHeight * aspectRatio).toFixed(2));
+              }
+            } else {
+              newWidth = parseFloat(Math.min(newWidth, maxWidthForMinDpi).toFixed(2));
+              newHeight = parseFloat(Math.min(newHeight, maxHeightForMinDpi).toFixed(2));
+            }
+            
+            toast.warning(
+              `Size clamped — image can't be enlarged beyond ${minimumResolutionDpi} DPI minimum`,
+              { duration: 4000 }
+            );
+          }
+        }
+
         const dpiFromWidth = currentDims.widthPixels / newWidth;
         const dpiFromHeight = currentDims.heightPixels / newHeight;
         const calculatedDpi = Math.round(Math.min(dpiFromWidth, dpiFromHeight));
@@ -427,10 +586,11 @@ export const ImageManager = ({
         setImageDimensions(newDimensions);
       }
       
+      // Convert back to display unit for input fields
       const newInputValues = new Map(inputValues);
       newInputValues.set(id, {
-        width: newWidth.toFixed(2),
-        height: newHeight.toFixed(2)
+        width: inchesToDisplay(newWidth),
+        height: inchesToDisplay(newHeight)
       });
       setInputValues(newInputValues);
       
@@ -453,17 +613,35 @@ export const ImageManager = ({
     setAspectRatioLocked(newAspectRatioLocks);
   };
 
-  const getDpiColor = (dpi: number) => {
-    if (dpi < 150) return "bg-red-600";
-    if (dpi < 250) return "bg-yellow-600";
-    return "bg-green-600";
+  /** Returns a hex color string for the DPI badge */
+  const getDpiColor = (dpi: number): string => {
+    const optimal = resolutionThresholds?.optimal ?? 300;
+    const good = resolutionThresholds?.good ?? 150;
+    const bad = resolutionThresholds?.bad ?? 72;
+    
+    if (dpi >= optimal) return "#22c55e"; // green
+    if (dpi >= good) return "#f4dc00"; // yellow
+    if (dpi >= bad) return "#ef4444"; // red
+    return "#171717"; // near-black for terrible
   };
 
   const getDpiLabel = (dpi: number) => {
-    if (dpi < 150) return "Bad resolution";
-    if (dpi < 250) return "Good Resolution";
-    if (dpi < 300) return "Excellent Resolution";
-    return "Excellent Resolution";
+    const optimal = resolutionThresholds?.optimal ?? 300;
+    const good = resolutionThresholds?.good ?? 150;
+    const bad = resolutionThresholds?.bad ?? 72;
+    
+    if (dpi >= optimal) return "Optimal Resolution";
+    if (dpi >= good) return "Good Resolution";
+    if (dpi >= bad) return "Bad Resolution";
+    if (resolutionThresholds?.hideTerrible) return "";
+    return "Terrible Resolution";
+  };
+
+  /** Should the DPI badge be completely hidden for this value? */
+  const shouldHideDpi = (dpi: number) => {
+    if (!resolutionThresholds?.hideTerrible) return false;
+    const bad = resolutionThresholds?.bad ?? 72;
+    return dpi < bad;
   };
 
   // Get thumbnail background style based on selected option
@@ -485,44 +663,240 @@ export const ImageManager = ({
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-4 animate-fade-in">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-slate-800">Uploaded Images</h2>
-          {/* Thumbnail Background Preview (Hold to preview) - Top */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 animate-fade-in">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">Uploaded Images</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {images.length} image{images.length !== 1 ? 's' : ''} ready for layout
+            </p>
+          </div>
+          
+          {/* Controls */}
           {images.length > 0 && (
-            <PreviewBackgroundToggle
-              value={thumbnailBg}
-              onChange={setThumbnailBg}
-            />
+            <div className="flex items-center gap-4">
+              {/* Thumbnail Background Preview */}
+              <PreviewBackgroundToggle
+                value={thumbnailBg}
+                onChange={setThumbnailBg}
+              />
+
+              {/* View Mode Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+                    {viewMode === 'list' ? (
+                      <List className="w-4 h-4" />
+                    ) : (
+                      <LayoutGrid className="w-4 h-4" />
+                    )}
+                    <span className="hidden sm:inline">
+                      {viewMode === 'grid-3' && 'Grid 3'}
+                      {viewMode === 'grid-4' && 'Grid 4'}
+                      {viewMode === 'grid-5' && 'Grid 5'}
+                      {viewMode === 'list' && 'List'}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-36">
+                  <DropdownMenuItem 
+                    onClick={() => setViewMode('grid-4')}
+                    className={`flex items-center gap-2 cursor-pointer ${viewMode === 'grid-4' ? 'bg-indigo-50 text-indigo-700' : ''}`}
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                    Grid 4
+                    {viewMode === 'grid-4' && <span className="ml-auto text-indigo-500">✓</span>}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setViewMode('grid-3')}
+                    className={`flex items-center gap-2 cursor-pointer ${viewMode === 'grid-3' ? 'bg-indigo-50 text-indigo-700' : ''}`}
+                  >
+                    <Grid3X3 className="w-4 h-4" />
+                    Grid 3
+                    {viewMode === 'grid-3' && <span className="ml-auto text-indigo-500">✓</span>}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setViewMode('grid-5')}
+                    className={`flex items-center gap-2 cursor-pointer ${viewMode === 'grid-5' ? 'bg-indigo-50 text-indigo-700' : ''}`}
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                    Grid 5
+                    {viewMode === 'grid-5' && <span className="ml-auto text-indigo-500">✓</span>}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setViewMode('list')}
+                    className={`flex items-center gap-2 cursor-pointer ${viewMode === 'list' ? 'bg-indigo-50 text-indigo-700' : ''}`}
+                  >
+                    <List className="w-4 h-4" />
+                    List
+                    {viewMode === 'list' && <span className="ml-auto text-indigo-500">✓</span>}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
         </div>
 
         {images.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7 max-h-[900px] overflow-y-auto pr-2">
-            {images.map((image) => {
-              const dimensions = imageDimensions.get(image.id);
-              const isLocked = aspectRatioLocked.get(image.id) || false;
-              const errors = dimensionErrors.get(image.id);
-              const inputs = inputValues.get(image.id);
+          <>
+            {/* List View Header */}
+            {viewMode === 'list' && (
+              <div className="grid grid-cols-[64px_1fr_240px_140px_80px_160px] items-center gap-4 px-6 py-3 border-b border-gray-200 text-sm font-medium text-gray-500">
+                <div></div>
+                <div>Name</div>
+                <div className="text-center">Size ({unitLabel})</div>
+                <div className="text-center">Pixels</div>
+                <div className="text-center">DPI</div>
+                <div className="text-right pr-2">Actions</div>
+              </div>
+            )}
+            
+            <div className={`max-h-[800px] overflow-y-auto pr-2 ${
+              viewMode === 'list' 
+                ? 'flex flex-col' 
+                : viewMode === 'grid-3'
+                  ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5'
+                  : viewMode === 'grid-5'
+                    ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4'
+                    : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5'
+            }`}>
+              {images.map((image) => {
+                const dimensions = imageDimensions.get(image.id);
+                const isLocked = aspectRatioLocked.get(image.id) || false;
+                const errors = dimensionErrors.get(image.id);
+                const inputs = inputValues.get(image.id);
 
-              // Check if image exceeds canvas dimensions
-              const exceedsCanvas = errors?.width || errors?.height;
+                // Check if image exceeds canvas dimensions
+                const exceedsCanvas = errors?.width || errors?.height;
 
-              return (
-                <div
-                  key={image.id}
-                  className={`rounded-xl p-5 shadow-lg hover:shadow-xl transition-shadow ${
-                    exceedsCanvas
-                      ? 'border-2 border-red-300 bg-red-50'
-                      : 'border border-emerald-200'
-                  }`}
-                  style={exceedsCanvas ? undefined : { backgroundColor: '#f6fffb' }}
-                >
+                // List View Layout
+                if (viewMode === 'list') {
+                  return (
+                    <div
+                      key={image.id}
+                      className={`grid grid-cols-[64px_1fr_240px_140px_80px_160px] items-center gap-4 px-6 py-5 transition-all duration-200 hover:bg-gray-50 border-b border-gray-100 ${
+                        exceedsCanvas ? 'bg-red-50/50' : ''
+                      }`}
+                    >
+                      {/* Thumbnail */}
+                      <div
+                        className="w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden border border-gray-200"
+                        style={getThumbnailBgStyle()}
+                      >
+                        <img
+                          src={image.thumbnailUrl}
+                          alt={image.file.name}
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      </div>
+
+                      {/* Filename + Transparency */}
+                      <div className="min-w-0 flex items-center gap-2">
+                        <p className="text-sm font-medium text-gray-800 truncate" title={image.file.name}>
+                          {image.file.name}
+                        </p>
+                        {image.hasTransparency && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-100 cursor-help flex-shrink-0">
+                                <Info className="w-2.5 h-2.5 text-amber-600" />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs text-sm">
+                              <p>This image has transparent areas. In DTF printing, transparent pixels won't transfer onto the garment.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+
+                      {/* Size in Inches */}
+                      <div className="flex flex-col items-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <Input
+                            type="text"
+                            value={inputs?.width || ''}
+                            onChange={(e) => handleInputChange(image.id, 'width', e.target.value)}
+                            onBlur={() => handleInputBlur(image.id, 'width')}
+                            className={`w-24 h-10 text-center text-sm font-medium ${errors?.width ? 'border-red-400 bg-red-50 focus:ring-red-400 focus:border-red-400' : 'border-gray-200'}`}
+                          />
+                          <span className="text-gray-400 text-sm">×</span>
+                          <Input
+                            type="text"
+                            value={inputs?.height || ''}
+                            onChange={(e) => handleInputChange(image.id, 'height', e.target.value)}
+                            onBlur={() => handleInputBlur(image.id, 'height')}
+                            className={`w-24 h-10 text-center text-sm font-medium ${errors?.height ? 'border-red-400 bg-red-50 focus:ring-red-400 focus:border-red-400' : 'border-gray-200'}`}
+                          />
+                        </div>
+                        {(errors?.width || errors?.height) && (
+                          <p className="text-xs text-red-500 mt-1">Exceeds canvas</p>
+                        )}
+                      </div>
+
+                      {/* Pixels */}
+                      <div className="text-center text-sm text-gray-600">
+                        {dimensions ? `${dimensions.widthPixels} × ${dimensions.heightPixels}` : '—'}
+                      </div>
+
+                      {/* DPI */}
+                      <div className="text-center">
+                        {dimensions && !shouldHideDpi(dimensions.dpi) && (
+                          <span 
+                            className="inline-block px-2.5 py-1 text-xs font-bold rounded-full"
+                            style={{ backgroundColor: getDpiColor(dimensions.dpi), color: getDpiColor(dimensions.dpi) === '#f4dc00' ? '#000' : '#fff' }}
+                          >
+                            {dimensions.dpi}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-end gap-2">
+                        {onEditImage && (
+                          <button
+                            onClick={() => onEditImage(image)}
+                            className="px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
+                          >
+                            Edit Image
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleCopyImage(image.id)}
+                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+                          title="Duplicate"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => onImagesRemoved([image.id])}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Grid View Layout
+                return (
+                  <div
+                    key={image.id}
+                    className={`group relative rounded-xl p-10 transition-all duration-300 ${
+                      exceedsCanvas
+                        ? 'border-2 border-red-300 bg-red-50 shadow-md'
+                        : 'border border-gray-200 shadow-sm'
+                    }`}
+                    style={!exceedsCanvas ? { backgroundColor: cardBackgroundColor || '#ffffff' } : undefined}
+                  >
                   {/* Top section: Thumbnail + Filename + DPI */}
                   <div className="flex gap-3 mb-3">
                     {/* Thumbnail */}
                     <div
-                      className="w-20 h-20 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden border border-slate-200"
+                      className="w-20 h-20 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden border border-gray-200"
                       style={getThumbnailBgStyle()}
                     >
                       {/* Use thumbnailUrl for gallery display to reduce memory usage on low-RAM devices.
@@ -535,28 +909,42 @@ export const ImageManager = ({
                       />
                     </div>
 
-                    {/* Filename + DPI */}
+                    {/* Filename + DPI + Transparency */}
                     <div className="flex-1 min-w-0 flex flex-col justify-between">
-                      <p className="text-lg font-bold text-slate-800 truncate" title={image.file.name}>
+                      <p className="text-base font-semibold text-gray-800 truncate" title={image.file.name}>
                         {image.file.name}
                       </p>
 
-                      {dimensions && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className={`inline-block px-3 py-1 text-white text-sm font-bold rounded-full cursor-help w-fit ${
-                              dimensions.dpi < 100
-                                ? 'bg-gradient-to-r from-red-500 to-red-600'
-                                : 'bg-gradient-to-r from-emerald-500 to-teal-500'
-                            }`}>
-                              {dimensions.dpi} DPI
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{getDpiLabel(dimensions.dpi)}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {dimensions && !shouldHideDpi(dimensions.dpi) && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span 
+                                className="inline-block px-3 py-1 text-sm font-bold rounded-full cursor-help w-fit"
+                                style={{ backgroundColor: getDpiColor(dimensions.dpi), color: getDpiColor(dimensions.dpi) === '#f4dc00' ? '#000' : '#fff' }}
+                              >
+                                {dimensions.dpi} DPI
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{getDpiLabel(dimensions.dpi)}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+
+                        {image.hasTransparency && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 cursor-help flex-shrink-0">
+                                <Info className="w-3 h-3 text-amber-600" />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs text-sm">
+                              <p>This image has transparent areas. In DTF printing, transparent pixels won't transfer onto the garment. If you notice unexpected gaps in your print, try using the Remove Color tool to clean up semi-transparent edges.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -564,17 +952,17 @@ export const ImageManager = ({
                   <div className="grid grid-cols-2 gap-3 mb-2">
                     {/* Width */}
                     <div>
-                      <Label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Width</Label>
+                      <Label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Width</Label>
                       <div className="relative mt-1">
                         <Input
                           type="text"
                           value={inputs?.width || ""}
                           onChange={(e) => handleInputChange(image.id, 'width', e.target.value)}
                           onBlur={() => handleInputBlur(image.id, 'width')}
-                          className={`h-11 text-xl font-bold text-slate-800 pr-14 ${errors?.width ? 'border-red-500 focus-visible:ring-red-500' : 'border-slate-200'}`}
+                          className={`h-11 text-xl font-bold text-gray-800 pr-14 ${errors?.width ? 'border-red-500 focus-visible:ring-red-500' : 'border-gray-200'}`}
                         />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">
-                          inches
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                          {unitLabel}
                         </span>
                       </div>
                       {errors?.width && (
@@ -584,17 +972,17 @@ export const ImageManager = ({
 
                     {/* Height */}
                     <div>
-                      <Label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Height</Label>
+                      <Label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Height</Label>
                       <div className="relative mt-1">
                         <Input
                           type="text"
                           value={inputs?.height || ""}
                           onChange={(e) => handleInputChange(image.id, 'height', e.target.value)}
                           onBlur={() => handleInputBlur(image.id, 'height')}
-                          className={`h-11 text-xl font-bold text-slate-800 pr-14 ${errors?.height ? 'border-red-500 focus-visible:ring-red-500' : 'border-slate-200'}`}
+                          className={`h-11 text-xl font-bold text-gray-800 pr-14 ${errors?.height ? 'border-red-500 focus-visible:ring-red-500' : 'border-gray-200'}`}
                         />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">
-                          inches
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                          {unitLabel}
                         </span>
                       </div>
                       {errors?.height && (
@@ -605,13 +993,13 @@ export const ImageManager = ({
 
                   {/* Image dimensions - show original and trimmed if image was trimmed */}
                   {dimensions && (
-                    <div className="text-sm text-slate-500 mb-2 space-y-0.5">
+                    <div className="text-sm text-gray-500 mb-2 space-y-0.5">
                       {image.originalWidth && image.originalHeight ? (
                         <>
                           <p>
                             Original: <span className="font-mono">{image.originalWidth} × {image.originalHeight} px</span>
                           </p>
-                          <p className="text-emerald-600">
+                          <p className="text-indigo-600">
                             Trimmed: <span className="font-mono">{dimensions.widthPixels} × {dimensions.heightPixels} px</span>
                             <span className="ml-1 text-xs">
                               (-{Math.round((1 - (dimensions.widthPixels * dimensions.heightPixels) / (image.originalWidth * image.originalHeight)) * 100)}%)
@@ -626,80 +1014,60 @@ export const ImageManager = ({
                     </div>
                   )}
 
-                  {/* Lock Aspect Ratio Toggle - Homepage style */}
-                  <div className="flex items-center gap-2 mb-3 py-2 border-t border-slate-100">
+                  {/* Lock Aspect Ratio Toggle */}
+                  <div className="flex items-center gap-2 mb-3 py-2 border-t border-gray-100">
                     <button
                       onClick={() => toggleAspectRatioLock(image.id)}
                       className="relative inline-flex items-center cursor-pointer focus:outline-none group"
                       aria-label="Toggle aspect ratio lock"
                     >
-                      <div className={`w-10 h-6 rounded-full shadow-sm transition-all duration-200 ${
-                        isLocked
-                          ? 'bg-emerald-500 group-hover:bg-emerald-600'
-                          : 'bg-slate-300 group-hover:bg-slate-400'
-                      }`}>
+                      <div 
+                        className={`w-10 h-6 rounded-full shadow-sm transition-all duration-200 ${
+                          !isLocked ? 'bg-gray-300 group-hover:bg-gray-400' : ''
+                        }`}
+                        style={isLocked ? { backgroundColor: primaryColor || '#6366f1' } : undefined}
+                      >
                         <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all duration-200 ${
                           isLocked ? 'translate-x-4' : 'translate-x-0.5'
                         }`}></div>
                       </div>
                     </button>
-                    <span className="text-sm text-slate-700 select-none">Lock Aspect Ratio</span>
+                    <span className="text-sm text-gray-700 select-none">Lock Aspect Ratio</span>
                   </div>
 
-                  {/* Action buttons */}
-                  <div className="space-y-2">
-                    {/* Row 1: Trim and Remove Background */}
-                    <div className="flex gap-2">
+                  {/* Action buttons - single row */}
+                  <div className="flex gap-2">
+                    {onEditImage && (
                       <button
-                        onClick={() => onTrimImage(image)}
-                        className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 text-sm font-medium text-emerald-600 bg-white border border-slate-300 rounded-lg hover:bg-emerald-50 hover:border-emerald-300 transition-colors"
+                        onClick={() => onEditImage(image)}
+                        className="flex-[2] flex items-center justify-center gap-1.5 h-9 px-3 text-sm font-semibold text-gray-800 border-[1.5px] border-gray-200 bg-transparent rounded-full group-hover:bg-white hover:border-indigo-600 hover:text-indigo-600 hover:bg-indigo-600/[0.04] hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-all duration-200"
                       >
-                        <Scissors className="h-3.5 w-3.5" />
-                        Trim
+                        <Pencil className="h-3.5 w-3.5" />
+                        Edit
                       </button>
-                      <button
-                        onClick={() => onRemoveBackground(image)}
-                        className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 text-sm font-medium text-purple-600 bg-white border border-slate-300 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-colors"
-                      >
-                        <Eraser className="h-3.5 w-3.5" />
-                        Remove BG
-                      </button>
-                    </div>
-                    {/* Row 2: Duplicate and Delete */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleCopyImage(image.id)}
-                        className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:text-slate-800 transition-colors"
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                        Duplicate
-                      </button>
-                      <button
-                        onClick={() => onImagesRemoved([image.id])}
-                        className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 text-sm font-medium text-red-600 bg-white border border-slate-300 rounded-lg hover:bg-red-50 hover:border-red-300 transition-colors"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Delete
-                      </button>
-                    </div>
+                    )}
+                    <button
+                      onClick={() => handleCopyImage(image.id)}
+                      className="flex-[2] flex items-center justify-center gap-1.5 h-9 px-3 text-sm font-semibold text-gray-800 border-[1.5px] border-gray-200 bg-transparent rounded-full group-hover:bg-white hover:border-indigo-600 hover:text-indigo-600 hover:bg-indigo-600/[0.04] hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-all duration-200"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Duplicate
+                    </button>
+                    <button
+                      onClick={() => onImagesRemoved([image.id])}
+                      className="flex-[1] flex items-center justify-center h-9 text-gray-500 bg-transparent border-[1.5px] border-gray-200 rounded-full group-hover:bg-white hover:border-red-400 hover:text-red-500 hover:bg-red-500/[0.04] hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-all duration-200"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               );
             })}
-          </div>
+            </div>
+          </>
         ) : (
-          <div className="text-center py-8 text-slate-400 text-base">
-            No images uploaded yet
-          </div>
-        )}
-
-        {/* Thumbnail Background Preview (Hold to preview) - Bottom */}
-        {images.length > 0 && (
-          <div className="flex justify-end mt-4 pt-4 border-t border-slate-200">
-            <PreviewBackgroundToggle
-              value={thumbnailBg}
-              onChange={setThumbnailBg}
-            />
+          <div className="text-center py-12 text-gray-400">
+            <p className="text-base">No images uploaded yet</p>
           </div>
         )}
       </div>

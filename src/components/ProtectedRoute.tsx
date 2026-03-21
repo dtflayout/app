@@ -1,6 +1,5 @@
-import { Navigate, useLocation } from "react-router-dom";
-import { useOutseta } from "@/contexts/OutsetaContext";
-import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
@@ -8,60 +7,21 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, isLoading } = useOutseta();
-  const location = useLocation();
-  const [showTimeout, setShowTimeout] = useState(false);
+  const { user, isLoading } = useAuth();
 
-  useEffect(() => {
-    console.log("[ProtectedRoute] Auth state:", { user, isLoading });
-
-    // Check for access token in URL - if present, we just logged in
-    const urlParams = new URLSearchParams(location.search);
-    const hasAccessToken = urlParams.has('access_token');
-
-    if (hasAccessToken) {
-      console.log("[ProtectedRoute] Access token detected in URL");
-    }
-
-    // Set timeout to stop showing loading after 3 seconds
-    const timer = setTimeout(() => {
-      if (isLoading) {
-        console.warn("[ProtectedRoute] Auth check timeout - showing timeout message");
-        setShowTimeout(true);
-      }
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, [user, isLoading, location]);
+  console.log("[ProtectedRoute] Auth state:", { user: user?.email, isLoading });
 
   // Still checking authentication
-  if (isLoading && !showTimeout) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-emerald-50/50 via-white to-white">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-indigo-50/50 via-white to-white">
         <div className="text-center">
-          <Loader2 className="animate-spin w-12 h-12 text-emerald-500 mx-auto" />
-          <p className="mt-6 text-2xl font-bold text-slate-900">Loading...</p>
+          <Loader2 className="animate-spin w-12 h-12 text-indigo-500 mx-auto" />
+          <p className="mt-6 text-2xl font-bold text-gray-900">Loading...</p>
           <p className="mt-2 text-lg text-gray-500">Checking authentication</p>
         </div>
       </div>
     );
-  }
-
-  // Timeout occurred - check for access token in URL
-  if (showTimeout) {
-    const urlParams = new URLSearchParams(location.search);
-    const hasAccessToken = urlParams.has('access_token');
-
-    if (hasAccessToken) {
-      console.log("[ProtectedRoute] Timeout but access token present - allowing access");
-      // Remove token from URL
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
-      return <>{children}</>;
-    }
-
-    console.log("[ProtectedRoute] Timeout with no access token - redirecting to auth");
-    return <Navigate to="/auth" replace />;
   }
 
   // Not authenticated - redirect to auth page

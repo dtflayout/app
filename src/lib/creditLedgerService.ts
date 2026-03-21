@@ -4,7 +4,6 @@ import { supabase } from './supabaseClient';
 export type CreditType = 
   | 'free_trial' 
   | 'recharge' 
-  | 'referral_bonus' 
   | 'usage' 
   | 'manual_adjustment';
 

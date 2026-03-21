@@ -13,11 +13,11 @@ const SectionTitle = ({
 }: SectionTitleProps) => {
   return (
     <div className={`${centered ? "text-center" : ""} ${className}`}>
-      <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
+      <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
         {title}
       </h2>
       {subtitle && (
-        <p className="text-lg md:text-xl text-slate-600 max-w-3xl mx-auto">
+        <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
           {subtitle}
         </p>
       )}

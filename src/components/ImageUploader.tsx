@@ -9,7 +9,8 @@ import { generateThumbnail } from "@/utils/thumbnailUtils";
 
 // File and count limits to prevent memory issues
 const MAX_FILE_SIZE_MB = 25; // Maximum size per file
-const MAX_TOTAL_IMAGES = 40; // Maximum number of images
+const MAX_TOTAL_IMAGES = 80; // Maximum number of images
+const WARNING_THRESHOLD = 60; // Show warning above this count
 
 interface ImageUploaderProps {
   onImagesAdded: (images: ImageObject[]) => void;
@@ -49,6 +50,15 @@ export const ImageUploader = ({ onImagesAdded, currentImageCount = 0 }: ImageUpl
           `Files exceed ${MAX_FILE_SIZE_MB}MB limit:\n${fileList}\n\nPlease compress or resize these images.`
         );
         return;
+      }
+
+      // Show warning when exceeding 60 images (performance may be slower)
+      const newTotalCount = currentImageCount + imageFiles.length;
+      if (newTotalCount > WARNING_THRESHOLD && currentImageCount <= WARNING_THRESHOLD) {
+        toast.warning(
+          `Large batch: ${newTotalCount} images. Export may take longer on devices with limited memory.`,
+          { duration: 5000 }
+        );
       }
 
       // Generate thumbnails in parallel for gallery display (max 300px, JPEG 0.7 quality)
@@ -124,16 +134,16 @@ export const ImageUploader = ({ onImagesAdded, currentImageCount = 0 }: ImageUpl
         className={`
           relative border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-all duration-200
           ${isDragging
-            ? "border-emerald-400 bg-emerald-50"
-            : "hover:border-emerald-400 hover:bg-emerald-50/50"
+            ? "border-indigo-400 bg-indigo-50"
+            : "hover:border-indigo-400 hover:bg-indigo-50/50"
           }
         `}
         style={{ borderColor: isDragging ? undefined : 'rgb(167, 243, 208)' }}
         onClick={() => document.getElementById("file-upload")?.click()}
       >
         <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
-            <ImagePlus className="h-8 w-8 text-emerald-600" />
+          <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center">
+            <ImagePlus className="h-8 w-8 text-indigo-600" />
           </div>
           <div>
             <h3 className="text-xl font-semibold mb-1">Upload Images</h3>
@@ -142,7 +152,7 @@ export const ImageUploader = ({ onImagesAdded, currentImageCount = 0 }: ImageUpl
             </p>
             <Button
               type="button"
-              className="pointer-events-none bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl px-6 py-2 shadow-md hover:shadow-xl transition-all duration-200"
+              className="pointer-events-none bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl px-6 py-2 shadow-md hover:shadow-xl transition-all duration-200"
             >
               Browse Files
             </Button>
@@ -150,9 +160,9 @@ export const ImageUploader = ({ onImagesAdded, currentImageCount = 0 }: ImageUpl
           <p className="text-sm text-muted-foreground">
             Supported formats: PNG, JPG, JPEG
           </p>
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-6 py-3 mt-2">
-            <p className="text-base text-emerald-700 font-medium">
-              Max 40 images per sheet &bull; Max 25 MB per image
+          <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-6 py-3 mt-2">
+            <p className="text-base text-indigo-700 font-medium">
+              Max 80 images per session &bull; Max 25 MB per image
             </p>
           </div>
         </div>

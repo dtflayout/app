@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useOutseta } from "@/contexts/OutsetaContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { LogIn } from "lucide-react";
 
 // Custom styles to override Outseta widget button
@@ -15,8 +15,8 @@ const outsetaStyles = `
   [data-o-auth] .o-btn-primary,
   .o-auth-module button,
   .o-auth-module .btn-primary {
-    background: linear-gradient(to right, #059669, #0d9488) !important;
-    background-color: #059669 !important;
+    background: linear-gradient(to right, #4338CA, #4F46E5) !important;
+    background-color: #4338CA !important;
     border: none !important;
     border-color: transparent !important;
     transition: all 0.2s ease !important;
@@ -31,15 +31,15 @@ const outsetaStyles = `
   [data-o-auth] .o-btn-primary:hover,
   .o-auth-module button:hover,
   .o-auth-module .btn-primary:hover {
-    background: linear-gradient(to right, #047857, #0f766e) !important;
-    background-color: #047857 !important;
+    background: linear-gradient(to right, #3730A3, #0f766e) !important;
+    background-color: #3730A3 !important;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
   }
 `;
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { user, refreshUser } = useOutseta();
+  const { user } = useAuth();
 
   useEffect(() => {
     // Check if user is already authenticated
@@ -48,21 +48,8 @@ const LoginPage = () => {
     }
   }, [user, navigate]);
 
-  useEffect(() => {
-    // Handle successful login - just redirect
-    const handleLogin = async () => {
-      console.log("Login event triggered");
-      await refreshUser();
-      navigate("/app");
-    };
-
-    // Listen for access token set event (fires after successful login)
-    window.addEventListener("accessToken.set", handleLogin);
-
-    return () => {
-      window.removeEventListener("accessToken.set", handleLogin);
-    };
-  }, [navigate, refreshUser]);
+  // Note: LoginPage uses legacy Outseta widget. Consider migrating to AuthPage.tsx which uses Supabase auth.
+  // Removed Outseta-specific event listeners and refreshUser calls.
 
   return (
     <>
@@ -103,7 +90,7 @@ const LoginPage = () => {
         <div className="min-h-screen flex items-center justify-center px-4 py-12">
           <div className="w-full max-w-lg">
             {/* Login Card with Border Beam */}
-            <div className="relative bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+            <div className="relative bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
 
               {/* First animated border beam - EMERALD GREEN */}
               <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
@@ -134,17 +121,17 @@ const LoginPage = () => {
               <div className="relative z-10 p-8">
                 {/* Icon */}
                 <div className="flex justify-center mb-6">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
-                    <LogIn className="w-7 h-7 text-slate-600" />
+                  <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
+                    <LogIn className="w-7 h-7 text-gray-600" />
                   </div>
                 </div>
 
                 {/* Header */}
                 <div className="text-center mb-2">
-                  <h1 className="text-2xl font-bold text-slate-900 mb-2">
+                  <h1 className="text-2xl font-bold text-gray-900 mb-2">
                     Welcome back
                   </h1>
-                  <p className="text-slate-500">Sign in to your account to continue</p>
+                  <p className="text-gray-500">Sign in to your account to continue</p>
                 </div>
 
                 {/* Outseta auth widget embedded here */}
@@ -158,11 +145,11 @@ const LoginPage = () => {
                 </div>
 
                 {/* Footer link */}
-                <p className="text-center mt-1 text-slate-600">
+                <p className="text-center mt-1 text-gray-600">
                   Don't have an account?{" "}
                   <Link
                     to="/signup"
-                    className="text-slate-900 font-semibold hover:text-slate-700 transition-colors underline underline-offset-2"
+                    className="text-gray-900 font-semibold hover:text-gray-700 transition-colors underline underline-offset-2"
                   >
                     Sign up
                   </Link>
@@ -174,7 +161,7 @@ const LoginPage = () => {
             <p className="text-center mt-6">
               <Link
                 to="/"
-                className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
+                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
               >
                 &larr; Back to home
               </Link>

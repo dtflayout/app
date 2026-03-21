@@ -16,9 +16,9 @@ const WaveDivider = ({ variant = "bottom", color = "white" }: WaveDividerProps) 
         >
           <defs>
             <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#10b981" />
-              <stop offset="50%" stopColor="#14b8a6" />
-              <stop offset="100%" stopColor="#06b6d4" />
+              <stop offset="0%" stopColor="#4F46E5" />
+              <stop offset="50%" stopColor="#6366F1" />
+              <stop offset="100%" stopColor="#7C3AED" />
             </linearGradient>
           </defs>
           <path
@@ -39,9 +39,9 @@ const WaveDivider = ({ variant = "bottom", color = "white" }: WaveDividerProps) 
       >
         <defs>
           <linearGradient id="waveGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#10b981" />
-            <stop offset="50%" stopColor="#14b8a6" />
-            <stop offset="100%" stopColor="#06b6d4" />
+            <stop offset="0%" stopColor="#4F46E5" />
+            <stop offset="50%" stopColor="#6366F1" />
+            <stop offset="100%" stopColor="#7C3AED" />
           </linearGradient>
         </defs>
         <path

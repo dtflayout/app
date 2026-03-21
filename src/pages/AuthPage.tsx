@@ -1,232 +1,217 @@
-import { useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { useOutseta } from "@/contexts/OutsetaContext";
-import { useToast } from "@/hooks/use-toast";
-import { LogIn } from "lucide-react";
-
-// Custom styles to override Outseta widget button
-const outsetaStyles = `
-  .outseta-widget button,
-  .outseta-widget input[type="submit"],
-  [data-o-auth] button,
-  [data-o-auth] button[type="submit"],
-  [data-o-auth] .btn,
-  [data-o-auth] .btn-primary,
-  [data-o-auth] .o-btn,
-  [data-o-auth] .o-btn-primary,
-  .o-auth-module button,
-  .o-auth-module .btn-primary {
-    background: linear-gradient(to right, #059669, #0d9488) !important;
-    background-color: #059669 !important;
-    border: none !important;
-    border-color: transparent !important;
-    transition: all 0.2s ease !important;
-  }
-  .outseta-widget button:hover,
-  .outseta-widget input[type="submit"]:hover,
-  [data-o-auth] button:hover,
-  [data-o-auth] button[type="submit"]:hover,
-  [data-o-auth] .btn:hover,
-  [data-o-auth] .btn-primary:hover,
-  [data-o-auth] .o-btn:hover,
-  [data-o-auth] .o-btn-primary:hover,
-  .o-auth-module button:hover,
-  .o-auth-module .btn-primary:hover {
-    background: linear-gradient(to right, #047857, #0f766e) !important;
-    background-color: #047857 !important;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-  }
-`;
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const AuthPage = () => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
-  const { user, refreshUser } = useOutseta();
-  const { toast } = useToast();
 
-  useEffect(() => {
-    // Check if user is already authenticated
-    if (user) {
-      navigate("/app");
-    }
-  }, [user, navigate]);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+    setIsLoading(true);
 
-  useEffect(() => {
-    // Handle successful signup - set initial credits
-    const handleSignup = async () => {
-      console.log("Signup event triggered");
-
-      try {
-        // Get the newly created user
-        if (window.Outseta) {
-          const currentUser = await window.Outseta.getUser();
-
-          if (currentUser) {
-            // Update account with initial credits balance
-            await currentUser.update({
-              Account: {
-                credits_balance: 700
-              }
-            });
-
-            console.log("Credits initialized to 700");
-
-            toast({
-              title: "Welcome!",
-              description: "Your account has been created with 700 free credits.",
-            });
-          }
-        }
-
-        // Refresh user data and redirect
-        await refreshUser();
-        navigate("/app");
-      } catch (error) {
-        console.error("Error initializing credits:", error);
-        // Still redirect even if credits update fails
-        await refreshUser();
-        navigate("/app");
+    if (isLogin) {
+  // Login
+  const result = await signIn(email, password);
+  if (result.success) {
+    console.log("[AuthPage] Login successful, navigating to /app");
+    navigate("/app");
+  } else {
+    setError(result.error || "Login failed");
+  }
+} else {
+      // Signup
+      if (password.length < 6) {
+        setError("Password must be at least 6 characters");
+        setIsLoading(false);
+        return;
       }
-    };
 
-    // Handle successful login - just redirect
-    const handleLogin = async () => {
-      console.log("Login event triggered");
-      await refreshUser();
-      navigate("/app");
-    };
+      const result = await signUp(email, password, fullName);
+      if (result.success) {
+        setSuccess("Account created! Please check your email to confirm your account.");
+        setEmail("");
+        setPassword("");
+        setFullName("");
+      } else {
+        setError(result.error || "Signup failed");
+      }
+    }
 
-    // Listen for signup event (fires after registration completes)
-    window.addEventListener("signup", handleSignup);
-
-    // Listen for access token set event (fires after successful login)
-    window.addEventListener("accessToken.set", handleLogin);
-
-    return () => {
-      window.removeEventListener("signup", handleSignup);
-      window.removeEventListener("accessToken.set", handleLogin);
-    };
-  }, [navigate, refreshUser, toast]);
+    setIsLoading(false);
+  };
 
   return (
-    <>
-      <style>{outsetaStyles}</style>
-      <div
-        className="min-h-screen relative"
-        style={{
-          background: `
-            linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 30%, #ffffff 70%, #f0f9ff 100%)
-          `
-        }}
-      >
-        {/* Subtle cloud-like radial gradients */}
-        <div
-          className="absolute inset-0 overflow-hidden pointer-events-none"
-          style={{
-            background: `
-              radial-gradient(ellipse 80% 50% at 20% 20%, rgba(186, 230, 253, 0.4) 0%, transparent 50%),
-              radial-gradient(ellipse 60% 40% at 80% 30%, rgba(186, 230, 253, 0.3) 0%, transparent 50%),
-              radial-gradient(ellipse 70% 50% at 50% 80%, rgba(224, 242, 254, 0.3) 0%, transparent 50%)
-            `
-          }}
-        />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        {/* Logo/Title */}
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900">DTF Layout</h1>
+          <h2 className="mt-6 text-2xl font-semibold text-gray-900">
+            {isLogin ? "Sign in to your account" : "Create your account"}
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            <button
+              type="button"
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setError("");
+                setSuccess("");
+              }}
+              className="font-medium text-blue-600 hover:text-blue-500"
+            >
+              {isLogin ? "Sign up" : "Sign in"}
+            </button>
+          </p>
+        </div>
 
-        {/* Logo - Top Left */}
-        <Link
-          to="/"
-          className="absolute top-6 left-6 z-10 group"
-        >
-          <img
-            src="/logo.png"
-            alt="DTF Layout"
-            className="h-10 group-hover:scale-105 transition-all duration-300"
-          />
-        </Link>
+        {/* Form */}
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          )}
 
-        {/* Centered Login Card */}
-        <div className="min-h-screen flex items-center justify-center px-4 py-12">
-          <div className="w-full max-w-lg">
-            {/* Login Card with Border Beam */}
-            <div className="relative bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+          {/* Success Message */}
+          {success && (
+            <div className="bg-indigo-50 border border-indigo-200 text-indigo-700 px-4 py-3 rounded-lg">
+              {success}
+            </div>
+          )}
 
-              {/* First animated border beam - EMERALD GREEN */}
-              <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
-                <div
-                  className="absolute -inset-[100px] animate-border-beam"
-                  style={{
-                    background: 'conic-gradient(from 0deg, transparent 0deg, transparent 200deg, rgba(16, 185, 129, 0) 230deg, rgba(16, 185, 129, 0.9) 260deg, rgba(52, 211, 153, 1) 280deg, rgba(16, 185, 129, 0.9) 300deg, rgba(16, 185, 129, 0) 330deg, transparent 360deg)',
-                    filter: 'blur(2px)',
-                  }}
+          <div className="space-y-4">
+            {/* Full Name (Signup only) */}
+            {!isLogin && (
+              <div>
+                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+                  Full Name
+                </label>
+                <input
+                  id="fullName"
+                  name="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  placeholder="John Doe"
                 />
               </div>
+            )}
 
-              {/* Second animated border beam - BLUE (delayed) */}
-              <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
-                <div
-                  className="absolute -inset-[100px] animate-border-beam-delayed"
-                  style={{
-                    background: 'conic-gradient(from 0deg, transparent 0deg, transparent 200deg, rgba(59, 130, 246, 0) 230deg, rgba(59, 130, 246, 0.9) 260deg, rgba(37, 99, 235, 1) 280deg, rgba(59, 130, 246, 0.9) 300deg, rgba(59, 130, 246, 0) 330deg, transparent 360deg)',
-                    filter: 'blur(2px)',
-                  }}
-                />
-              </div>
-
-              {/* White card background mask */}
-              <div className="absolute inset-[2px] bg-white rounded-3xl z-0"></div>
-
-              {/* Card content */}
-              <div className="relative z-10 p-8">
-                {/* Icon */}
-                <div className="flex justify-center mb-6">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
-                    <LogIn className="w-7 h-7 text-slate-600" />
-                  </div>
-                </div>
-
-                {/* Header */}
-                <div className="text-center mb-2">
-                  <h1 className="text-2xl font-bold text-slate-900 mb-2">
-                    Welcome back
-                  </h1>
-                  <p className="text-slate-500">Sign in to your account to continue</p>
-                </div>
-
-                {/* Outseta auth widget embedded here - using data attributes for inline embedding */}
-                <div className="overflow-hidden">
-                  <div
-                    data-o-auth="1"
-                    data-mode="embed"
-                    data-widget-mode="login|register"
-                    data-plan-uid="rmk5109g"
-                    className="w-full min-h-[280px]"
-                  ></div>
-                </div>
-
-                {/* Footer link */}
-                <p className="text-center mt-1 text-slate-600">
-                  Don't have an account?{" "}
-                  <Link
-                    to="/signup"
-                    className="text-slate-900 font-semibold hover:text-slate-700 transition-colors underline underline-offset-2"
-                  >
-                    Sign up
-                  </Link>
-                </p>
-              </div>
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="you@example.com"
+              />
             </div>
 
-            {/* Back to home - outside card */}
-            <p className="text-center mt-6">
-              <Link
-                to="/"
-                className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
-              >
-                &larr; Back to home
-              </Link>
-            </p>
+            {/* Password */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete={isLogin ? "current-password" : "new-password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="••••••••"
+              />
+            </div>
           </div>
-        </div>
+
+          {/* Forgot Password (Login only) */}
+          {isLogin && (
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                onClick={() => {
+                  // TODO: Implement forgot password
+                  alert("Forgot password feature coming soon!");
+                }}
+              >
+                Forgot your password?
+              </button>
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <span className="flex items-center">
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Processing...
+                </span>
+              ) : isLogin ? (
+                "Sign in"
+              ) : (
+                "Create account"
+              )}
+            </button>
+          </div>
+
+          {/* Free Trial Info (Signup only) */}
+          {!isLogin && (
+            <p className="text-center text-sm text-gray-500">
+              🎉 Get <span className="font-semibold">10,000 free credits</span> when you sign up!
+            </p>
+          )}
+        </form>
       </div>
-    </>
+    </div>
   );
 };
 

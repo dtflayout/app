@@ -1,4 +1,5 @@
-import { useOutseta } from "@/contexts/OutsetaContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCredits } from "@/contexts/CreditsContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -12,7 +13,8 @@ import {
 } from "@/components/ui/tooltip";
 
 export const Navbar = () => {
-  const { user, logout: contextLogout } = useOutseta();
+  const { user, signOut } = useAuth();
+  const { credits: creditsBalance } = useCredits();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -22,7 +24,7 @@ export const Navbar = () => {
 
     try {
       // Use the centralized logout function from context
-      await contextLogout();
+      await signOut();
 
       toast({
         title: "Logged out",
@@ -47,26 +49,7 @@ export const Navbar = () => {
     return null;
   }
 
-  // Debug: Log the full user object to see structure
-  console.log("[Navbar] Full user object:", user);
-  console.log("[Navbar] user.Account:", user.Account);
-  console.log("[Navbar] All user keys:", Object.keys(user));
-
-  if (user.Account) {
-    console.log("[Navbar] Account keys:", Object.keys(user.Account));
-    console.log("[Navbar] Account object:", user.Account);
-  }
-
-  // Get credits balance from Account custom property
-  // Try multiple possible property names
-  const creditsBalance =
-    user.Account?.credits_balance ??
-    user.Account?.creditsBalance ??
-    user.Account?.CreditsBalance ??
-    user.credits_balance ??
-    0;
-
-  console.log("[Navbar] Credits balance extracted:", creditsBalance);
+  // Credits balance comes from CreditsContext
 
   // Determine credit warning level
   const getCreditWarningLevel = () => {
@@ -101,7 +84,7 @@ export const Navbar = () => {
         };
       default:
         return {
-          className: "bg-green-600 hover:bg-green-700 text-white border-green-700",
+          className: "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-700",
           icon: null,
           tooltip: `You have ${creditsBalance.toLocaleString('en-IN')} sq.in available.`
         };
@@ -168,7 +151,7 @@ export const Navbar = () => {
 
           {/* User Email */}
           <div className="text-sm text-gray-600">
-            <span className="font-medium">{user.Email}</span>
+            <span className="font-medium">{user?.email}</span>
           </div>
 
           {/* Logout Button */}

@@ -96,10 +96,10 @@ function hasPhysChunk(data: Uint8Array): boolean {
 /**
  * Adds DPI metadata to a PNG data URL
  * @param dataUrl - The PNG as a data URL (data:image/png;base64,...)
- * @param dpi - The DPI to embed (default 150)
+ * @param dpi - The DPI to embed (default 300 for professional print quality)
  * @returns A Blob containing the PNG with DPI metadata
  */
-export async function addDpiToPng(dataUrl: string, dpi: number = 150): Promise<Blob> {
+export async function addDpiToPng(dataUrl: string, dpi: number = 300): Promise<Blob> {
   // Extract base64 data from data URL
   const base64Data = dataUrl.split(',')[1];
 
@@ -145,6 +145,7 @@ export async function addDpiToPng(dataUrl: string, dpi: number = 150): Promise<B
  * Creates a download link for a Blob
  */
 export function downloadBlob(blob: Blob, filename: string): void {
+  console.log(`[Download] Starting download: ${filename}, size: ${blob.size} bytes`);
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -152,5 +153,9 @@ export function downloadBlob(blob: Blob, filename: string): void {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  // Delay revoking URL to ensure download has started
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    console.log(`[Download] Revoked URL for: ${filename}`);
+  }, 1000);
 }

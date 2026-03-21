@@ -1,440 +1,268 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useOutseta } from "@/contexts/OutsetaContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/contexts/CreditsContext";
-import { supabase } from "@/lib/supabaseClient";
+import { getCreditLedger, getCreditSummary, CreditLedgerEntry, CreditType } from "@/lib/creditLedgerService";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, CreditCard, PlusCircle, IndianRupee, CheckCircle, XCircle } from "lucide-react";
-import { toast } from "sonner";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  RefreshCw, CreditCard, PlusCircle,
+  TrendingUp, TrendingDown, Wallet, Sparkles, Loader2,
+} from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 
-interface PaymentLog {
-  id: string;
-  email: string;              // Table uses "email" not "user_email"
-  user_id: string;
-  razorpay_payment_id: string;
-  razorpay_order_id: string | null;
-  plan_id: string;
-  plan_name: string;
-  amount_inr: number;
-  credits_added: number;
-  credits_before: number;
-  credits_after: number;
-  status: 'success' | 'failed' | 'pending';
-  error_message: string | null;
-  created_at: string;
-}
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-interface PaymentStats {
-  totalRecharges: number;
-  totalAmountSpent: number;
-  totalCreditsAdded: number;
-}
+const formatNumber = (num: number): string =>
+  num.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const formatCompact = (num: number): string =>
+  num >= 100000
+    ? (num / 100000).toFixed(1) + "L"
+    : num >= 1000
+    ? (num / 1000).toFixed(1) + "K"
+    : num.toFixed(0);
+
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric", month: "short", year: "numeric",
+    hour: "numeric", minute: "2-digit", hour12: true,
+  });
+};
+
+const TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
+  free_trial: { label: "Free Trial", icon: <Sparkles className="h-4 w-4" />, color: "text-purple-600 bg-purple-50" },
+  recharge: { label: "Recharge", icon: <CreditCard className="h-4 w-4" />, color: "text-blue-600 bg-blue-50" },
+  manual_adjustment: { label: "Adjustment", icon: <TrendingUp className="h-4 w-4" />, color: "text-gray-600 bg-gray-50" },
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+let _billingLoaded = false;
 
 const Billing = () => {
   const navigate = useNavigate();
-  const { user } = useOutseta();
-  const { credits: creditsBalance } = useCredits();
-  const [payments, setPayments] = useState<PaymentLog[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const { user } = useAuth();
+  const { credits: currentBalance } = useCredits();
 
-  const formatNumber = (num: number): string => {
-    return num.toLocaleString('en-IN');
-  };
+  const [ledger, setLedger] = useState<CreditLedgerEntry[]>([]);
+  const [summary, setSummary] = useState<{ totalCredits: number; totalDebits: number; byType: Record<CreditType, number> } | null>(null);
+  const [isLoading, setIsLoading] = useState(!_billingLoaded);
 
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-IN', {
-      timeZone: 'Asia/Kolkata',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-  };
+  const userId = user?.id || "";
 
-  const fetchPayments = async () => {
-    const userId = user?.Account?.Uid || user?.Uid;
-    if (!userId) {
-      console.error('No user ID found');
-      setIsLoading(false);
-      return;
-    }
+  // ─── Data fetch ─────────────────────────────────────────────────────────
 
-    setIsLoading(true);
-    console.log('[Billing] Fetching payments for user_id:', userId);
+  const loadData = async () => {
+    if (!userId) { setIsLoading(false); return; }
+    if (!_billingLoaded) setIsLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('[Billing] Error fetching payments:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
-        });
-        // Don't show error toast if table just doesn't exist or is empty
-        if (error.code !== 'PGRST116') {
-          toast.error('Failed to load payment history');
-        }
-        setPayments([]);
-      } else {
-        setPayments(data || []);
-        console.log(`[Billing] Loaded ${data?.length || 0} payments for user`);
-      }
-    } catch (err: any) {
-      console.error('[Billing] Exception fetching payments:', err?.message || err);
-      toast.error('Failed to load payment history');
-      setPayments([]);
-    }
-
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    if (user) {
-      fetchPayments();
-    }
-  }, [user]);
-
-  // Calculate stats (only for successful payments)
-  const calculateStats = (): PaymentStats => {
-    const successfulPayments = payments.filter(p => p.status === 'success');
-    return {
-      totalRecharges: successfulPayments.length,
-      totalAmountSpent: successfulPayments.reduce((sum, p) => sum + p.amount_inr, 0),
-      totalCreditsAdded: successfulPayments.reduce((sum, p) => sum + p.credits_added, 0),
-    };
-  };
-
-  const stats = calculateStats();
-
-  // Pagination
-  const totalPages = Math.ceil(payments.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentPayments = payments.slice(startIndex, endIndex);
-
-  const handleRefresh = () => {
-    toast.info('Refreshing payment history...');
-    fetchPayments();
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'success':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-            <CheckCircle className="w-3 h-3" />
-            Success
-          </span>
-        );
-      case 'failed':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-            <XCircle className="w-3 h-3" />
-            Failed
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-            Pending
-          </span>
-        );
+      const [ledgerData, summaryData] = await Promise.all([
+        getCreditLedger(userId, 200),
+        getCreditSummary(userId),
+      ]);
+      // Only show credits coming in (exclude usage deductions — those live on History page)
+      setLedger(ledgerData.filter((e) => e.type !== "usage"));
+      setSummary(summaryData);
+    } catch (error) {
+      console.error("Error loading billing data:", error);
+    } finally {
+      _billingLoaded = true;
+      setIsLoading(false);
     }
   };
+
+  useEffect(() => { if (userId) loadData(); }, [userId]);
+
+  // ─── Render ─────────────────────────────────────────────────────────────
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-emerald-600" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold">Billing & Payments</h1>
-              <p className="text-gray-600">View your recharge history and manage credits</p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              onClick={handleRefresh}
-              disabled={isLoading}
-              variant="outline"
-              size="sm"
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-            <Button
-              onClick={() => navigate('/pricing')}
-              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
-            >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Buy Credits
-            </Button>
-          </div>
-        </div>
+      <div className="px-6 py-8 space-y-6">
 
-        {/* Current Balance Card */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-6 mb-8 text-white">
-          <div className="flex items-center justify-between">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+              <Wallet className="w-6 h-6 text-indigo-600" />
+            </div>
             <div>
-              <p className="text-slate-300 text-sm mb-1">Current Credit Balance</p>
-              <p className="text-4xl font-bold text-emerald-400">
-                {formatNumber(creditsBalance)}
-                <span className="text-lg font-normal text-slate-400 ml-2">sq.inch</span>
+              <h1 className="text-2xl font-bold">Billing & Credits</h1>
+              <p className="text-sm text-muted-foreground">
+                Manage your balance and recharges — for usage details, see{" "}
+                <a href="/logs" className="text-indigo-600 hover:underline font-medium">History</a>
               </p>
             </div>
-            <Button
-              onClick={() => navigate('/pricing')}
-              variant="outline"
-              className="border-emerald-500 text-emerald-400 hover:bg-emerald-500/10"
-            >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Recharge Now
+          </div>
+          <div className="flex items-center gap-2">
+            <Button onClick={loadData} variant="outline" size="sm" disabled={isLoading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+              Refresh
             </Button>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        {payments.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
-              <div className="text-sm font-medium text-blue-700 mb-1">
-                Total Recharges
-              </div>
-              <div className="text-3xl font-bold text-blue-900">
-                {stats.totalRecharges}
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg p-6 border border-amber-200">
-              <div className="text-sm font-medium text-amber-700 mb-1">
-                Total Amount Spent
-              </div>
-              <div className="text-3xl font-bold text-amber-900 flex items-center">
-                <IndianRupee className="w-6 h-6" />
-                {formatNumber(stats.totalAmountSpent)}
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 border border-green-200">
-              <div className="text-sm font-medium text-green-700 mb-1">
-                Total Credits Purchased
-              </div>
-              <div className="text-3xl font-bold text-green-900">
-                {formatNumber(stats.totalCreditsAdded)}
-                <span className="text-base font-normal ml-1">sq.in</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Loading State */}
-        {isLoading ? (
-          <div className="bg-white rounded-lg shadow-sm border p-12 text-center">
-            <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">Loading your payment history...</p>
-          </div>
-        ) : payments.length === 0 ? (
-          /* Empty State */
-          <div className="bg-white rounded-lg shadow-sm border p-12 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CreditCard className="w-8 h-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              No recharges yet
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Buy credits to get started with creating print sheets.
-            </p>
-            <Button
-              onClick={() => navigate('/pricing')}
-              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
-            >
+            <Button onClick={() => navigate("/pricing")} className="bg-indigo-600 hover:bg-indigo-700">
               <PlusCircle className="mr-2 h-4 w-4" />
               Buy Credits
             </Button>
           </div>
-        ) : (
-          /* Table */
-          <>
-            <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-              {/* Desktop Table */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Date & Time
-                      </th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Plan
-                      </th>
-                      <th className="text-right px-6 py-3 text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th className="text-right px-6 py-3 text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Credits Added
-                      </th>
-                      <th className="text-center px-6 py-3 text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Payment ID
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {currentPayments.map((payment, index) => (
-                      <tr
-                        key={payment.id}
-                        className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatDate(payment.created_at)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {payment.plan_name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                          {payment.amount_inr === 0 ? (
-                            <span className="text-green-600 font-medium">Free</span>
-                          ) : (
-                            <span className="text-gray-900 font-medium">
-                              ₹{formatNumber(payment.amount_inr)}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-emerald-600">
-                          +{formatNumber(payment.credits_added)} sq.in
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          {getStatusBadge(payment.status)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono text-xs">
-                          {payment.razorpay_payment_id.length > 20
-                            ? `${payment.razorpay_payment_id.substring(0, 20)}...`
-                            : payment.razorpay_payment_id
-                          }
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+        </div>
 
-              {/* Mobile Cards */}
-              <div className="md:hidden divide-y divide-gray-200">
-                {currentPayments.map((payment, index) => (
-                  <div
-                    key={payment.id}
-                    className={`p-4 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {payment.plan_name}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {formatDate(payment.created_at)}
-                        </div>
-                      </div>
-                      {getStatusBadge(payment.status)}
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Amount:</span>
-                        <span className="font-medium text-gray-900">
-                          {payment.amount_inr === 0 ? 'Free' : `₹${formatNumber(payment.amount_inr)}`}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Credits Added:</span>
-                        <span className="font-medium text-emerald-600">
-                          +{formatNumber(payment.credits_added)} sq.in
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Payment ID:</span>
-                        <span className="text-gray-500 font-mono text-xs">
-                          {payment.razorpay_payment_id.length > 15
-                            ? `${payment.razorpay_payment_id.substring(0, 15)}...`
-                            : payment.razorpay_payment_id
-                          }
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+        {/* Balance Card */}
+        <Card className="bg-gradient-to-r from-slate-800 to-slate-900 text-white overflow-hidden">
+          <CardContent className="pt-6 pb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm mb-1">Current Balance</p>
+                <p className="text-4xl font-bold text-indigo-400">
+                  {formatNumber(currentBalance)}
+                  <span className="text-lg font-normal text-gray-400 ml-2">sq.in</span>
+                </p>
               </div>
+              <Button
+                onClick={() => navigate("/pricing")}
+                variant="outline"
+                className="text-white border-gray-600 hover:bg-gray-700 hover:text-white"
+              >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Recharge Now
+              </Button>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Showing {startIndex + 1} to {Math.min(endIndex, payments.length)} of {payments.length} transactions
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Previous
-                  </Button>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                      let page: number;
-                      if (totalPages <= 5) {
-                        page = i + 1;
-                      } else if (currentPage <= 3) {
-                        page = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        page = totalPages - 4 + i;
-                      } else {
-                        page = currentPage - 2 + i;
-                      }
-                      return (
-                        <Button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          variant={page === currentPage ? "default" : "outline"}
-                          size="sm"
-                          className="w-10"
-                        >
-                          {page}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                  <Button
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Next
-                  </Button>
-                </div>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="h-4 w-4 text-green-500" />
+                <span className="text-xs font-medium text-muted-foreground">Total Credits In</span>
               </div>
-            )}
-          </>
+              <div className="text-2xl font-bold text-green-600">
+                +{summary ? formatCompact(summary.totalCredits) : "0"}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingDown className="h-4 w-4 text-red-500" />
+                <span className="text-xs font-medium text-muted-foreground">Total Used</span>
+              </div>
+              <div className="text-2xl font-bold text-red-600">
+                −{summary ? formatCompact(summary.totalDebits) : "0"}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="h-4 w-4 text-purple-500" />
+                <span className="text-xs font-medium text-muted-foreground">Free Trial</span>
+              </div>
+              <div className="text-2xl font-bold">
+                {summary?.byType?.free_trial ? formatCompact(summary.byType.free_trial) : "0"}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <CreditCard className="h-4 w-4 text-blue-500" />
+                <span className="text-xs font-medium text-muted-foreground">From Recharges</span>
+              </div>
+              <div className="text-2xl font-bold">
+                {summary?.byType?.recharge ? formatCompact(summary.byType.recharge) : "0"}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Credit Activity */}
+        {isLoading ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground">Loading...</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Credit Activity</CardTitle>
+              <CardDescription>Recharges, free trial, and bonus credits received</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {ledger.length === 0 ? (
+                <div className="py-12 text-center">
+                  <CreditCard className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="font-medium">No credit activity yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">Buy credits to get started</p>
+                  <Button onClick={() => navigate("/pricing")} className="mt-4 bg-indigo-600 hover:bg-indigo-700">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Buy Credits
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {ledger.map((entry) => {
+                    const isCredit = entry.amount > 0;
+                    const config = TYPE_CONFIG[entry.type] || TYPE_CONFIG.manual_adjustment;
+
+                    return (
+                      <div
+                        key={entry.id}
+                        className="flex items-center gap-4 py-3.5 px-3 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        {/* Icon */}
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${config.color}`}>
+                          {config.icon}
+                        </div>
+
+                        {/* Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold">{config.label}</span>
+                            {entry.description && (
+                              <span className="text-xs text-muted-foreground truncate max-w-[300px]">
+                                — {entry.description}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground">{formatDate(entry.created_at)}</span>
+                        </div>
+
+                        {/* Amount */}
+                        <div className="text-right flex-shrink-0">
+                          <span className={`text-sm font-bold ${isCredit ? "text-green-600" : "text-red-600"}`}>
+                            {isCredit ? "+" : "−"}{formatNumber(Math.abs(entry.amount))}
+                            <span className="text-xs font-normal text-muted-foreground ml-1">sq.in</span>
+                          </span>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <p className="text-xs text-muted-foreground cursor-help">
+                                Bal: {formatCompact(entry.balance_after)}
+                              </p>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="text-xs">
+                              Balance after: {formatNumber(entry.balance_after)} sq.in
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
       </div>
     </AppLayout>

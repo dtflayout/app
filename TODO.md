@@ -1,60 +1,164 @@
 # TODO List for DTF Layout Tool
 
-## 🚨 Critical (Blockers for Launch)
-
-### Fix Outseta CreditsBalance Update
-- **Issue:** Outseta API returns 401 when trying to update CreditsBalance custom property
-- **Status:** Blocked - both Basic Auth and Bearer Token fail
-- **Why Blocked:** API endpoint /api/v1/crm/accounts/{id} doesn't allow updating custom properties
-- **Solution Needed:** Research Outseta's custom properties API or contact support
-- **Estimated Time:** 1-2 hours research + implementation
-- **Workaround:** Currently updating UI only, credits not synced to Outseta
-- **Added:** Day 2 - 2025-11-20
-
-### Move API Credentials to Backend
-- **Issue:** Outseta API Secret exposed on client side (in browser)
-- **Status:** Acceptable for MVP testing, critical for production
-- **Security Risk:** Anyone can inspect and steal API credentials
-- **Solution:** Create backend API endpoint (Vercel/Netlify function) that proxies Outseta calls
-- **Estimated Time:** 2-3 hours
-- **Priority:** Must fix before public launch
-- **Added:** Day 1 - 2025-11-19
+**Last Updated:** March 20, 2026  
+**Auth System:** Supabase Auth (email/password)  
+**Payment Gateway:** Dodo Payments (India + Global)  
+**Credits System:** Supabase `credits` table
 
 ---
 
-## ⚠️ High Priority (Needed Before Launch)
+## 🚨 Critical (Blockers for Launch)
+
+### ~~Supabase Pro Upgrade Required~~
+- ~~**Issue:** Large 300 DPI files (3+ sheets) exceed free tier 50MB limit~~
+- **Status:** ✅ DONE
+
+### Test Multi-Sheet Flow on Pro
+- **What:** Full end-to-end test with 3+ sheets at 300 DPI
+- **Status:** Ready to test (Supabase Pro active)
+- **Checklist:**
+  - [ ] Upload multiple images
+  - [ ] Generate 3+ sheet layout
+  - [ ] Export all sheets (300 DPI)
+  - [ ] Upload to Supabase storage
+  - [ ] Redirect to Shopify cart
+- **Estimated Time:** 2-3 hours
+
+---
+
+## 🚀 Deployment Tasks (Do at launch time)
+
+### Vercel Cron Job for Auto-Cleanup
+- **What:** Expired orders auto-purge (marks pending→expired, deletes >30 day old expired orders + files)
+- **File:** `api/cleanup-expired.ts` (already created)
+- **Schedule:** Daily at 3 AM UTC (configured in `vercel.json`)
+- **Requires:** Vercel Pro plan for cron
+- **Env vars to add in Vercel dashboard:**
+  - [ ] `CRON_SECRET` — any random string for auth
+  - [ ] `SUPABASE_SERVICE_ROLE_KEY` — from Supabase dashboard → Settings → API
+- **Estimated Time:** 15 minutes
+
+---
+
+## ⚠️ High Priority (Before Launch)
 
 ### End-to-End Testing
 - **What:** Test complete flow from signup to generation to credit deduction
-- **Status:** Pending Outseta fix
 - **Checklist:**
-  - [ ] Signup with 700 free credits
+  - [ ] Signup with 10,000 free trial credits
   - [ ] Generate layout
   - [ ] Credits deducted correctly
   - [ ] Supabase log created
-  - [ ] Navbar updates
+  - [ ] Navbar credits update
   - [ ] Low credit warning works
 - **Estimated Time:** 1 hour
+
+### Integrate Dodo Payments
+- **What:** Replace Razorpay with Dodo for both India and global payments
+- **Status:** Pending
+- **Files to Update:**
+  - `api/create-order.ts`
+  - `api/verify-payment.ts`
+  - `src/pages/Billing.tsx`
+  - `src/services/paymentService.ts`
+- **Estimated Time:** 4-6 hours
+
+---
+
+## 🌐 Website Integration
+
+### ✅ Completed
+- [x] Store Setup (name, URL, slug, logo, currency)
+- [x] Products Management (list, add, edit, delete with variants)
+- [x] Product Form (Shopify variant fetch, size mapping, slug)
+- [x] Orders Page (list, filter, search, mark paid, download, delete)
+- [x] Orders — Kanban view with drag-and-drop (Pending → Paid → Downloaded)
+- [x] Orders — Table view with bulk select, Mark as Paid, Download Files
+- [x] Orders — Date range picker with presets (Today, This Week, Last 7/30 Days, etc.)
+- [x] Orders — Stats cards that reflect selected date range
+- [x] Orders — Clear Expired button for bulk cleanup
+- [x] Orders — Real file downloads (fetch+blob, not window.open)
+- [x] Orders — View toggle (Kanban/Table) with kanban as default
+- [x] Orders — Search highlighting in kanban cards
+- [x] Orders — Fixed dialog overflow for tall sheet previews
+- [x] Orders — Fixed decimal precision for sheet dimensions (.toFixed(2))
+- [x] Orders — Green status badges for Paid/Downloaded
+- [x] Orders — Hidden "Mark as Paid" for expired orders
+- [x] Orders — No page blink on tab switch (silent background refresh)
+- [x] Public Builder - Single sheet flow
+- [x] Public Builder - Multi-sheet support (layout, export, upload, cart redirect)
+- [x] Public Builder - Shopify line item properties (Design Code, Sheets, Sheet X of Y)
+- [x] Database Schema (printers, products, variants, designs tables)
+- [x] Storage Buckets (design-files, printer-assets)
+- [x] Builder Settings (appearance, tools, uploads customization)
+
+### ⏳ Pending
+- [ ] **Roll Width Configuration** - Currently hardcoded to 22"
+- [ ] **Customer Email Capture** - Optional email capture before cart redirect
+- [ ] **Progress Feedback** - "Exporting sheet 1 of 3..." during export
+
+### 🔮 Future
+- [ ] CSV import for bulk variant upload
+- [ ] Shopify webhook for auto-confirm payment
+- [ ] Analytics dashboard (conversion tracking, revenue)
+
+---
+
+## 🏪 Quick Store
+
+### ✅ Completed
+- [x] Store Setup (name, slug, logo, colors, contact info)
+- [x] Homepage Editor (hero, about, testimonials, features, FAQ, footer — all inline with multiple layout variants)
+- [x] Products Management (list, add, edit with pricing tiers)
+- [x] Orders Management (list, filter, status updates, download sheets)
+- [x] Public Storefront (homepage, products, product detail, contact)
+- [x] Storefront Layout (4 header styles, multiple footer styles, customer login modal)
+- [x] Builder Integration (CollageCreator with area/length pricing)
+- [x] Order Submission Flow (customer info modal, sheet upload)
+- [x] Customer Accounts System (email OTP login, 20-day sessions)
+- [x] Customer Dashboard (order history, profile)
+- [x] Printer Customer Management (list, detail, order history)
+- [x] All storefront pages (StoreBuilder, StoreContact, StoreOrderStatus, StoreNotFound, StoreAccount)
+- [x] All storefront components (PricingTable, OrderStatusTracker, CustomerLoginModal, OrderSubmitModal, OrderSummaryPanel, QSBuilderTopBar)
+
+### ⏳ Pending
+- [ ] **Integrate Email Service for OTP** - Currently OTPs logged to console
+  - Suggested: Resend (simple API, good free tier)
+  - Location: `src/services/qsCustomerService.ts` -> `requestOTP()` function
+  - Estimated Time: 1-2 hours
+
+- [ ] **Link Orders to Customer Accounts** - Auto-link `customer_id` when logged in
+  - Location: `src/pages/storefront/StoreBuilder.tsx` -> `handleExportComplete()`
+  
+- [ ] **Pre-fill Customer Info** - Auto-fill name/phone from logged-in account
+  - Location: `src/components/quick-store/OrderSubmitModal.tsx`
+
+- [ ] **Guest Checkout Option** - Allow orders without account creation
+
+### 🔮 Future
+- [ ] Customer-specific pricing/discounts
+- [ ] Order notifications via email
+- [ ] Bulk customer import
+- [ ] Customer notes/tags for printers
 
 ---
 
 ## 📌 Medium Priority
 
-### Usage History in localStorage (Backup)
-- **What:** Store logs in browser as backup if Supabase fails
+### Implement Password Reset
+- **Location:** `src/pages/AuthPage.tsx`
+- **What:** Add "Forgot Password" functionality using Supabase Auth
+- **Estimated Time:** 1 hour
+
+### Usage History Backup
+- **What:** Store logs in browser localStorage as backup
 - **Estimated Time:** 30 minutes
 
 ---
 
-## 🔵 Low Priority (Future Improvements)
+## 🔵 Low Priority (Future)
 
-### Fix Email Verification Redirect
-- **Issue:** Redirect URL uses temporary Codespaces URL that changes
-- **Status:** Workaround exists (manually verify in Outseta)
-- **Solution:** Configure proper domain in Outseta settings
-- **Priority:** Low for MVP, fix when deploying to production domain
-
-### Add Email Notifications
+### Email Notifications
 - **What:** Send email after generation with summary
 - **Estimated Time:** 2-3 hours
 
@@ -64,67 +168,66 @@
 
 ---
 
-## ✅ Completed (Day 1-2)
+## ✅ Completed (Historical)
 
-**Day 1 (2025-11-19):**
-- [x] Outseta authentication integration
-- [x] Protected routes
-- [x] Credits display in navbar
+**Authentication Migration:**
+- [x] Migrated from Outseta to Supabase Auth
+- [x] Email/password authentication
+- [x] Credits system in Supabase
+- [x] Protected routes with ProtectedRoute component
 
-**Day 2 (2025-11-20):**
+**Core Features:**
 - [x] Square inch calculation system
-- [x] Supabase setup and database table
-- [x] Usage logging to Supabase with full transaction details
+- [x] Usage logging to Supabase
 - [x] Confirmation dialog before generation
 - [x] Insufficient credits modal
-- [x] Dual authentication attempt (Basic + Bearer)
-- [x] Credit deduction flow with Outseta API workaround
-- [x] Sheet Logs page - Generation history with stats
-- [x] Low credit warning system:
-  - Dynamic navbar badge with 4-level alerts
-  - Dismissible warning banners
-  - Button disable state when credits = 0
+- [x] Sheet Logs page
+- [x] Low credit warning system
 - [x] Error handling dialogs
-- [x] Logout button functionality
-- [x] Navigation between Create and History pages
-- [x] TODO.md project tracking document
+- [x] TODO.md project tracking
+
+**March 2026 Orders Page Overhaul:**
+- [x] Kanban view with 3 columns (Pending/Paid/Downloaded) + drag-and-drop
+- [x] Table view with multi-select checkboxes + bulk actions
+- [x] View toggle (Kanban default, Table for bulk ops)
+- [x] Date range picker with quick presets + custom calendar
+- [x] Stats cards reflecting filtered date range
+- [x] Real file downloads via fetch+blob (replaces window.open)
+- [x] Clear Expired button on expired stat card
+- [x] Cron job API route for auto-purging expired orders (`api/cleanup-expired.ts`)
+- [x] Fixed: dialog overflow, decimal precision, status colors, tab-switch blink
 
 ---
 
-## 📅 Timeline
+## 🔗 Key Files Reference
 
-**Day 2 (Complete - 2025-11-20):**
-- ✅ Implemented Outseta workaround
-- ✅ Built Sheet Logs page
-- ✅ Tested with Supabase logging
-- ✅ Added comprehensive warning system
+### Authentication
+- `src/contexts/AuthContext.tsx` - Supabase Auth provider
+- `src/contexts/CreditsContext.tsx` - Credits management
+- `src/pages/AuthPage.tsx` - Login/Signup page
 
-**Day 3:**
-- Razorpay integration
-- Pricing page
-- Fix logout button
-- Revisit Outseta sync if time permits
+### Website Integration
+- `src/pages/public-builder/PublicBuilder.tsx` - Public builder wrapper
+- `src/pages/website-integration/Orders.tsx` - Orders with Kanban + Table views
+- `src/services/publicBuilderService.ts` - Design save/upload
+- `src/services/printerService.ts` - Printer/product CRUD
+- `src/services/orderService.ts` - Order management
+- `src/services/builderSettingsService.ts` - Builder customization
+- `api/cleanup-expired.ts` - Cron job for expired order cleanup
 
-**Day 4:**
-- Marketing pages
-- Security fixes (move to backend)
-- Final testing
-- Deploy
+### Quick Store
+- `src/pages/storefront/StorefrontApp.tsx` - Customer-facing app
+- `src/pages/storefront/StorefrontLayout.tsx` - Header/footer variants (all inline)
+- `src/pages/storefront/StoreHome.tsx` - Homepage with hero/features/FAQ (all inline)
+- `src/services/quickStoreService.ts` - Store CRUD
+- `src/services/qsOrderService.ts` - Order management
+- `src/services/qsCustomerService.ts` - Customer auth/OTP
 
-**After Launch:**
-- Address remaining TODOs based on user feedback
-
----
-
-## 🔗 Related Files
-
-- `/src/lib/outsetaApi.ts` - Outseta API integration
-- `/src/lib/supabaseClient.ts` - Supabase client
-- `/src/lib/usageLogger.ts` - Usage logging function
-- `/src/components/CollageCreator.tsx` - Main app with credit logic
+### Core Builder
+- `src/components/CollageCreator.tsx` - Shared builder component
+- `src/utils/layoutAlgorithm.ts` - Packing algorithm
+- `src/utils/multiSheetExport.ts` - Multi-sheet export
 
 ---
-
-**Last Updated:** 2025-11-20 (Day 2 Complete)
 
 **Note:** Update this file as tasks are completed or new ones are discovered.

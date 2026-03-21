@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useOutseta } from "@/contexts/OutsetaContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, CheckCircle2 } from "lucide-react";
 
 const SignupPage = () => {
   const navigate = useNavigate();
-  const { user, refreshUser } = useOutseta();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -16,51 +16,8 @@ const SignupPage = () => {
     }
   }, [user, navigate]);
 
-  useEffect(() => {
-    // Handle successful signup - set initial credits
-    const handleSignup = async () => {
-      console.log("Signup event triggered");
-
-      try {
-        // Get the newly created user
-        if (window.Outseta) {
-          const currentUser = await window.Outseta.getUser();
-
-          if (currentUser) {
-            // Update account with initial credits balance
-            await currentUser.update({
-              Account: {
-                credits_balance: 700
-              }
-            });
-
-            console.log("Credits initialized to 700");
-
-            toast({
-              title: "Welcome!",
-              description: "Your account has been created with 700 free credits.",
-            });
-          }
-        }
-
-        // Refresh user data and redirect
-        await refreshUser();
-        navigate("/app");
-      } catch (error) {
-        console.error("Error initializing credits:", error);
-        // Still redirect even if credits update fails
-        await refreshUser();
-        navigate("/app");
-      }
-    };
-
-    // Listen for signup event (fires after registration completes)
-    window.addEventListener("signup", handleSignup);
-
-    return () => {
-      window.removeEventListener("signup", handleSignup);
-    };
-  }, [navigate, refreshUser, toast]);
+  // Note: SignupPage uses legacy Outseta widget. Consider migrating to AuthPage.tsx which uses Supabase auth.
+  // Removed Outseta-specific event listeners, window.Outseta calls, and refreshUser calls.
 
   return (
     <div
@@ -99,7 +56,7 @@ const SignupPage = () => {
       <div className="min-h-screen flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-lg">
           {/* Signup Card with Border Beam */}
-          <div className="relative bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+          <div className="relative bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
 
             {/* First animated border beam - EMERALD GREEN */}
             <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
@@ -130,8 +87,8 @@ const SignupPage = () => {
             <div className="relative z-10 p-8">
               {/* Icon */}
               <div className="flex justify-center mb-4">
-                <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
-                  <UserPlus className="w-7 h-7 text-slate-600" />
+                <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
+                  <UserPlus className="w-7 h-7 text-gray-600" />
                 </div>
               </div>
 
@@ -147,29 +104,29 @@ const SignupPage = () => {
               </div>
 
               {/* Benefits list */}
-              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4 mt-4 mb-4 border border-emerald-100">
+              <div className="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-xl p-4 mt-4 mb-4 border border-indigo-100">
                 <ul className="space-y-2">
-                  <li className="flex items-center gap-3 text-emerald-800">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                  <li className="flex items-center gap-3 text-indigo-800">
+                    <CheckCircle2 className="w-5 h-5 text-indigo-500 flex-shrink-0" />
                     <span className="text-sm font-medium">10,000 free credits to get started</span>
                   </li>
-                  <li className="flex items-center gap-3 text-emerald-800">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                  <li className="flex items-center gap-3 text-indigo-800">
+                    <CheckCircle2 className="w-5 h-5 text-indigo-500 flex-shrink-0" />
                     <span className="text-sm font-medium">High-quality 150 DPI & 300 DPI exports</span>
                   </li>
-                  <li className="flex items-center gap-3 text-emerald-800">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                  <li className="flex items-center gap-3 text-indigo-800">
+                    <CheckCircle2 className="w-5 h-5 text-indigo-500 flex-shrink-0" />
                     <span className="text-sm font-medium">Access to tools like Background Remover, Image Enhancer & Trimmer</span>
                   </li>
                 </ul>
               </div>
 
               {/* Footer link */}
-              <p className="text-center text-slate-600">
+              <p className="text-center text-gray-600">
                 Already have an account?{" "}
                 <Link
                   to="/login"
-                  className="text-slate-900 font-semibold hover:text-slate-700 transition-colors underline underline-offset-2"
+                  className="text-gray-900 font-semibold hover:text-gray-700 transition-colors underline underline-offset-2"
                 >
                   Sign in
                 </Link>
@@ -181,7 +138,7 @@ const SignupPage = () => {
           <p className="text-center mt-6">
             <Link
               to="/"
-              className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
+              className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
             >
               &larr; Back to home
             </Link>

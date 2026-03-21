@@ -16,27 +16,27 @@ const TermsConditions = () => {
   return (
     <MarketingLayout>
       {/* Subtle gradient background */}
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-emerald-50/30">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-indigo-50/30">
         <div className="container max-w-4xl mx-auto px-6 py-20 lg:py-28">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
               Terms & Conditions
             </h1>
-            <p className="text-lg text-slate-600">
+            <p className="text-lg text-gray-600">
               Welcome to our platform. By using our service, you agree to the following:
             </p>
           </div>
 
           {/* Content */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 lg:p-12">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 lg:p-12">
             <ol className="space-y-6">
               {terms.map((term, index) => (
                 <li key={index} className="flex gap-4">
-                  <span className="flex-shrink-0 w-8 h-8 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center font-semibold text-sm">
+                  <span className="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-semibold text-sm">
                     {index + 1}
                   </span>
-                  <p className="text-slate-700 leading-relaxed pt-1">
+                  <p className="text-gray-700 leading-relaxed pt-1">
                     {term}
                   </p>
                 </li>
@@ -45,7 +45,7 @@ const TermsConditions = () => {
           </div>
 
           {/* Footer note */}
-          <p className="text-center text-slate-500 text-sm mt-8">
+          <p className="text-center text-gray-500 text-sm mt-8">
             Last updated: November 2025
           </p>
         </div>

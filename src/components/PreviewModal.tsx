@@ -351,7 +351,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
             <DialogTitle className="text-xl font-bold">Sheet Preview</DialogTitle>
             <div className="flex items-center gap-4">
               {/* Sheet dimensions */}
-              <span className="text-sm text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+              <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
                 {canvasWidthInches}" × {canvasHeightInches.toFixed(2)}"
               </span>
 
@@ -391,13 +391,13 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
 
               {/* Background Preview (Hold to preview) */}
               <div className="flex items-center gap-2 border rounded-lg px-2 py-1" title="Hold to preview background">
-                <span className="text-xs text-slate-500">Press & hold to preview:</span>
+                <span className="text-xs text-gray-500">Press & hold to preview:</span>
                 <div
                   className="h-6 w-6 rounded flex items-center justify-center bg-blue-50 ring-1 ring-blue-300"
                   title="Default (checkered)"
                 >
                   <div
-                    className="w-4 h-4 rounded-sm border border-slate-300"
+                    className="w-4 h-4 rounded-sm border border-gray-300"
                     style={{
                       backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
                       backgroundSize: '6px 6px',
@@ -412,11 +412,11 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                   className={`h-6 w-6 rounded flex items-center justify-center transition-colors select-none ${
                     previewBg === 'grey'
                       ? 'bg-gray-200 ring-2 ring-gray-400'
-                      : 'hover:bg-slate-100'
+                      : 'hover:bg-gray-100'
                   }`}
                   title="Hold to preview grey background"
                 >
-                  <div className="w-4 h-4 rounded-sm bg-gray-500 border border-slate-300" />
+                  <div className="w-4 h-4 rounded-sm bg-gray-500 border border-gray-300" />
                 </button>
                 <button
                   onMouseDown={() => setPreviewBg('black')}
@@ -425,11 +425,11 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                   className={`h-6 w-6 rounded flex items-center justify-center transition-colors select-none ${
                     previewBg === 'black'
                       ? 'bg-gray-700 ring-2 ring-gray-500'
-                      : 'hover:bg-slate-100'
+                      : 'hover:bg-gray-100'
                   }`}
                   title="Hold to preview black background"
                 >
-                  <div className="w-4 h-4 rounded-sm bg-black border border-slate-300" />
+                  <div className="w-4 h-4 rounded-sm bg-black border border-gray-300" />
                 </button>
               </div>
             </div>
@@ -448,10 +448,10 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
             <div className="flex items-center justify-center h-full min-h-[400px]">
               <div className="flex flex-col items-center gap-4">
                 <div className="relative w-12 h-12">
-                  <div className="absolute inset-0 rounded-full border-4 border-emerald-100"></div>
-                  <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-emerald-500 animate-spin"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-indigo-100"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-indigo-500 animate-spin"></div>
                 </div>
-                <p className="text-slate-600">Generating preview...</p>
+                <p className="text-gray-600">Generating preview...</p>
               </div>
             </div>
           ) : previewUrl ? (
@@ -527,7 +527,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
             </div>
           ) : (
             <div className="flex items-center justify-center h-full min-h-[400px]">
-              <p className="text-slate-500">No preview available</p>
+              <p className="text-gray-500">No preview available</p>
             </div>
           )}
 
@@ -575,7 +575,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
 
         {/* Footer - Fixed at bottom */}
         <div className="px-6 py-3 border-t bg-white flex-shrink-0 flex items-center justify-between">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-gray-500">
             This is a low-resolution preview. Download for full print quality ({canvasHeightInches > 100 ? "very long sheet - scroll to see full preview" : "scroll to see full sheet"}).
           </p>
           <Button

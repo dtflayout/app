@@ -12,7 +12,7 @@ const GradientButton = forwardRef<HTMLButtonElement, GradientButtonProps>(
     ref
   ) => {
     const baseClasses =
-      "font-semibold rounded-xl transition-all duration-300 inline-flex items-center justify-center transform hover:-translate-y-1 active:translate-y-0";
+      "font-semibold rounded-full transition-all duration-300 inline-flex items-center justify-center transform hover:-translate-y-1 active:translate-y-0";
 
     const sizeClasses = {
       sm: "px-6 py-2.5 text-sm",
@@ -22,15 +22,15 @@ const GradientButton = forwardRef<HTMLButtonElement, GradientButtonProps>(
     };
 
     const variantClasses = {
-      hero: "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xl hover:shadow-2xl",
+      hero: "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-xl hover:shadow-[0_8px_28px_rgba(99,102,241,0.4)]",
       secondary:
-        "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-xl hover:shadow-2xl",
+        "bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 text-white shadow-xl hover:shadow-[0_8px_28px_rgba(99,102,241,0.4)]",
       outline:
         "border-2 border-white/30 backdrop-blur-sm text-white hover:bg-white/10 hover:border-white/50 shadow-lg hover:shadow-xl",
       white:
-        "bg-white text-emerald-600 shadow-xl hover:shadow-2xl hover:scale-105",
+        "bg-white text-indigo-600 shadow-xl hover:shadow-2xl hover:scale-105",
       "outline-teal":
-        "border-2 border-teal-600 bg-transparent text-teal-700 hover:bg-teal-50 shadow-lg hover:shadow-xl",
+        "border-2 border-indigo-600 bg-transparent text-indigo-700 hover:bg-indigo-50 shadow-lg hover:shadow-xl",
     };
 
     return (

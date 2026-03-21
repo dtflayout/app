@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useOutseta } from "@/contexts/OutsetaContext";
+import { useAuth } from "@/contexts/AuthContext";
 import Footer from "./Footer";
 
 interface MarketingLayoutProps {
@@ -21,13 +21,13 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout, isLoading } = useOutseta();
+  const { user, signOut, isLoading } = useAuth();
 
   // Get user display name
   const getUserDisplayName = () => {
     if (!user) return "";
-    if (user.FirstName) return user.FirstName;
-    if (user.Email) return user.Email.split("@")[0];
+    if (user.user_metadata?.full_name) return user.user_metadata.full_name.split(' ')[0];
+    if (user.email) return user.email.split("@")[0];
     return "User";
   };
 
@@ -55,7 +55,7 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
   return (
     <div className="min-h-screen flex flex-col">
       <header
-        className={`sticky top-0 z-50 w-full bg-white/90 backdrop-blur-lg border-b border-slate-200/50 transition-all duration-300 ${
+        className={`sticky top-0 z-50 w-full bg-white/90 backdrop-blur-lg border-b border-gray-200/50 transition-all duration-300 ${
           isScrolled ? "shadow-lg" : "shadow-sm"
         }`}
       >
@@ -76,8 +76,8 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
                   to={link.href}
                   className={`text-base font-medium transition-all duration-200 ${
                     location.pathname === link.href
-                      ? "text-emerald-600"
-                      : "text-slate-600 hover:text-emerald-600"
+                      ? "text-indigo-600"
+                      : "text-gray-600 hover:text-indigo-600"
                   }`}
                 >
                   {link.label}
@@ -89,14 +89,14 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
               {!isLoading && user ? (
                 <>
                   <Link to="/app">
-                    <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-base font-medium rounded-xl shadow-md hover:shadow-xl hover:scale-105 transition-all duration-200 px-6">
+                    <Button className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-base font-medium rounded-full shadow-md hover:shadow-[0_8px_24px_rgba(79,70,229,0.35)] hover:scale-105 transition-all duration-200 px-6">
                       Go to App
                     </Button>
                   </Link>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="flex items-center gap-2 text-slate-600 text-base font-medium hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-200">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                      <Button variant="ghost" className="flex items-center gap-2 text-gray-600 text-base font-medium hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
                           <User className="w-4 h-4 text-white" />
                         </div>
                         <span className="max-w-[120px] truncate">{getUserDisplayName()}</span>
@@ -108,7 +108,7 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
                         Dashboard
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={logout} className="cursor-pointer text-red-600 focus:text-red-600">
+                      <DropdownMenuItem onClick={signOut} className="cursor-pointer text-red-600 focus:text-red-600">
                         <LogOut className="w-4 h-4 mr-2" />
                         Logout
                       </DropdownMenuItem>
@@ -118,12 +118,12 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
               ) : (
                 <>
                   <Link to="/login">
-                    <Button variant="ghost" className="text-slate-600 text-base font-medium hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-200">
+                    <Button variant="ghost" className="text-gray-600 text-base font-medium hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200">
                       Login
                     </Button>
                   </Link>
                   <Link to="/signup">
-                    <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-base font-medium rounded-xl shadow-md hover:shadow-xl hover:scale-105 transition-all duration-200 px-6">
+                    <Button className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-base font-medium rounded-full shadow-md hover:shadow-[0_8px_24px_rgba(79,70,229,0.35)] hover:scale-105 transition-all duration-200 px-6">
                       Sign Up
                     </Button>
                   </Link>
@@ -137,9 +137,9 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
               aria-label="Toggle menu"
             >
               {isMobileMenuOpen ? (
-                <X className="h-6 w-6 text-slate-600" />
+                <X className="h-6 w-6 text-gray-600" />
               ) : (
-                <Menu className="h-6 w-6 text-slate-600" />
+                <Menu className="h-6 w-6 text-gray-600" />
               )}
             </button>
           </div>
@@ -151,10 +151,10 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
                   <Link
                     key={link.label}
                     to={link.href}
-                    className={`text-base font-medium transition-colors hover:text-emerald-600 ${
+                    className={`text-base font-medium transition-colors hover:text-indigo-600 ${
                       location.pathname === link.href
-                        ? "text-emerald-600"
-                        : "text-slate-600"
+                        ? "text-indigo-600"
+                        : "text-gray-600"
                     }`}
                   >
                     {link.label}
@@ -163,19 +163,19 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
                 <div className="flex flex-col gap-2 mt-4">
                   {!isLoading && user ? (
                     <>
-                      <div className="flex items-center gap-2 px-4 py-2 text-slate-700">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                      <div className="flex items-center gap-2 px-4 py-2 text-gray-700">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
                           <User className="w-4 h-4 text-white" />
                         </div>
                         <span className="font-medium">{getUserDisplayName()}</span>
                       </div>
                       <Link to="/app">
-                        <Button className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-base">
+                        <Button className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-base">
                           Go to App
                         </Button>
                       </Link>
                       <Link to="/dashboard">
-                        <Button variant="outline" className="w-full text-slate-600 text-base">
+                        <Button variant="outline" className="w-full text-gray-600 text-base">
                           <LayoutDashboard className="w-4 h-4 mr-2" />
                           Dashboard
                         </Button>
@@ -183,7 +183,7 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
                       <Button
                         variant="ghost"
                         className="w-full text-red-600 text-base hover:bg-red-50"
-                        onClick={logout}
+                        onClick={signOut}
                       >
                         <LogOut className="w-4 h-4 mr-2" />
                         Logout
@@ -194,13 +194,13 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
                       <Link to="/login">
                         <Button
                           variant="ghost"
-                          className="w-full text-slate-600 text-base"
+                          className="w-full text-gray-600 text-base"
                         >
                           Login
                         </Button>
                       </Link>
                       <Link to="/signup">
-                        <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-base">
+                        <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-base">
                           Sign Up
                         </Button>
                       </Link>
