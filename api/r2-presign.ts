@@ -18,7 +18,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { getR2Client, getR2BucketName, getR2PublicUrl } from "./lib/r2";
+import { getR2Client, getR2BucketName, getR2PublicUrl } from "./lib/r2.js";
 
 // Allowed key prefixes — prevents arbitrary writes
 const ALLOWED_PREFIXES = ["design-files/", "store-assets/", "printer-assets/"];

@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
-import { getR2Client, getR2BucketName } from './lib/r2';
+import { getR2Client, getR2BucketName } from './lib/r2.js';
 
 /**
  * Cron job: Clean up expired orders (both Website Integration and Quick Store)

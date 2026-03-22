@@ -20,7 +20,7 @@ import {
   ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 import { createClient } from "@supabase/supabase-js";
-import { getR2Client, getR2BucketName } from "./lib/r2";
+import { getR2Client, getR2BucketName } from "./lib/r2.js";
 
 // Allowed key/prefix prefixes — prevents arbitrary deletes
 const ALLOWED_PREFIXES = ["design-files/", "store-assets/", "printer-assets/"];
