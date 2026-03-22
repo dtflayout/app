@@ -18,7 +18,7 @@ import { logSheetGeneration } from "@/lib/usageLogger";
 import { logCreditTransaction } from "@/lib/creditLedgerService";
 import { getQSOrders, updateQSOrderStatus, deleteQSOrder, formatTimeRemaining, formatDate, getTimezoneAbbreviation } from "@/services/qsOrderService";
 import { QuickStore, QSOrder, formatPrice } from "@/types/quickStore";
-import { supabase } from "@/lib/supabaseClient";
+import { getR2PublicUrl } from "@/lib/r2Client";
 import { toast } from "sonner";
 import { format, startOfDay, endOfDay, subDays, startOfMonth, startOfWeek, formatDistanceToNow } from "date-fns";
 import { Loader2, Package, Clock, CheckCircle, Download, XCircle, MoreVertical, Eye, Trash2, RefreshCw, FileDown, Search, LayoutGrid, List, CalendarIcon, Phone, User, AlertTriangle, Mail, MessageSquare } from "lucide-react";
@@ -191,8 +191,8 @@ const QSOrders = () => {
   const downloadOrderFiles = async (order: QSOrder) => {
     for (const sheet of order.sheets) {
       const storagePath = sheet.storage_path || `orders/${store?.slug || "unknown"}/${order.order_code}/sheet_${sheet.sheet_number}.png`;
-      const { data: urlData } = supabase.storage.from("design-files").getPublicUrl(storagePath);
-      if (urlData?.publicUrl) { await downloadFile(urlData.publicUrl, `${order.order_code}_sheet${sheet.sheet_number}_${Math.round(sheet.width_inches)}x${Math.round(sheet.height_inches)}in.png`); await new Promise((r) => setTimeout(r, 500)); }
+      const publicUrl = getR2PublicUrl("design-files", storagePath);
+      if (publicUrl) { await downloadFile(publicUrl, `${order.order_code}_sheet${sheet.sheet_number}_${Math.round(sheet.width_inches)}x${Math.round(sheet.height_inches)}in.png`); await new Promise((r) => setTimeout(r, 500)); }
     }
   };
 

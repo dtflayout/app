@@ -8,10 +8,9 @@ const LOW_CREDITS_ALERT_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours in millis
 export interface UserCredits {
   user_id: string;
   email: string;
-  credit_balance: number;
+  balance: number;
   free_trial_claimed: boolean;
   created_at: string;
-  updated_at: string;
 }
 
 /**
@@ -23,12 +22,12 @@ export async function getOrCreateUserCredits(
   email: string
 ): Promise<{ success: boolean; credits?: number; freeTrialClaimed?: boolean; error?: string; isNewUser?: boolean }> {
   try {
-    console.log('[Credits] Fetching credits for user:', userId);
+    console.log('[Credits] Fetching credits for user');
 
     // Try to get existing record
     const { data, error: fetchError } = await supabase
-      .from('user_credits')
-      .select('credit_balance, free_trial_claimed')
+      .from('credits')
+      .select('balance, free_trial_claimed')
       .eq('user_id', userId)
       .single();
 
@@ -40,10 +39,10 @@ export async function getOrCreateUserCredits(
 
     if (data) {
       // User exists, return their balance
-      console.log('[Credits] User found, balance:', data.credit_balance, 'free_trial_claimed:', data.free_trial_claimed);
+      console.log('[Credits] User found, balance:', data.balance);
       return {
         success: true,
-        credits: data.credit_balance,
+        credits: data.balance,
         freeTrialClaimed: data.free_trial_claimed || false,
         isNewUser: false
       };
@@ -53,14 +52,13 @@ export async function getOrCreateUserCredits(
     console.log('[Credits] New user, creating with 10,000 free trial credits');
 
     const { error: insertError } = await supabase
-      .from('user_credits')
+      .from('credits')
       .insert({
         user_id: userId,
         email: email,
-        credit_balance: FREE_TRIAL_CREDITS,
+        balance: FREE_TRIAL_CREDITS,
         free_trial_claimed: true,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       });
 
     if (insertError) {
@@ -94,8 +92,8 @@ export async function getUserCredits(
 ): Promise<{ success: boolean; credits?: number; freeTrialClaimed?: boolean; error?: string }> {
   try {
     const { data, error } = await supabase
-      .from('user_credits')
-      .select('credit_balance, free_trial_claimed')
+      .from('credits')
+      .select('balance, free_trial_claimed')
       .eq('user_id', userId)
       .single();
 
@@ -106,7 +104,7 @@ export async function getUserCredits(
 
     return {
       success: true,
-      credits: data?.credit_balance ?? 0,
+      credits: data?.balance ?? 0,
       freeTrialClaimed: data?.free_trial_claimed ?? false
     };
   } catch (err: any) {
@@ -123,7 +121,7 @@ export async function checkFreeTrialClaimed(
 ): Promise<{ success: boolean; claimed?: boolean; error?: string }> {
   try {
     const { data, error } = await supabase
-      .from('user_credits')
+      .from('credits')
       .select('free_trial_claimed')
       .eq('user_id', userId)
       .single();
@@ -146,7 +144,8 @@ export async function checkFreeTrialClaimed(
 }
 
 /**
- * Deduct credits from user's balance
+ * Deduct credits from user's balance using atomic Postgres RPC
+ * Prevents double-spending via SELECT ... FOR UPDATE inside the function
  */
 export async function deductCredits(
   userId: string,
@@ -154,41 +153,27 @@ export async function deductCredits(
   email: string
 ): Promise<{ success: boolean; newBalance?: number; error?: string }> {
   try {
-    console.log('[Credits] Deducting', amount, 'credits from user:', userId);
+    console.log('[Credits] Deducting credits from user (atomic)');
 
-    // First get current balance
-    const { data, error: fetchError } = await supabase
-      .from('user_credits')
-      .select('credit_balance')
-      .eq('user_id', userId)
-      .single();
+    const { data, error: rpcError } = await supabase
+      .rpc('deduct_credits_atomic', {
+        p_user_id: userId,
+        p_amount: amount,
+      });
 
-    if (fetchError) {
-      console.error('[Credits] Fetch error:', fetchError);
-      return { success: false, error: fetchError.message };
+    if (rpcError) {
+      console.error('[Credits] RPC error:', rpcError.message);
+      // The RPC raises exceptions for insufficient credits / user not found
+      if (rpcError.message.includes('Insufficient credits')) {
+        return { success: false, error: 'Insufficient credits' };
+      }
+      if (rpcError.message.includes('User not found')) {
+        return { success: false, error: 'User credit record not found' };
+      }
+      return { success: false, error: rpcError.message };
     }
 
-    const currentBalance = data?.credit_balance ?? 0;
-
-    if (currentBalance < amount) {
-      return { success: false, error: 'Insufficient credits' };
-    }
-
-    const newBalance = currentBalance - amount;
-
-    // Update the balance
-    const { error: updateError } = await supabase
-      .from('user_credits')
-      .update({
-        credit_balance: newBalance,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', userId);
-
-    if (updateError) {
-      console.error('[Credits] Update error:', updateError);
-      return { success: false, error: updateError.message };
-    }
+    const newBalance = data as number;
 
     // Log the usage deduction transaction
     await logCreditTransaction(
@@ -211,6 +196,10 @@ export async function deductCredits(
 /**
  * Check if user should receive a low credits alert
  * Returns true if balance is below threshold AND no alert was sent in the last 24 hours
+ *
+ * NOTE: This requires a 'last_low_credit_alert' column on the credits table.
+ * If you haven't added it yet, run:
+ *   ALTER TABLE credits ADD COLUMN last_low_credit_alert TIMESTAMPTZ;
  */
 export async function shouldSendLowCreditsAlert(
   userId: string,
@@ -224,7 +213,7 @@ export async function shouldSendLowCreditsAlert(
 
     // Check last alert timestamp
     const { data, error } = await supabase
-      .from('user_credits')
+      .from('credits')
       .select('last_low_credit_alert')
       .eq('user_id', userId)
       .single();
@@ -261,16 +250,19 @@ export async function shouldSendLowCreditsAlert(
 
 /**
  * Update the last low credit alert timestamp
+ *
+ * NOTE: This requires a 'last_low_credit_alert' column on the credits table.
+ * If you haven't added it yet, run:
+ *   ALTER TABLE credits ADD COLUMN last_low_credit_alert TIMESTAMPTZ;
  */
 export async function updateLowCreditAlertTimestamp(
   userId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await supabase
-      .from('user_credits')
+      .from('credits')
       .update({
         last_low_credit_alert: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       })
       .eq('user_id', userId);
 
@@ -303,12 +295,12 @@ export async function addCredits(
   email: string
 ): Promise<{ success: boolean; newBalance?: number; error?: string }> {
   try {
-    console.log('[Credits] Adding', amount, 'credits to user:', userId);
+    console.log('[Credits] Adding', amount, 'credits to user');
 
     // First get current balance (or create user if doesn't exist)
     const { data, error: fetchError } = await supabase
-      .from('user_credits')
-      .select('credit_balance')
+      .from('credits')
+      .select('balance')
       .eq('user_id', userId)
       .single();
 
@@ -319,13 +311,12 @@ export async function addCredits(
 
     if (data) {
       // User exists, update balance
-      const newBalance = (data.credit_balance ?? 0) + amount;
+      const newBalance = (data.balance ?? 0) + amount;
 
       const { error: updateError } = await supabase
-        .from('user_credits')
+        .from('credits')
         .update({
-          credit_balance: newBalance,
-          updated_at: new Date().toISOString(),
+          balance: newBalance,
         })
         .eq('user_id', userId);
 
@@ -349,13 +340,12 @@ export async function addCredits(
     } else {
       // User doesn't exist, create with the added amount
       const { error: insertError } = await supabase
-        .from('user_credits')
+        .from('credits')
         .insert({
           user_id: userId,
           email: email,
-          credit_balance: amount,
+          balance: amount,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         });
 
       if (insertError) {

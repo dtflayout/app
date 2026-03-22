@@ -6,7 +6,7 @@ import { useCredits } from '@/contexts/CreditsContext';
 import { logSheetGeneration } from '@/lib/usageLogger';
 import { logCreditTransaction } from '@/lib/creditLedgerService';
 import { QuickStore, QSOrder, OrderStatus, formatPrice } from '@/types/quickStore';
-import { supabase } from '@/lib/supabaseClient';
+import { getR2PublicUrl } from '@/lib/r2Client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -95,10 +95,10 @@ const QSOrderDetail: React.FC = () => {
     try {
       for (const sheet of order.sheets) {
         const storagePath = sheet.storage_path || `orders/${store?.slug || 'unknown'}/${order.order_code}/sheet_${sheet.sheet_number}.png`;
-        const { data: urlData } = supabase.storage.from('design-files').getPublicUrl(storagePath);
-        if (urlData?.publicUrl) {
+        const publicUrl = getR2PublicUrl("design-files", storagePath);
+        if (publicUrl) {
           try {
-            const response = await fetch(urlData.publicUrl);
+            const response = await fetch(publicUrl);
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a'); link.href = url; link.download = `${order.order_code}_sheet${sheet.sheet_number}_${Math.round(sheet.width_inches)}x${Math.round(sheet.height_inches)}in.png`;
