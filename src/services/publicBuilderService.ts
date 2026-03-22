@@ -5,6 +5,7 @@
  */
 
 import { supabase } from "@/lib/supabaseClient";
+import { uploadToR2 } from "@/lib/r2Client";
 import {
   PublicPrinter,
   PublicProduct,
@@ -264,8 +265,8 @@ export async function getDesignByCode(
 }
 
 /**
- * Upload sheet PNG to Supabase Storage
- * Path: {store_id}/{design_code}/sheet_{n}.png
+ * Upload sheet PNG to R2 via presigned URL
+ * Path: design-files/{store_id}/{design_code}/sheet_{n}.png
  */
 export async function uploadSheetFile(
   storeId: string,
@@ -275,36 +276,17 @@ export async function uploadSheetFile(
 ): Promise<{ success: boolean; path?: string; publicUrl?: string; error?: string }> {
   try {
     const path = `${storeId}/${designCode}/sheet_${sheetNumber}.png`;
-    const fileSizeMB = (blob.size / 1024 / 1024).toFixed(2);
 
-    console.log(`[PublicBuilderService] 📤 Uploading sheet ${sheetNumber}: ${path} (${fileSizeMB} MB)`);
-    const startTime = Date.now();
+    const result = await uploadToR2("design-files", path, blob, "image/png");
 
-    const { data, error } = await supabase.storage
-      .from("design-files")
-      .upload(path, blob, {
-        contentType: "image/png",
-        upsert: true,
-      });
-
-    if (error) {
-      console.error(`[PublicBuilderService] ❌ Upload failed for sheet ${sheetNumber}:`, error);
-      return { success: false, error: error.message };
+    if (!result.success) {
+      return { success: false, error: result.error };
     }
-
-    const uploadTime = ((Date.now() - startTime) / 1000).toFixed(1);
-
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from("design-files")
-      .getPublicUrl(path);
-
-    console.log(`[PublicBuilderService] ✅ Sheet ${sheetNumber} uploaded in ${uploadTime}s:`, data.path);
 
     return {
       success: true,
-      path: data.path,
-      publicUrl: urlData.publicUrl,
+      path,
+      publicUrl: result.publicUrl,
     };
   } catch (err: any) {
     console.error("[PublicBuilderService] Exception uploading file:", err);
@@ -313,8 +295,8 @@ export async function uploadSheetFile(
 }
 
 /**
- * Upload preview PNG to Supabase Storage
- * Path: {store_id}/{design_code}/preview_{n}.png
+ * Upload preview PNG to R2 via presigned URL
+ * Path: design-files/{store_id}/{design_code}/preview_{n}.png
  */
 export async function uploadPreviewFile(
   storeId: string,
@@ -324,25 +306,14 @@ export async function uploadPreviewFile(
 ): Promise<{ success: boolean; publicUrl?: string; error?: string }> {
   try {
     const path = `${storeId}/${designCode}/preview_${sheetNumber}.png`;
-    console.log("[PublicBuilderService] Uploading preview file:", path);
 
-    const { data, error } = await supabase.storage
-      .from("design-files")
-      .upload(path, blob, {
-        contentType: "image/png",
-        upsert: true,
-      });
+    const result = await uploadToR2("design-files", path, blob, "image/png");
 
-    if (error) {
-      console.error("[PublicBuilderService] Error uploading preview:", error);
-      return { success: false, error: error.message };
+    if (!result.success) {
+      return { success: false, error: result.error };
     }
 
-    const { data: urlData } = supabase.storage
-      .from("design-files")
-      .getPublicUrl(path);
-
-    return { success: true, publicUrl: urlData.publicUrl };
+    return { success: true, publicUrl: result.publicUrl };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

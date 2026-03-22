@@ -14,7 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, Store, Copy, Check, ExternalLink, Upload, X, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { getPrinter, savePrinter, Printer } from "@/services/printerService";
-import { supabase } from "@/lib/supabaseClient";
+import { uploadToR2 } from "@/lib/r2Client";
 
 // Currency options
 const CURRENCY_OPTIONS = [
@@ -109,13 +109,12 @@ const StoreSetup = () => {
     setLogoPreview(URL.createObjectURL(file));
   };
 
-  // Upload logo to Supabase Storage
+  // Upload logo to R2
   // Uses store_id for organized storage paths: {store_id}/logo.{ext}
   const uploadLogo = async (): Promise<string | null> => {
     if (!logoFile || !user?.id) return logoUrl; // Return existing URL if no new file
 
     // If we don't have a printer with store_id yet, use user_id temporarily
-    // The path will be updated after printer is created
     const storageId = printer?.store_id || user.id;
 
     setIsUploadingLogo(true);
@@ -123,19 +122,13 @@ const StoreSetup = () => {
       const fileExt = logoFile.name.split(".").pop()?.toLowerCase() || "png";
       const filePath = `${storageId}/logo-${Date.now()}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("printer-assets")
-        .upload(filePath, logoFile, { upsert: true });
+      const result = await uploadToR2("printer-assets", filePath, logoFile, logoFile.type || "image/png");
 
-      if (uploadError) {
-        throw uploadError;
+      if (!result.success) {
+        throw new Error(result.error || "Upload failed");
       }
 
-      const { data: urlData } = supabase.storage
-        .from("printer-assets")
-        .getPublicUrl(filePath);
-
-      return urlData.publicUrl;
+      return result.publicUrl || null;
     } catch (err: any) {
       console.error("Logo upload error:", err);
       toast.error("Failed to upload logo: " + err.message);

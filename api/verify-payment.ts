@@ -1,3 +1,4 @@
+import { applyRateLimit, paymentLimiter } from './lib/rateLimit';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHmac } from 'crypto';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
@@ -28,10 +29,8 @@ const findOutsetaPersonByEmail = async (
     const url = `${baseUrl}/crm/people?email=${encodeURIComponent(email)}`;
 
     console.log('[Outseta] ========== PERSON LOOKUP DEBUG ==========');
-    console.log('[Outseta] Email being searched:', email);
-    console.log('[Outseta] Full URL:', url);
+    console.log('[Outseta] Email search: [REDACTED]');
     console.log('[Outseta] Auth header present:', !!authHeader);
-    console.log('[Outseta] Auth header prefix:', authHeader?.substring(0, 10) + '...');
 
     const response = await fetch(url, {
       method: 'GET',
@@ -43,28 +42,23 @@ const findOutsetaPersonByEmail = async (
 
     console.log('[Outseta] Response status:', response.status, response.statusText);
 
-    const responseText = await response.text();
-    console.log('[Outseta] Raw response body:', responseText);
-
     if (!response.ok) {
       console.error('[Outseta] Failed to find person - Status:', response.status);
       return null;
     }
 
+    const responseText = await response.text();
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (parseErr) {
-      console.error('[Outseta] Failed to parse JSON response:', parseErr);
+      console.error('[Outseta] Failed to parse JSON response');
       return null;
     }
 
-    console.log('[Outseta] Parsed response keys:', Object.keys(data));
-    console.log('[Outseta] Full parsed response:', JSON.stringify(data, null, 2));
-
     // Try multiple possible response structures
     const items = data.items || data.Items || data.results || data.Results || [];
-    console.log('[Outseta] Items array length:', items.length);
+    console.log('[Outseta] Items found:', items.length);
 
     if (items.length === 0) {
       console.log('[Outseta] No items found in response');
@@ -72,19 +66,16 @@ const findOutsetaPersonByEmail = async (
     }
 
     // Find the person with matching email (case-insensitive)
-    console.log('[Outseta] Searching for exact email match:', email);
     const matchingPerson = items.find(
       (person: any) => person.Email?.toLowerCase() === email.toLowerCase()
     );
 
     if (!matchingPerson) {
-      console.log('[Outseta] No exact email match found. Available emails:',
-        items.map((p: any) => p.Email).join(', ')
-      );
+      console.log('[Outseta] No exact email match found');
       return null;
     }
 
-    console.log('[Outseta] Found matching person UID:', matchingPerson.Uid, 'Email:', matchingPerson.Email);
+    console.log('[Outseta] Found matching person');
     return matchingPerson.Uid;
   } catch (err) {
     console.error('[Outseta] Exception finding person:', err);
@@ -108,11 +99,7 @@ const updateOutsetaAccountField = async (
       [fieldName]: fieldValue,
     };
 
-    console.log('[Outseta] ========== UPDATE ACCOUNT FIELD DEBUG ==========');
-    console.log('[Outseta] URL:', url);
-    console.log('[Outseta] Account UID:', accountUid);
-    console.log('[Outseta] Field:', fieldName, '=', fieldValue);
-    console.log('[Outseta] Request payload:', JSON.stringify(requestBody, null, 2));
+    console.log('[Outseta] Updating account field:', fieldName);
 
     const response = await fetch(url, {
       method: 'PUT',
@@ -123,17 +110,15 @@ const updateOutsetaAccountField = async (
       body: JSON.stringify(requestBody),
     });
 
-    console.log('[Outseta] Response status:', response.status, response.statusText);
-
-    const responseText = await response.text();
-    console.log('[Outseta] Response body:', responseText);
+    console.log('[Outseta] Update response status:', response.status);
 
     if (!response.ok) {
-      console.error('[Outseta] ❌ Failed to update account field:', response.status, responseText);
+      const responseText = await response.text();
+      console.error('[Outseta] Failed to update account field:', response.status);
       return false;
     }
 
-    console.log(`[Outseta] ✅ Account field ${fieldName} updated successfully`);
+    console.log(`[Outseta] Account field ${fieldName} updated successfully`);
     return true;
   } catch (err) {
     console.error('[Outseta] ❌ Exception updating account field:', err);
@@ -161,11 +146,7 @@ const postOutsetaActivity = async (
       ActivityData: JSON.stringify(metadata),
     };
 
-    console.log('[Outseta] ========== POST ACTIVITY DEBUG ==========');
-    console.log('[Outseta] URL:', url);
-    console.log('[Outseta] Person UID:', personUid);
-    console.log('[Outseta] Activity Type:', activityType);
-    console.log('[Outseta] Request payload:', JSON.stringify(requestBody, null, 2));
+    console.log('[Outseta] Posting activity:', activityType);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -176,17 +157,15 @@ const postOutsetaActivity = async (
       body: JSON.stringify(requestBody),
     });
 
-    console.log('[Outseta] Response status:', response.status, response.statusText);
-
-    const responseText = await response.text();
-    console.log('[Outseta] Response body:', responseText);
+    console.log('[Outseta] Activity response status:', response.status);
 
     if (!response.ok) {
-      console.error('[Outseta] ❌ Failed to post activity:', response.status, responseText);
+      const responseText = await response.text();
+      console.error('[Outseta] Failed to post activity:', response.status);
       return false;
     }
 
-    console.log(`[Outseta] ✅ Activity ${activityType} posted successfully`);
+    console.log(`[Outseta] Activity ${activityType} posted successfully`);
     return true;
   } catch (err) {
     console.error('[Outseta] ❌ Exception posting activity:', err);
@@ -228,16 +207,22 @@ interface VerifyPaymentRequest {
   amount: number;
 }
 
-// Initialize Supabase client for server-side
+// Initialize Supabase client for server-side — MUST use service role key
 const getSupabaseClient = (): SupabaseClient => {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing Supabase environment variables');
+  if (!supabaseUrl) {
+    throw new Error('Missing SUPABASE_URL environment variable');
+  }
+  if (!supabaseServiceKey) {
+    throw new Error(
+      'Missing SUPABASE_SERVICE_KEY environment variable. ' +
+      'Server-side routes MUST use the service role key, never the anon key.'
+    );
   }
 
-  return createClient(supabaseUrl, supabaseKey);
+  return createClient(supabaseUrl, supabaseServiceKey);
 };
 
 // Verify Razorpay signature
@@ -457,9 +442,7 @@ const createRazorpayInvoice = async (
       },
     };
 
-    console.log('[Razorpay Invoice] ========== CREATE INVOICE DEBUG ==========');
-    console.log('[Razorpay Invoice] URL:', url);
-    console.log('[Razorpay Invoice] Request payload:', JSON.stringify(requestBody, null, 2));
+    console.log('[Razorpay Invoice] Creating invoice for plan:', planName);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -470,20 +453,17 @@ const createRazorpayInvoice = async (
       body: JSON.stringify(requestBody),
     });
 
-    console.log('[Razorpay Invoice] Response status:', response.status, response.statusText);
+    console.log('[Razorpay Invoice] Response status:', response.status);
 
     const responseText = await response.text();
-    console.log('[Razorpay Invoice] Response body:', responseText);
 
     if (!response.ok) {
-      console.error('[Razorpay Invoice] ❌ Failed to create invoice:', response.status, responseText);
-      return { success: false, error: `API error: ${response.status} - ${responseText}` };
+      console.error('[Razorpay Invoice] Failed to create invoice:', response.status);
+      return { success: false, error: `API error: ${response.status}` };
     }
 
     const invoice = JSON.parse(responseText);
-    console.log('[Razorpay Invoice] ✅ Invoice created successfully');
-    console.log('[Razorpay Invoice] Invoice ID:', invoice.id);
-    console.log('[Razorpay Invoice] Invoice URL:', invoice.short_url);
+    console.log('[Razorpay Invoice] Invoice created successfully');
 
     return {
       success: true,
@@ -541,7 +521,7 @@ const logPayment = async (
     insertData.razorpay_invoice_url = data.razorpay_invoice_url;
   }
 
-  console.log('[Payment Log] Attempting to insert:', JSON.stringify(insertData, null, 2));
+  console.log('[Payment Log] Logging transaction:', { plan_id: data.plan_id, status: data.status, credits_added: data.credits_added });
 
   try {
     const { data: insertedData, error } = await supabase
@@ -558,7 +538,7 @@ const logPayment = async (
       });
       // Don't fail the payment if logging fails
     } else {
-      console.log('[Payment Log] Payment logged successfully:', insertedData);
+      console.log('[Payment Log] Payment logged successfully');
     }
   } catch (err: any) {
     console.error('[Payment Log] Exception:', {
@@ -569,16 +549,30 @@ const logPayment = async (
   }
 };
 
+// Validate and return CORS origin, or null if not allowed
+function getAllowedOrigin(req: VercelRequest): string | null {
+  const origin = req.headers.origin;
+  if (!origin) return null;
+  if (origin === 'https://dtflayout.com' || origin === 'http://localhost:5173') return origin;
+  if (/^https:\/\/[\w-]+\.dtflayout\.com$/.test(origin)) return origin;
+  return null;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS headers — locked to dtflayout.com and subdomains
+  const allowedOrigin = getAllowedOrigin(req);
+  if (allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    res.setHeader('Vary', 'Origin');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
+    if (!allowedOrigin) return res.status(403).json({ error: 'Origin not allowed' });
     return res.status(200).end();
   }
-
+  if (await applyRateLimit(req, res, paymentLimiter)) return;
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -596,8 +590,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('[Verify Payment] Request received:', {
       plan_id,
-      user_id: outseta_account_id,
-      user_email,
+      has_user_id: !!outseta_account_id,
+      has_email: !!user_email,
       amount,
       has_payment_id: !!razorpay_payment_id,
       has_order_id: !!razorpay_order_id,
@@ -770,7 +764,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
 
       if (invoiceResult.success) {
-        console.log('[Verify Payment] ✅ Invoice generated:', invoiceResult.invoice_url);
+        console.log('[Verify Payment] Invoice generated successfully');
       } else {
         console.log('[Verify Payment] ⚠️ Invoice generation failed:', invoiceResult.error);
         // Don't fail the payment, invoice is a nice-to-have
@@ -800,10 +794,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // This triggers segment-based drip campaigns for email notifications
     const outsetaCredentials = getOutsetaCredentials();
     if (outsetaCredentials) {
-      console.log('[Verify Payment] ========== OUTSETA ACCOUNT UPDATE ==========');
-      console.log('[Verify Payment] Account UID (from request):', outseta_account_id);
-      console.log('[Verify Payment] Outseta subdomain:', process.env.OUTSETA_SUBDOMAIN);
-      console.log('[Verify Payment] Base URL:', outsetaCredentials.baseUrl);
+      console.log('[Verify Payment] Starting Outseta account update');
 
       // PRIMARY METHOD: Update Account's PaymentConfirmedAt field
       // This triggers segment-based drip campaigns
@@ -885,7 +876,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
 
       if (personUid) {
-        console.log('[Verify Payment] Found Person UID for activity:', personUid);
+        console.log('[Verify Payment] Found Person for activity logging');
 
         const activityMetadata = {
           amount: amount || PLAN_PRICES[plan_id],

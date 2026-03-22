@@ -4,6 +4,7 @@
  */
 
 import { supabase } from "@/lib/supabaseClient";
+import { uploadToR2, getR2PublicUrl, deleteR2Folder } from "@/lib/r2Client";
 import { QSOrder, QSOrderInput, OrderStatus } from "@/types/quickStore";
 
 // ============================================
@@ -367,7 +368,7 @@ export async function getOrderStats(
 }
 
 /**
- * Delete order and its files from storage
+ * Delete order and its files from R2 storage
  */
 export async function deleteQSOrder(
   orderId: string,
@@ -375,24 +376,13 @@ export async function deleteQSOrder(
   orderCode: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Delete files from storage first
+    // Delete files from R2 storage first
     const folderPath = `orders/${storeSlug}/${orderCode}`;
+    const deleteResult = await deleteR2Folder("design-files", folderPath);
 
-    const { data: files, error: listError } = await supabase.storage
-      .from("design-files")
-      .list(folderPath);
-
-    if (listError) {
-      console.error("[QSOrderService] Error listing files:", listError);
-    } else if (files && files.length > 0) {
-      const filePaths = files.map((f: any) => `${folderPath}/${f.name}`);
-      const { error: deleteFilesError } = await supabase.storage
-        .from("design-files")
-        .remove(filePaths);
-
-      if (deleteFilesError) {
-        console.error("[QSOrderService] Error deleting files:", deleteFilesError);
-      }
+    if (!deleteResult.success) {
+      console.error("[QSOrderService] Error deleting R2 files:", deleteResult.error);
+      // Continue with DB deletion even if storage delete fails
     }
 
     // Delete the database record
@@ -412,7 +402,7 @@ export async function deleteQSOrder(
 }
 
 /**
- * Upload order sheet file
+ * Upload order sheet file to R2
  */
 export async function uploadOrderSheet(
   storeSlug: string,
@@ -423,28 +413,16 @@ export async function uploadOrderSheet(
   try {
     const path = `orders/${storeSlug}/${orderCode}/sheet_${sheetNumber}.png`;
 
-    console.log("[QSOrderService] Uploading sheet:", path);
+    const result = await uploadToR2("design-files", path, blob, "image/png");
 
-    const { data, error } = await supabase.storage
-      .from("design-files")
-      .upload(path, blob, {
-        contentType: "image/png",
-        upsert: true,
-      });
-
-    if (error) {
-      console.error("[QSOrderService] Upload error:", error);
-      return { success: false, error: error.message };
+    if (!result.success) {
+      return { success: false, error: result.error };
     }
-
-    const { data: urlData } = supabase.storage
-      .from("design-files")
-      .getPublicUrl(path);
 
     return {
       success: true,
-      path: data.path,
-      publicUrl: urlData.publicUrl,
+      path,
+      publicUrl: result.publicUrl,
     };
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -452,7 +430,7 @@ export async function uploadOrderSheet(
 }
 
 /**
- * Upload order preview
+ * Upload order preview to R2
  */
 export async function uploadOrderPreview(
   storeSlug: string,
@@ -463,22 +441,13 @@ export async function uploadOrderPreview(
   try {
     const path = `orders/${storeSlug}/${orderCode}/preview_${sheetNumber}.png`;
 
-    const { error } = await supabase.storage
-      .from("design-files")
-      .upload(path, blob, {
-        contentType: "image/png",
-        upsert: true,
-      });
+    const result = await uploadToR2("design-files", path, blob, "image/png");
 
-    if (error) {
-      return { success: false, error: error.message };
+    if (!result.success) {
+      return { success: false, error: result.error };
     }
 
-    const { data: urlData } = supabase.storage
-      .from("design-files")
-      .getPublicUrl(path);
-
-    return { success: true, publicUrl: urlData.publicUrl };
+    return { success: true, publicUrl: result.publicUrl };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

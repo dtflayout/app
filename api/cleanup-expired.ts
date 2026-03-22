@@ -1,27 +1,63 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
+import { getR2Client, getR2BucketName } from './lib/r2.js';
 
 /**
  * Cron job: Clean up expired orders (both Website Integration and Quick Store)
  * 
  * Website Integration (designs table):
  * - Marks pending orders past their expires_at as "expired"
- * - Deletes storage files and DB records for orders expired > 30 days ago
+ * - Deletes R2 files and DB records for orders expired > 30 days ago
  * 
  * Quick Store (quick_store_orders table):
- * - Deletes storage files and DB records for orders past their expires_at by > 30 days
+ * - Deletes R2 files and DB records for orders past their expires_at by > 30 days
  * 
  * Schedule: Runs daily via Vercel Cron
  * Endpoint: GET /api/cleanup-expired
  * Auth: CRON_SECRET header check
  */
+
+/**
+ * Delete all R2 objects under a given prefix (folder).
+ */
+async function deleteR2Folder(prefix: string): Promise<number> {
+  const r2 = getR2Client();
+  const bucket = getR2BucketName();
+
+  const listCmd = new ListObjectsV2Command({
+    Bucket: bucket,
+    Prefix: prefix,
+  });
+
+  const listed = await r2.send(listCmd);
+  const objects = listed.Contents || [];
+
+  if (objects.length === 0) return 0;
+
+  const deleteCmd = new DeleteObjectsCommand({
+    Bucket: bucket,
+    Delete: {
+      Objects: objects.map((obj) => ({ Key: obj.Key! })),
+      Quiet: true,
+    },
+  });
+
+  await r2.send(deleteCmd);
+  return objects.length;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && req.headers.authorization !== `Bearer ${cronSecret}`) {
+  if (!cronSecret) {
+    console.error('[Cleanup] CRON_SECRET env var is not set — refusing to run');
+    return res.status(500).json({ error: 'Cron authentication not configured' });
+  }
+  if (req.headers.authorization !== `Bearer ${cronSecret}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -76,14 +112,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const storeId = (order as any).printers?.store_id;
       if (!storeId) continue;
 
-      const folderPath = `${storeId}/${order.design_code}`;
-      const { data: files } = await supabase.storage
-        .from('design-files')
-        .list(folderPath);
-
-      if (files && files.length > 0) {
-        const filePaths = files.map((f: any) => `${folderPath}/${f.name}`);
-        await supabase.storage.from('design-files').remove(filePaths);
+      // R2 key prefix: design-files/{storeId}/{designCode}/
+      const r2Prefix = `design-files/${storeId}/${order.design_code}/`;
+      try {
+        await deleteR2Folder(r2Prefix);
+      } catch (err) {
+        console.error(`[Cleanup] Error deleting R2 files for WI order ${order.id}:`, err);
       }
 
       const { error: delError } = await supabase
@@ -101,7 +135,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ═══════════════════════════════════════════════════════════════════════
 
     // Find QS orders expired > 30 days ago for permanent deletion
-    // Join with quick_stores to get the store slug for file paths
     const { data: oldQSExpired, error: qsFetchError } = await supabase
       .from('quick_store_orders')
       .select('id, order_code, quick_store_id, quick_stores!inner(slug)')
@@ -118,15 +151,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const storeSlug = (order as any).quick_stores?.slug;
       if (!storeSlug) continue;
 
-      // QS files are stored at: orders/{storeSlug}/{orderCode}/
-      const folderPath = `orders/${storeSlug}/${order.order_code}`;
-      const { data: files } = await supabase.storage
-        .from('design-files')
-        .list(folderPath);
-
-      if (files && files.length > 0) {
-        const filePaths = files.map((f: any) => `${folderPath}/${f.name}`);
-        await supabase.storage.from('design-files').remove(filePaths);
+      // R2 key prefix: design-files/orders/{storeSlug}/{orderCode}/
+      const r2Prefix = `design-files/orders/${storeSlug}/${order.order_code}/`;
+      try {
+        await deleteR2Folder(r2Prefix);
+      } catch (err) {
+        console.error(`[Cleanup] Error deleting R2 files for QS order ${order.id}:`, err);
       }
 
       const { error: delError } = await supabase

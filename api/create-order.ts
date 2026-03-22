@@ -1,3 +1,4 @@
+import { applyRateLimit, paymentLimiter } from './lib/rateLimit';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Plan prices for validation (in INR)
@@ -26,16 +27,31 @@ interface RazorpayOrder {
   created_at: number;
 }
 
+// Validate and return CORS origin, or null if not allowed
+function getAllowedOrigin(req: VercelRequest): string | null {
+  const origin = req.headers.origin;
+  if (!origin) return null;
+  // Allow exact match or any subdomain of dtflayout.com
+  if (origin === 'https://dtflayout.com' || origin === 'http://localhost:5173') return origin;
+  if (/^https:\/\/[\w-]+\.dtflayout\.com$/.test(origin)) return origin;
+  return null;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS headers — locked to dtflayout.com and subdomains
+  const allowedOrigin = getAllowedOrigin(req);
+  if (allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    res.setHeader('Vary', 'Origin');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
+    if (!allowedOrigin) return res.status(403).json({ error: 'Origin not allowed' });
     return res.status(200).end();
   }
-
+  if (await applyRateLimit(req, res, paymentLimiter)) return;
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -43,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { plan_id, user_email, outseta_account_id } = req.body as CreateOrderRequest;
 
-    console.log('[Create Order] Request received:', { plan_id, user_email, outseta_account_id });
+    console.log('[Create Order] Request received:', { plan_id, has_email: !!user_email, has_account: !!outseta_account_id });
 
     // Validate required fields
     if (!plan_id || !user_email || !outseta_account_id) {
@@ -93,7 +109,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     };
 
-    console.log('[Create Order] Creating Razorpay order:', orderData);
+    console.log('[Create Order] Creating Razorpay order:', { amount: orderData.amount, currency: orderData.currency, plan_id });
 
     const auth = Buffer.from(`${razorpayKeyId}:${razorpayKeySecret}`).toString('base64');
 

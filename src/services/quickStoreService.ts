@@ -4,6 +4,7 @@
  */
 
 import { supabase } from "@/lib/supabaseClient";
+import { uploadToR2, deleteFromR2 } from "@/lib/r2Client";
 import {
   QuickStore,
   QuickStoreInput,
@@ -376,7 +377,7 @@ export async function reorderTestimonials(
 // ============================================
 
 /**
- * Upload store asset (logo, banner, favicon)
+ * Upload store asset (logo, banner, favicon) to R2
  */
 export async function uploadStoreAsset(
   storeId: string,
@@ -385,28 +386,19 @@ export async function uploadStoreAsset(
 ): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
     const fileExt = file.name.split('.').pop()?.toLowerCase() || 'png';
-    const fileName = `${storeId}/${type}-${Date.now()}.${fileExt}`;
+    const path = `${storeId}/${type}-${Date.now()}.${fileExt}`;
 
-    console.log("[QuickStoreService] Uploading asset:", fileName);
+    console.log("[QuickStoreService] Uploading asset:", path);
 
-    const { error: uploadError } = await supabase.storage
-      .from("quick-store-assets")
-      .upload(fileName, file, { 
-        upsert: true,
-        contentType: file.type,
-      });
+    const result = await uploadToR2("store-assets", path, file, file.type || "image/png");
 
-    if (uploadError) {
-      console.error("[QuickStoreService] Upload error:", uploadError);
-      return { success: false, error: uploadError.message };
+    if (!result.success) {
+      console.error("[QuickStoreService] Upload error:", result.error);
+      return { success: false, error: result.error };
     }
 
-    const { data: urlData } = supabase.storage
-      .from("quick-store-assets")
-      .getPublicUrl(fileName);
-
-    console.log("[QuickStoreService] Asset uploaded:", urlData.publicUrl);
-    return { success: true, url: urlData.publicUrl };
+    console.log("[QuickStoreService] Asset uploaded:", result.publicUrl);
+    return { success: true, url: result.publicUrl };
   } catch (err: any) {
     console.error("[QuickStoreService] Exception:", err);
     return { success: false, error: err.message };
@@ -414,24 +406,23 @@ export async function uploadStoreAsset(
 }
 
 /**
- * Delete store asset
+ * Delete store asset from R2
  */
 export async function deleteStoreAsset(
   filePath: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Extract path from full URL
-    const path = filePath.split('/quick-store-assets/')[1];
-    if (!path) {
-      return { success: false, error: "Invalid file path" };
+    // Extract the R2 key from the full public URL
+    // URL format: https://<R2_PUBLIC_URL>/store-assets/<storeId>/<filename>
+    const storeAssetsIdx = filePath.indexOf("store-assets/");
+    if (storeAssetsIdx === -1) {
+      return { success: false, error: "Invalid file path — not an R2 store-assets URL" };
     }
+    const key = filePath.substring(storeAssetsIdx);
 
-    const { error } = await supabase.storage
-      .from("quick-store-assets")
-      .remove([path]);
-
-    if (error) {
-      return { success: false, error: error.message };
+    const result = await deleteFromR2([key]);
+    if (!result.success) {
+      return { success: false, error: result.error };
     }
 
     return { success: true };

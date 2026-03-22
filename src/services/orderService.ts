@@ -4,6 +4,7 @@
  */
 
 import { supabase } from "@/lib/supabaseClient";
+import { getR2PublicUrl, deleteR2Folder } from "@/lib/r2Client";
 
 export interface OrderDesign {
   id: string;
@@ -202,7 +203,7 @@ export async function updateOrderStatus(
 }
 
 /**
- * Get download URLs for order sheets
+ * Get download URLs for order sheets from R2
  */
 export async function getOrderDownloadUrls(
   storeId: string,
@@ -214,11 +215,7 @@ export async function getOrderDownloadUrls(
 
     for (let i = 1; i <= sheetCount; i++) {
       const path = `${storeId}/${designCode}/sheet_${i}.png`;
-      const { data } = supabase.storage
-        .from("design-files")
-        .getPublicUrl(path);
-      
-      urls.push(data.publicUrl);
+      urls.push(getR2PublicUrl("design-files", path));
     }
 
     return { success: true, urls };
@@ -228,7 +225,7 @@ export async function getOrderDownloadUrls(
 }
 
 /**
- * Get preview URLs for order sheets
+ * Get preview URLs for order sheets from R2
  */
 export async function getOrderPreviewUrls(
   storeId: string,
@@ -239,18 +236,14 @@ export async function getOrderPreviewUrls(
 
   for (let i = 1; i <= sheetCount; i++) {
     const path = `${storeId}/${designCode}/preview_${i}.png`;
-    const { data } = supabase.storage
-      .from("design-files")
-      .getPublicUrl(path);
-    
-    urls.push(data.publicUrl);
+    urls.push(getR2PublicUrl("design-files", path));
   }
 
   return urls;
 }
 
 /**
- * Delete order and its files
+ * Delete order and its files from R2
  */
 export async function deleteOrder(
   orderId: string,
@@ -259,26 +252,13 @@ export async function deleteOrder(
   designCode: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Delete files from storage first
+    // Delete files from R2 storage first
     const folderPath = `${storeId}/${designCode}`;
-    
-    // List all files in the folder
-    const { data: files, error: listError } = await supabase.storage
-      .from("design-files")
-      .list(folderPath);
+    const deleteResult = await deleteR2Folder("design-files", folderPath);
 
-    if (listError) {
-      console.error("[OrderService] Error listing files:", listError);
-    } else if (files && files.length > 0) {
-      // Delete all files in the folder
-      const filePaths = files.map(f => `${folderPath}/${f.name}`);
-      const { error: deleteFilesError } = await supabase.storage
-        .from("design-files")
-        .remove(filePaths);
-
-      if (deleteFilesError) {
-        console.error("[OrderService] Error deleting files:", deleteFilesError);
-      }
+    if (!deleteResult.success) {
+      console.error("[OrderService] Error deleting R2 files:", deleteResult.error);
+      // Continue with DB deletion even if storage delete fails
     }
 
     // Delete the database record
