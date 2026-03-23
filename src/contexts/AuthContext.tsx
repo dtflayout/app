@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return null;
       }
 
-      console.log("[Auth] Profile fetched:", data?.email);
+      console.log("[Auth] Profile fetched:", data?.id ? "[OK]" : "[EMPTY]");
       return data as Profile;
     } catch (err) {
       console.error("[Auth] Exception fetching profile:", err);
@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     fullName?: string
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      console.log("[Auth] Signing up user:", email);
+      console.log("[Auth] Signing up user: [REDACTED]");
 
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       if (data.user) {
-        console.log("[Auth] Signup successful:", data.user.email);
+        console.log("[Auth] Signup successful:", data.user.id);
         return { success: true };
       }
 
@@ -121,7 +121,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     password: string
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      console.log("[Auth] Signing in user:", email);
+      console.log("[Auth] Signing in user: [REDACTED]");
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -134,7 +134,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       if (data.user) {
-        console.log("[Auth] Signin successful:", data.user.email);
+        console.log("[Auth] Signin successful:", data.user.id);
         return { success: true };
       }
 
@@ -168,7 +168,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
       
-      console.log("[Auth] Initial session:", session?.user?.email || "none");
+      console.log("[Auth] Initial session:", session?.user?.id || "none");
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
@@ -187,7 +187,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
       
-      console.log("[Auth] Auth state changed:", event, session?.user?.email);
+      console.log("[Auth] Auth state changed:", event, session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);

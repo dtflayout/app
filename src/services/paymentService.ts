@@ -142,7 +142,7 @@ export interface UserInfo {
   name?: string;
   email?: string;
   phone?: string;
-  userId?: string; // Supabase user ID (formerly outsetaAccountId)
+  userId?: string;
 }
 
 // Payment result
@@ -182,7 +182,7 @@ const createRazorpayOrder = async (
       body: JSON.stringify({
         plan_id: planId,
         user_email: userEmail,
-        user_id: userId, // Backend may still expect outseta_account_id - update backend if needed
+        user_id: userId,
       }),
     });
 
@@ -264,7 +264,7 @@ export const initiateRazorpayCheckout = async (
           plan_id: plan.id,
           plan_name: plan.name,
           credits: plan.credits.toString(),
-          user_id: userInfo.userId || '', // Backend may still expect outseta_account_id - update backend if needed
+          user_id: userInfo.userId || '',
         },
         theme: {
           color: '#4F46E5', // Emerald green to match our UI
@@ -357,7 +357,7 @@ export interface VerifyPaymentParams {
   razorpay_order_id?: string;
   razorpay_signature?: string;
   plan_id: string;
-  user_id: string; // Supabase user ID (backend may still expect outseta_account_id - update backend if needed)
+  user_id: string;
   user_email: string;
   amount: number;
 }
