@@ -1,4 +1,5 @@
 import { applyRateLimit, paymentLimiter } from './lib/rateLimit';
+import { initSentry, Sentry } from './lib/sentry';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Plan prices for validation (in INR)
@@ -12,7 +13,7 @@ const PLAN_PRICES: Record<string, number> = {
 interface CreateOrderRequest {
   plan_id: string;
   user_email: string;
-  outseta_account_id: string;
+  user_id: string;
 }
 
 interface RazorpayOrder {
@@ -38,6 +39,8 @@ function getAllowedOrigin(req: VercelRequest): string | null {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  initSentry();
+
   // CORS headers — locked to dtflayout.com and subdomains
   const allowedOrigin = getAllowedOrigin(req);
   if (allowedOrigin) {
@@ -57,12 +60,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { plan_id, user_email, outseta_account_id } = req.body as CreateOrderRequest;
+    const { plan_id, user_email, user_id } = req.body as CreateOrderRequest;
 
-    console.log('[Create Order] Request received:', { plan_id, has_email: !!user_email, has_account: !!outseta_account_id });
+    console.log('[Create Order] Request received:', { plan_id, has_email: !!user_email, has_account: !!user_id });
 
     // Validate required fields
-    if (!plan_id || !user_email || !outseta_account_id) {
+    if (!plan_id || !user_email || !user_id) {
       return res.status(400).json({
         success: false,
         error: 'Missing required fields',
@@ -101,11 +104,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const orderData = {
       amount: price * 100, // Convert to paise
       currency: 'INR',
-      receipt: `order_${outseta_account_id}_${Date.now()}`,
+      receipt: `order_${user_id}_${Date.now()}`,
       notes: {
         plan_id,
         user_email,
-        outseta_account_id,
+        user_id,
       },
     };
 
@@ -147,6 +150,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error: any) {
     console.error('[Create Order] Unexpected error:', error);
+    Sentry.captureException(error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error',

@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -211,17 +212,25 @@ const AppContent = () => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <CreditsProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <AppContent />
-        </TooltipProvider>
-      </CreditsProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+  <Sentry.ErrorBoundary fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>
+    <h2>Something went wrong</h2>
+    <p>The error has been reported. Please refresh the page.</p>
+    <button onClick={() => window.location.reload()} style={{ marginTop: '1rem', padding: '0.5rem 1rem', cursor: 'pointer' }}>
+      Refresh
+    </button>
+  </div>}>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <CreditsProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <AppContent />
+          </TooltipProvider>
+        </CreditsProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </Sentry.ErrorBoundary>
 );
 
 export default App;

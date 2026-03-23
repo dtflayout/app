@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { initSentry, Sentry } from './lib/sentry';
 import { createClient } from '@supabase/supabase-js';
 import { ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import { getR2Client, getR2BucketName } from './lib/r2.js';
@@ -48,6 +49,8 @@ async function deleteR2Folder(prefix: string): Promise<number> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  initSentry();
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -169,6 +172,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`[Cleanup] QS: Permanently deleted ${qsDeletedCount} old expired orders`);
 
+    // ── ANALYTICS RETENTION (90-day purge) ──────────────────────────────
+    const ninetyDaysAgo = new Date(now);
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const ninetyDaysAgoISO = ninetyDaysAgo.toISOString();
+
+    let analyticsPurged = 0;
+    try {
+      const { count, error: analyticsError } = await supabase
+        .from('quick_store_analytics')
+        .delete()
+        .lt('created_at', ninetyDaysAgoISO)
+        .select('id', { count: 'exact', head: true });
+
+      if (analyticsError) {
+        console.error('[Cleanup] Analytics purge error:', analyticsError.message);
+      } else {
+        analyticsPurged = count || 0;
+        console.log(`[Cleanup] Analytics: Purged ${analyticsPurged} records older than 90 days`);
+      }
+    } catch (err) {
+      console.error('[Cleanup] Analytics purge exception:', err);
+    }
+
     return res.status(200).json({
       success: true,
       website_integration: {
@@ -178,10 +204,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       quick_store: {
         deleted: qsDeletedCount,
       },
+      analytics: {
+        purged: analyticsPurged,
+      },
       timestamp: now,
     });
   } catch (error: any) {
     console.error('[Cleanup] Error:', error);
+    Sentry.captureException(error);
     return res.status(500).json({ error: error.message });
   }
 }

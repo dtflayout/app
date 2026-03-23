@@ -51,7 +51,7 @@ export const CreditsProvider = ({ children }: CreditsProviderProps) => {
       return;
     }
 
-    console.log("[Credits] Refreshing credits for user:", user.id);
+    console.log("[Credits] Refreshing credits for user");
     setIsLoading(true);
     setError(null);
 

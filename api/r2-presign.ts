@@ -16,6 +16,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { initSentry, Sentry } from './lib/sentry';
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getR2Client, getR2BucketName, getR2PublicUrl } from "./lib/r2.js";
@@ -44,6 +45,7 @@ function getCorsOrigin(req: VercelRequest): string {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  initSentry();
   const corsOrigin = getCorsOrigin(req);
 
   // Handle CORS preflight
@@ -111,6 +113,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error: any) {
     console.error("[r2-presign] Error:", error);
+    Sentry.captureException(error);
     return res.status(500).json({ error: error.message });
   }
 }

@@ -40,7 +40,7 @@ export const paymentLimiter = new Ratelimit({
 });
 
 /**
- * General API routes (outseta-activity, etc.):
+ * General API routes:
  * 20 requests per 60 seconds per IP
  */
 export const generalLimiter = new Ratelimit({
@@ -147,15 +147,6 @@ export async function applyRateLimit(
 //   export default async function handler(req, res) {
 //     // ... CORS headers ...
 //     if (await applyRateLimit(req, res, paymentLimiter)) return;
-//     // ... rest of handler ...
-//   }
-//
-// ── api/outseta-activity.ts ─────────────────────────────────────────────
-//
-//   import { applyRateLimit, generalLimiter } from './lib/rateLimit';
-//
-//   export default async function handler(req, res) {
-//     if (await applyRateLimit(req, res, generalLimiter)) return;
 //     // ... rest of handler ...
 //   }
 //

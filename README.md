@@ -21,8 +21,7 @@ Smart DTF Sheet Builder - Create optimized layouts for Direct-to-Film printing.
 - Tailwind CSS
 - shadcn/ui
 - Fabric.js for canvas manipulation
-- Supabase for backend
-- Outseta for authentication
+- Supabase for backend and authentication
 - Razorpay for payments
 
 ## Development
@@ -40,4 +39,4 @@ npm run build
 
 ## Environment Variables
 
-Create a `.env` file with the required environment variables for Supabase, Outseta, and Razorpay integration.
+Create a `.env` file with the required environment variables for Supabase and Razorpay integration.

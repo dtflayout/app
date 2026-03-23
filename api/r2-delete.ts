@@ -15,6 +15,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { initSentry, Sentry } from './lib/sentry';
 import {
   DeleteObjectsCommand,
   ListObjectsV2Command,
@@ -75,6 +76,7 @@ async function verifyAuth(req: VercelRequest): Promise<boolean> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  initSentry();
   const corsOrigin = getCorsOrigin(req);
 
   // Handle CORS preflight
@@ -166,6 +168,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error: any) {
     console.error("[r2-delete] Error:", error);
+    Sentry.captureException(error);
     return res.status(500).json({ error: error.message });
   }
 }

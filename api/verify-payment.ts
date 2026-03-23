@@ -1,177 +1,8 @@
 import { applyRateLimit, paymentLimiter } from './lib/rateLimit';
+import { initSentry, Sentry } from './lib/sentry';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHmac } from 'crypto';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-
-// Outseta Activity Helper Functions
-const getOutsetaCredentials = () => {
-  const apiKey = process.env.OUTSETA_API_KEY;
-  const apiSecret = process.env.OUTSETA_API_SECRET;
-  const subdomain = process.env.OUTSETA_SUBDOMAIN;
-
-  if (!apiKey || !apiSecret || !subdomain) {
-    return null;
-  }
-
-  // Outseta uses custom auth format: "Outseta [api-key]:[secret-key]"
-  return {
-    authHeader: `Outseta ${apiKey}:${apiSecret}`,
-    baseUrl: `https://${subdomain}.outseta.com/api/v1`,
-  };
-};
-
-const findOutsetaPersonByEmail = async (
-  email: string,
-  authHeader: string,
-  baseUrl: string
-): Promise<string | null> => {
-  try {
-    const url = `${baseUrl}/crm/people?email=${encodeURIComponent(email)}`;
-
-    console.log('[Outseta] ========== PERSON LOOKUP DEBUG ==========');
-    console.log('[Outseta] Email search: [REDACTED]');
-    console.log('[Outseta] Auth header present:', !!authHeader);
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': authHeader,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    console.log('[Outseta] Response status:', response.status, response.statusText);
-
-    if (!response.ok) {
-      console.error('[Outseta] Failed to find person - Status:', response.status);
-      return null;
-    }
-
-    const responseText = await response.text();
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch (parseErr) {
-      console.error('[Outseta] Failed to parse JSON response');
-      return null;
-    }
-
-    // Try multiple possible response structures
-    const items = data.items || data.Items || data.results || data.Results || [];
-    console.log('[Outseta] Items found:', items.length);
-
-    if (items.length === 0) {
-      console.log('[Outseta] No items found in response');
-      return null;
-    }
-
-    // Find the person with matching email (case-insensitive)
-    const matchingPerson = items.find(
-      (person: any) => person.Email?.toLowerCase() === email.toLowerCase()
-    );
-
-    if (!matchingPerson) {
-      console.log('[Outseta] No exact email match found');
-      return null;
-    }
-
-    console.log('[Outseta] Found matching person');
-    return matchingPerson.Uid;
-  } catch (err) {
-    console.error('[Outseta] Exception finding person:', err);
-    return null;
-  }
-};
-
-const updateOutsetaAccountField = async (
-  accountUid: string,
-  fieldName: string,
-  fieldValue: string,
-  authHeader: string,
-  baseUrl: string
-): Promise<boolean> => {
-  try {
-    // Use PUT to update the account record with the custom field
-    const url = `${baseUrl}/crm/accounts/${accountUid}`;
-
-    const requestBody = {
-      Uid: accountUid,
-      [fieldName]: fieldValue,
-    };
-
-    console.log('[Outseta] Updating account field:', fieldName);
-
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Authorization': authHeader,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    console.log('[Outseta] Update response status:', response.status);
-
-    if (!response.ok) {
-      const responseText = await response.text();
-      console.error('[Outseta] Failed to update account field:', response.status);
-      return false;
-    }
-
-    console.log(`[Outseta] Account field ${fieldName} updated successfully`);
-    return true;
-  } catch (err) {
-    console.error('[Outseta] ❌ Exception updating account field:', err);
-    return false;
-  }
-};
-
-const postOutsetaActivity = async (
-  personUid: string,
-  activityType: string,
-  metadata: Record<string, any>,
-  authHeader: string,
-  baseUrl: string
-): Promise<boolean> => {
-  try {
-    // Use the custom activity endpoint
-    const url = `${baseUrl}/activities/customactivity`;
-    const description = `Activity: ${activityType} | ${JSON.stringify(metadata)}`;
-
-    const requestBody = {
-      EntityUid: personUid,
-      EntityType: 2, // 2 = Person (required for "Person performs custom activity" trigger)
-      Title: activityType,
-      Description: description,
-      ActivityData: JSON.stringify(metadata),
-    };
-
-    console.log('[Outseta] Posting activity:', activityType);
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': authHeader,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    console.log('[Outseta] Activity response status:', response.status);
-
-    if (!response.ok) {
-      const responseText = await response.text();
-      console.error('[Outseta] Failed to post activity:', response.status);
-      return false;
-    }
-
-    console.log(`[Outseta] Activity ${activityType} posted successfully`);
-    return true;
-  } catch (err) {
-    console.error('[Outseta] ❌ Exception posting activity:', err);
-    return false;
-  }
-};
 
 // Plan credits mapping (in sq.inches)
 const PLAN_CREDITS: Record<string, number> = {
@@ -202,7 +33,7 @@ interface VerifyPaymentRequest {
   razorpay_payment_id: string;
   razorpay_signature?: string;
   plan_id: string;
-  outseta_account_id: string; // This is the user_id for Supabase
+  user_id: string;
   user_email: string;
   amount: number;
 }
@@ -248,8 +79,8 @@ const getOrCreateUserCredits = async (
   try {
     // Try to get existing record
     const { data, error: fetchError } = await supabase
-      .from('user_credits')
-      .select('credit_balance, free_trial_claimed')
+      .from('credits')
+      .select('balance, free_trial_claimed')
       .eq('user_id', userId)
       .single();
 
@@ -260,18 +91,18 @@ const getOrCreateUserCredits = async (
     }
 
     if (data) {
-      console.log('[User Credits] Found existing balance:', data.credit_balance, 'free_trial_claimed:', data.free_trial_claimed);
-      return { success: true, balance: data.credit_balance, freeTrialClaimed: data.free_trial_claimed || false };
+      console.log('[User Credits] Found existing balance:', data.balance, 'free_trial_claimed:', data.free_trial_claimed);
+      return { success: true, balance: data.balance, freeTrialClaimed: data.free_trial_claimed || false };
     }
 
     // User doesn't exist, create with 0 credits (will add plan credits next)
     console.log('[User Credits] New user, creating record');
     const { error: insertError } = await supabase
-      .from('user_credits')
+      .from('credits')
       .insert({
         user_id: userId,
         email: email,
-        credit_balance: 0,
+        balance: 0,
         free_trial_claimed: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -296,7 +127,7 @@ const hasClaimedFreeTrial = async (
 ): Promise<{ success: boolean; claimed?: boolean; error?: string }> => {
   try {
     const { data, error } = await supabase
-      .from('user_credits')
+      .from('credits')
       .select('free_trial_claimed')
       .eq('user_id', userId)
       .single();
@@ -325,7 +156,7 @@ const markFreeTrialClaimed = async (
 ): Promise<{ success: boolean; error?: string }> => {
   try {
     const { error } = await supabase
-      .from('user_credits')
+      .from('credits')
       .update({
         free_trial_claimed: true,
         updated_at: new Date().toISOString(),
@@ -371,9 +202,9 @@ const addCreditsToUser = async (
 
     // Update the balance
     const { error: updateError } = await supabase
-      .from('user_credits')
+      .from('credits')
       .update({
-        credit_balance: newBalance,
+        balance: newBalance,
         updated_at: new Date().toISOString(),
       })
       .eq('user_id', userId);
@@ -559,6 +390,8 @@ function getAllowedOrigin(req: VercelRequest): string | null {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  initSentry();
+
   // CORS headers — locked to dtflayout.com and subdomains
   const allowedOrigin = getAllowedOrigin(req);
   if (allowedOrigin) {
@@ -583,14 +416,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       razorpay_payment_id,
       razorpay_signature,
       plan_id,
-      outseta_account_id, // This is used as user_id in Supabase
+      user_id,
       user_email,
       amount,
     } = req.body as VerifyPaymentRequest;
 
     console.log('[Verify Payment] Request received:', {
       plan_id,
-      has_user_id: !!outseta_account_id,
+      has_user_id: !!user_id,
       has_email: !!user_email,
       amount,
       has_payment_id: !!razorpay_payment_id,
@@ -599,7 +432,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     // Validate required fields
-    if (!razorpay_payment_id || !plan_id || !outseta_account_id || !user_email) {
+    if (!razorpay_payment_id || !plan_id || !user_id || !user_email) {
       return res.status(400).json({
         success: false,
         error: 'Missing required fields',
@@ -634,7 +467,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (plan_id === 'free_trial') {
       console.log('[Verify Payment] Free trial request, checking if already claimed...');
 
-      const freeTrialCheck = await hasClaimedFreeTrial(supabase, outseta_account_id);
+      const freeTrialCheck = await hasClaimedFreeTrial(supabase, user_id);
 
       if (!freeTrialCheck.success) {
         console.error('[Verify Payment] Failed to check free trial status:', freeTrialCheck.error);
@@ -685,7 +518,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Log failed payment
         await logPayment(supabase, {
           user_email,
-          user_id: outseta_account_id,
+          user_id,
           razorpay_payment_id,
           razorpay_order_id,
           plan_id,
@@ -712,7 +545,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const addResult = await addCreditsToUser(
       supabase,
-      outseta_account_id,
+      user_id,
       user_email,
       creditsToAdd
     );
@@ -723,7 +556,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Log failed payment
       await logPayment(supabase, {
         user_email,
-        user_id: outseta_account_id,
+        user_id,
         razorpay_payment_id,
         razorpay_order_id,
         plan_id,
@@ -744,7 +577,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // If this was a free trial, mark it as claimed
     if (plan_id === 'free_trial') {
-      const markResult = await markFreeTrialClaimed(supabase, outseta_account_id);
+      const markResult = await markFreeTrialClaimed(supabase, user_id);
       if (!markResult.success) {
         console.error('[Verify Payment] Warning: Failed to mark free trial as claimed:', markResult.error);
         // Don't fail the request, credits were already added
@@ -774,7 +607,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Success! Log the payment with invoice details
     await logPayment(supabase, {
       user_email,
-      user_id: outseta_account_id,
+      user_id,
       razorpay_payment_id,
       razorpay_order_id,
       plan_id,
@@ -790,116 +623,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('[Verify Payment] Success! New balance:', addResult.newBalance);
 
-    // Update Outseta Account with payment confirmation (non-blocking)
-    // This triggers segment-based drip campaigns for email notifications
-    const outsetaCredentials = getOutsetaCredentials();
-    if (outsetaCredentials) {
-      console.log('[Verify Payment] Starting Outseta account update');
-
-      // PRIMARY METHOD: Update Account's PaymentConfirmedAt field
-      // This triggers segment-based drip campaigns
-      // User needs to:
-      // 1. Create custom Account field "PaymentConfirmedAt" (type: Text) in Outseta
-      // 2. Create a segment with filter: "PaymentConfirmedAt is not empty"
-      // 3. Create drip campaign triggered by "Account added to segment"
-      //
-      // TWO-STEP PROCESS: Segment triggers only fire when someone is ADDED to segment.
-      // If they're already in (PaymentConfirmedAt has value), we need to:
-      // 1. Clear the field (removes from segment)
-      // 2. Wait briefly
-      // 3. Set new value (adds back to segment, triggers drip)
-      const timestamp = new Date().toISOString();
-      console.log('[Verify Payment] Updating PaymentConfirmedAt with two-step process...');
-
-      // Step 1: Clear PaymentConfirmedAt to remove from segment
-      console.log('[Verify Payment] Step 1: Clearing PaymentConfirmedAt to remove from segment...');
-      const clearResult = await updateOutsetaAccountField(
-        outseta_account_id,
-        'PaymentConfirmedAt',
-        '',
-        outsetaCredentials.authHeader,
-        outsetaCredentials.baseUrl
-      );
-
-      if (clearResult) {
-        // Step 2: Wait 3 seconds for segment to process removal
-        console.log('[Verify Payment] Step 2: Waiting 3 seconds for segment processing...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
-
-        // Step 3: Set new timestamp to add back to segment (triggers drip)
-        console.log('[Verify Payment] Step 3: Setting PaymentConfirmedAt to:', timestamp);
-        const accountUpdated = await updateOutsetaAccountField(
-          outseta_account_id,
-          'PaymentConfirmedAt',
-          timestamp,
-          outsetaCredentials.authHeader,
-          outsetaCredentials.baseUrl
-        );
-
-        if (accountUpdated) {
-          console.log('[Verify Payment] ✅ Account PaymentConfirmedAt updated - segment trigger should fire');
-        } else {
-          console.log('[Verify Payment] ⚠️ Failed to set PaymentConfirmedAt timestamp');
-        }
-      } else {
-        console.log('[Verify Payment] ⚠️ Failed to clear PaymentConfirmedAt field, trying direct update...');
-        // Fallback: try direct update anyway
-        const accountUpdated = await updateOutsetaAccountField(
-          outseta_account_id,
-          'PaymentConfirmedAt',
-          timestamp,
-          outsetaCredentials.authHeader,
-          outsetaCredentials.baseUrl
-        );
-        if (accountUpdated) {
-          console.log('[Verify Payment] ✅ Direct update succeeded (may not trigger segment)');
-        }
-      }
-
-      // Update Account with invoice URL for use in email templates
-      if (invoiceResult.invoice_url) {
-        await updateOutsetaAccountField(
-          outseta_account_id,
-          'LastInvoiceUrl',
-          invoiceResult.invoice_url,
-          outsetaCredentials.authHeader,
-          outsetaCredentials.baseUrl
-        );
-        console.log('[Verify Payment] ✅ Account LastInvoiceUrl updated');
-      }
-
-      // FALLBACK: Also post custom activities to Person (in case they start working)
-      const personUid = await findOutsetaPersonByEmail(
-        user_email,
-        outsetaCredentials.authHeader,
-        outsetaCredentials.baseUrl
-      );
-
-      if (personUid) {
-        console.log('[Verify Payment] Found Person for activity logging');
-
-        const activityMetadata = {
-          amount: amount || PLAN_PRICES[plan_id],
-          planName: PLAN_NAMES[plan_id],
-          creditsAdded: creditsToAdd,
-          transactionId: razorpay_payment_id,
-          userEmail: user_email,
-          invoiceUrl: invoiceResult.invoice_url || null,
-        };
-
-        // Post payment_successful activity to Person
-        await postOutsetaActivity(
-          personUid,
-          'payment_successful',
-          activityMetadata,
-          outsetaCredentials.authHeader,
-          outsetaCredentials.baseUrl
-        );
-      }
-    } else {
-      console.log('[Verify Payment] Outseta not configured, skipping account update');
-    }
-
     return res.status(200).json({
       success: true,
       message: 'Payment verified and credits added',
@@ -908,6 +631,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error: any) {
     console.error('[Verify Payment] Unexpected error:', error);
+    Sentry.captureException(error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error',
