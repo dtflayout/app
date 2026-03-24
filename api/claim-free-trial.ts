@@ -89,7 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (existing) {
       // User exists — add credits and mark trial claimed
-      const newBalance = (existing.balance || 0) + FREE_TRIAL_CREDITS;
+      const newBalance = Math.round((existing.balance || 0) + FREE_TRIAL_CREDITS);
       const { error: updateError } = await supabase
         .from('credits')
         .update({
@@ -103,6 +103,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.error('[Free Trial] Update error:', updateError);
         return res.status(500).json({ success: false, error: 'Failed to add trial credits' });
       }
+
+      // Log to credit_transactions so it appears on the Billing page
+      await supabase.from('credit_transactions').insert({
+        user_id,
+        email: user_email,
+        type: 'recharge',
+        plan_id: 'free_trial',
+        plan_name: 'Free Trial',
+        amount: 0,
+        currency: 'USD',
+        credits_added: FREE_TRIAL_CREDITS,
+        credits_before: existing.balance || 0,
+        credits_after: newBalance,
+        status: 'success',
+        description: 'Free trial activation',
+        created_at: new Date().toISOString(),
+      });
 
       console.log('[Free Trial] Credits added to existing user:', { previous: existing.balance, new: newBalance });
 
@@ -129,6 +146,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.error('[Free Trial] Insert error:', insertError);
         return res.status(500).json({ success: false, error: 'Failed to create trial' });
       }
+
+      // Log to credit_transactions so it appears on the Billing page
+      await supabase.from('credit_transactions').insert({
+        user_id,
+        email: user_email,
+        type: 'recharge',
+        plan_id: 'free_trial',
+        plan_name: 'Free Trial',
+        amount: 0,
+        currency: 'USD',
+        credits_added: FREE_TRIAL_CREDITS,
+        credits_before: 0,
+        credits_after: FREE_TRIAL_CREDITS,
+        status: 'success',
+        description: 'Free trial activation',
+        created_at: new Date().toISOString(),
+      });
 
       console.log('[Free Trial] New user created with trial credits:', FREE_TRIAL_CREDITS);
 

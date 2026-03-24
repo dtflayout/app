@@ -14,6 +14,8 @@ const PRODUCT_CREDITS: Record<string, { credits: number; plan_id: string; plan_n
   'pdt_0NbAZg2ZiDFl8o4J1Ovfa': { credits: 150000,  plan_id: 'starter',  plan_name: 'DTF Starter-India' },
   'pdt_0NbAZtngV3jovZnpXe4WU': { credits: 500000,  plan_id: 'growth',   plan_name: 'DTF Growth-India' },
   'pdt_0NbAa1eGihyujWptwRpf1': { credits: 2000000, plan_id: 'max',      plan_name: 'DTF Max-India' },
+  // Test mode
+  'pdt_0NbB4gGZZa0PUdOs8zDEA': { credits: 150000,  plan_id: 'starter',  plan_name: 'DTF Starter (Test)' },
 };
 
 // ── Supabase client ───────────────────────────────────────────────────────
@@ -63,7 +65,7 @@ const addCreditsToUser = async (
       currentBalance = data?.balance || 0;
     }
 
-    const newBalance = currentBalance + creditsToAdd;
+    const newBalance = Math.round(currentBalance + creditsToAdd);
     const { error: updateError } = await supabase.from('credits')
       .update({ balance: newBalance, updated_at: new Date().toISOString() })
       .eq('user_id', userId);
