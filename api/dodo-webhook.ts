@@ -1,4 +1,4 @@
-import { initSentry, Sentry } from './lib/sentry';
+import { initSentry, Sentry } from './lib/sentry.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Webhook } from 'standardwebhooks';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
