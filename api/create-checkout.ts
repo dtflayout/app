@@ -99,7 +99,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Get the correct product_id for the region
-    const productId = plan[region as 'india' | 'global'];
+    let productId = plan[region as 'india' | 'global'];
 
     // Check API key
     const apiKey = process.env.DODO_PAYMENTS_API_KEY;
@@ -113,6 +113,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Determine environment — use test_mode unless DODO_LIVE_MODE is explicitly set
     const isLive = process.env.DODO_LIVE_MODE === 'true';
+
+    // In test mode, override with test product ID (live products don't exist in test env)
+    const TEST_PRODUCT_ID = process.env.DODO_TEST_PRODUCT_ID || 'pdt_0NbB4gGZZa0PUdOs8zDEA';
+    if (!isLive) {
+      productId = TEST_PRODUCT_ID;
+    }
 
     // Create Dodo Payments client
     const client = new DodoPayments({
