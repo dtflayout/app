@@ -1,5 +1,5 @@
-import { applyRateLimit, paymentLimiter } from './lib/rateLimit';
-import { initSentry, Sentry } from './lib/sentry';
+import { applyRateLimit, paymentLimiter } from './lib/rateLimit.js';
+import { initSentry, Sentry } from './lib/sentry.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import DodoPayments from 'dodopayments';
 
