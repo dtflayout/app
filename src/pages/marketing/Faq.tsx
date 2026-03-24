@@ -150,7 +150,7 @@ const faqSections: FaqSection[] = [
       {
         question: "What payment methods do you accept?",
         answer:
-          "We accept payments through Razorpay, which supports credit cards, debit cards, UPI, net banking, and other popular payment methods in India.",
+          "We accept payments through our secure payment partner, which supports credit cards, debit cards, UPI, net banking, and other popular payment methods worldwide.",
       },
     ],
   },

@@ -30,7 +30,7 @@ const redis = new Redis({
 
 /**
  * Payment routes (create-order, verify-payment):
- * 5 requests per 60 seconds per IP — tight because these hit Razorpay
+ * 5 requests per 60 seconds per IP — tight because these hit payment APIs
  */
 export const paymentLimiter = new Ratelimit({
   redis,

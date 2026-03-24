@@ -3,34 +3,39 @@ import { useNavigate } from "react-router-dom";
 import MarketingLayout from "@/components/marketing/MarketingLayout";
 import GradientButton from "@/components/marketing/GradientButton";
 import { Card } from "@/components/ui/card";
-import { Check, Info, Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { Highlighter } from "@/components/ui/highlighter";
-import { MobileTooltip } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/contexts/CreditsContext";
 import {
-  initiateRazorpayCheckout,
-  verifyPaymentAndAddCredits,
-  PricingPlan,
+  createCheckoutSession,
+  claimFreeTrial,
   UserInfo,
 } from "@/services/paymentService";
 
+// Detect if user is in India based on timezone
+const detectRegion = (): 'india' | 'global' => {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz === 'Asia/Kolkata' || tz === 'Asia/Calcutta') return 'india';
+  } catch {}
+  return 'global';
+};
+
 // Define pricing data outside component to prevent recreation on every render
-// Each plan includes id and priceValue for payment processing
 const PLANS = [
     {
       id: "free_trial",
-      price: "Rs. 0",
-      priceValue: 0,
-      credits: "10,000 sq.inch",
-      creditsValue: 10000,
-      rate: "0 paisa/sq.inch",
-      gradient: "linear-gradient(to bottom, #f0f9ff 0%, #f0f9ff 20%, white 50%, white 100%)",  // lightest
+      price: { india: "₹0", global: "$0" },
+      credits: "20,000 sq.inch",
+      creditsValue: 20000,
+      rate: "Free",
+      gradient: "linear-gradient(to bottom, #f0f9ff 0%, #f0f9ff 20%, white 50%, white 100%)",
       badge: "Free Trial",
       description: "Experience the platform for free before you commit.",
       features: [
-        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>10,000 sq. inch</strong></Highlighter> in credit with this recharge.</>,
+        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>20,000 sq. inch</strong></Highlighter> in credit with this recharge.</>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Image Enhancer & Trimmer and many other tools included.",
       ],
@@ -38,17 +43,16 @@ const PLANS = [
       popular: false,
     },
     {
-      id: "lite",
-      price: "Rs. 1,000",
-      priceValue: 1000,
-      credits: "1 Lac sq.inch",
-      creditsValue: 100000,
-      rate: "1 paisa/sq.inch",
+      id: "starter",
+      price: { india: "₹1,999", global: "$49" },
+      credits: "1.5 Lac sq.inch",
+      creditsValue: 150000,
+      rate: { india: "1.33 paisa/sq.inch", global: "$0.00033/sq.inch" },
       gradient: "linear-gradient(to bottom, #e0f2fe 0%, #e0f2fe 20%, white 50%, white 100%)",
-      badge: "Lite",
+      badge: "Starter",
       description: "More savings with a balanced, budget-smart plan.",
       features: [
-        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>1,00,000 sq. inch</strong></Highlighter> in credit with this recharge—<br />equivalent to a rate of <Highlighter action="underline" color="#4F46E5"><strong>1 paisa per sq. inch</strong></Highlighter>.</>,
+        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>1,50,000 sq. inch</strong></Highlighter> in credit with this recharge.</>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Image Enhancer & Trimmer and many other tools included.",
       ],
@@ -56,17 +60,16 @@ const PLANS = [
       popular: false,
     },
     {
-      id: "pro",
-      price: "Rs. 4,000",
-      priceValue: 4000,
+      id: "growth",
+      price: { india: "₹5,999", global: "$149" },
       credits: "5 Lac sq.inch",
       creditsValue: 500000,
-      rate: "0.8 paisa/sq.inch",
+      rate: { india: "1.2 paisa/sq.inch", global: "$0.0003/sq.inch" },
       gradient: "linear-gradient(to bottom, #d6f0fd 0%, #d6f0fd 20%, white 50%, white 100%)",
-      badge: "Pro",
+      badge: "Growth",
       description: "Significantly cheaper per-inch pricing for heavy users.",
       features: [
-        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>5,00,000 sq. inch</strong></Highlighter> in credit with this recharge—<br />equivalent to a rate of <Highlighter action="underline" color="#4F46E5"><strong>0.8 paisa per sq. inch</strong></Highlighter>.</>,
+        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>5,00,000 sq. inch</strong></Highlighter> in credit with this recharge.</>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Image Enhancer & Trimmer and many other tools included.",
       ],
@@ -74,17 +77,16 @@ const PLANS = [
       popular: false,
     },
     {
-      id: "enterprise",
-      price: "Rs. 8,000",
-      priceValue: 8000,
-      credits: "16 Lac sq.inch",
-      creditsValue: 1600000,
-      rate: "0.5 paisa/sq.inch",
-      gradient: "linear-gradient(to bottom, #bae6fd 0%, #bae6fd 20%, white 50%, white 100%)",  // darkest
-      badge: "Enterprise",
+      id: "max",
+      price: { india: "₹11,999", global: "$299" },
+      credits: "20 Lac sq.inch",
+      creditsValue: 2000000,
+      rate: { india: "0.6 paisa/sq.inch", global: "$0.00015/sq.inch" },
+      gradient: "linear-gradient(to bottom, #bae6fd 0%, #bae6fd 20%, white 50%, white 100%)",
+      badge: "Max",
       description: "Our lowest per-inch rates — maximum savings unlocked.",
       features: [
-        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>16,00,000 sq. inch</strong></Highlighter> in credit with this recharge—<br />equivalent to a rate of <Highlighter action="underline" color="#4F46E5"><strong>0.5 paisa per sq. inch</strong></Highlighter>.</>,
+        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>20,00,000 sq. inch</strong></Highlighter> in credit with this recharge.</>,
         "Easy to use drag & drop editor",
         "Full access to all tools — Background Remover, Image Enhancer & Trimmer and many other tools included.",
       ],
@@ -98,6 +100,7 @@ const Pricing3 = () => {
   const { user } = useAuth();
   const { refreshCredits, freeTrialClaimed } = useCredits();
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
+  const region = detectRegion();
 
   // Handle plan purchase
   const handleGetStarted = async (plan: typeof PLANS[number]) => {
@@ -114,92 +117,48 @@ const Pricing3 = () => {
     setProcessingPlanId(plan.id);
 
     try {
-      // Prepare user info for Razorpay
       const userInfo: UserInfo = {
         name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
         email: user?.email || '',
-        phone: user?.user_metadata?.phone || undefined,
         userId: user?.id,
       };
 
-      // Convert plan to PricingPlan format for payment service
-      const pricingPlan: PricingPlan = {
-        id: plan.id,
-        name: plan.badge,
-        price: plan.priceValue,
-        credits: plan.creditsValue,
-        badge: plan.badge,
-        description: plan.description,
-        features: [], // Not needed for checkout
-      };
-
-      // Handle free trial differently
-      if (plan.priceValue === 0) {
-        // Check if already claimed (frontend check)
+      // Handle free trial — direct server call, no Dodo checkout
+      if (plan.id === 'free_trial') {
         if (freeTrialClaimed) {
           toast.error("You have already claimed your free trial");
           setProcessingPlanId(null);
           return;
         }
 
-        // Add free trial credits via backend
-        const verifyResult = await verifyPaymentAndAddCredits({
-          razorpay_payment_id: `free_trial_${Date.now()}`,
-          plan_id: plan.id,
-          user_id: userInfo.userId || '',
-          user_email: userInfo.email || '',
-          amount: 0,
-        });
+        const result = await claimFreeTrial(userInfo);
 
-        if (verifyResult.success) {
+        if (result.success) {
           toast.success(`Free trial activated! ${plan.credits} added to your account.`);
-          await refreshCredits(); // Refresh credits from Supabase
+          await refreshCredits();
           navigate("/app");
+        } else if (result.already_claimed) {
+          toast.error("You have already claimed your free trial");
         } else {
-          // Handle "already claimed" response from backend
-          if ((verifyResult as any).already_claimed) {
-            toast.error("You have already claimed your free trial");
-          } else {
-            toast.error(verifyResult.error || "Failed to activate free trial");
-          }
+          toast.error(result.error || "Failed to activate free trial");
         }
         return;
       }
 
-      // Initiate Razorpay checkout for paid plans
-      const result = await initiateRazorpayCheckout(pricingPlan, userInfo);
+      // Paid plans — create Dodo Checkout Session and redirect
+      const result = await createCheckoutSession(plan.id, region, userInfo);
 
-      if (result.success && result.paymentId) {
-        console.log("[Payment] Razorpay success! Verifying payment...", {
-          paymentId: result.paymentId,
-          orderId: result.orderId,
-          signature: result.signature ? '***' : 'MISSING',
-        });
-
-        // Verify payment and add credits via backend
-        const verifyResult = await verifyPaymentAndAddCredits({
-          razorpay_payment_id: result.paymentId,
-          razorpay_order_id: result.orderId,
-          razorpay_signature: result.signature,
-          plan_id: plan.id,
-          user_id: userInfo.userId || '',
-          user_email: userInfo.email || '',
-          amount: plan.priceValue,
-        });
-
-        if (verifyResult.success) {
-          toast.success(`Payment successful! ${verifyResult.credits_added?.toLocaleString('en-IN')} sq.inch added to your account.`);
-          await refreshCredits(); // Refresh credits from Supabase
-          navigate("/app");
-        } else {
-          toast.error(verifyResult.error || "Payment verification failed. Please contact support.");
-        }
+      if (result.success && result.checkout_url) {
+        // Redirect to Dodo's hosted checkout page
+        window.location.href = result.checkout_url;
+        // Don't reset processingPlanId — user is leaving the page
+        return;
+      } else {
+        toast.error(result.error || "Failed to initiate payment. Please try again.");
       }
     } catch (error: any) {
       console.error("[Payment] Error:", error);
-      if (error?.error !== 'Payment cancelled by user') {
-        toast.error(error?.error || "Payment failed. Please try again.");
-      }
+      toast.error(error?.message || "Payment failed. Please try again.");
     } finally {
       setProcessingPlanId(null);
     }
@@ -235,7 +194,7 @@ const Pricing3 = () => {
           <div className="grid md:grid-cols-2 gap-12">
             {PLANS.map((plan, index) => (
               <div
-                key={plan.price}
+                key={plan.id}
                 className="relative"
               >
                 <Card
@@ -289,7 +248,7 @@ const Pricing3 = () => {
                           plan.popular ? "text-gray-900" : "text-gray-900"
                         }`}
                       >
-                        {plan.price}
+                        {typeof plan.price === 'object' ? plan.price[region] : plan.price}
                       </h3>
                       <p
                         className={`font-semibold mb-2 ${
@@ -307,7 +266,7 @@ const Pricing3 = () => {
                           {plan.credits}
                         </span>
                         <span className="text-gray-500 text-[1.75rem] font-[700]">
-                          <Highlighter action="underline" color="#4F46E5">{plan.rate}</Highlighter>
+                          <Highlighter action="underline" color="#4F46E5">{typeof plan.rate === 'object' ? plan.rate[region] : plan.rate}</Highlighter>
                         </span>
                       </div>
                     </div>
@@ -317,7 +276,7 @@ const Pricing3 = () => {
 
                     <ul className="space-y-4 mb-10">
                       {plan.features.map((feature, idx) => (
-                        <li key={`${plan.price}-feature-${idx}`} className="flex items-start">
+                        <li key={`${plan.id}-feature-${idx}`} className="flex items-start">
                           <Check
                             className={`w-6 h-6 mr-3 flex-shrink-0 mt-0.5 ${
                               plan.popular ? "text-indigo-600" : "text-indigo-600"

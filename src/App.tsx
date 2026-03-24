@@ -23,6 +23,7 @@ import BuilderSettings from "./pages/website-integration/BuilderSettings";
 import { PublicBuilder } from "./pages/public-builder";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import Home from "./pages/marketing/Home";
 import Product from "./pages/marketing/Product";
 import Pricing from "./pages/marketing/Pricing";
@@ -153,6 +154,14 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <ImageEnhancerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/payment-success"
+          element={
+            <ProtectedRoute>
+              <PaymentSuccess />
             </ProtectedRoute>
           }
         />
