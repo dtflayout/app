@@ -17,12 +17,18 @@ const PaymentSuccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { refreshCredits } = useCredits();
-  const [status, setStatus] = useState<'loading' | 'success' | 'pending'>('loading');
+  const [status, setStatus] = useState<'loading' | 'success' | 'pending' | 'failed'>('loading');
 
   const paymentId = searchParams.get('payment_id');
   const paymentStatus = searchParams.get('status');
 
   useEffect(() => {
+    // If Dodo explicitly says failed, show error immediately
+    if (paymentStatus === 'failed') {
+      setStatus('failed');
+      return;
+    }
+
     // Start polling for credit update
     let attempts = 0;
     const maxAttempts = 10;
@@ -114,6 +120,38 @@ const PaymentSuccess = () => {
             >
               Go to Dashboard
             </button>
+          </>
+        )}
+
+        {status === 'failed' && (
+          <>
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="h-8 w-8 text-red-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Failed</h1>
+            <p className="text-gray-600 mb-2">
+              Your payment could not be processed. No credits have been charged.
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              Please try again or use a different payment method. If the issue persists, contact support.
+            </p>
+            {paymentId && (
+              <p className="text-xs text-gray-400 mb-6">Payment ID: {paymentId}</p>
+            )}
+            <div className="space-y-3">
+              <button
+                onClick={() => navigate('/pricing')}
+                className="w-full bg-indigo-600 text-white py-3 px-6 rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => navigate('/app')}
+                className="w-full bg-white text-gray-700 py-3 px-6 rounded-xl font-semibold border border-gray-300 hover:bg-gray-50 transition-colors"
+              >
+                Go to Dashboard
+              </button>
+            </div>
           </>
         )}
       </Card>
