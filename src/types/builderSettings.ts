@@ -66,8 +66,6 @@ export interface BuilderSettings {
   button_style: ButtonStyle;
   toolbox_icon_color: string;
   action_bar_color: string;
-  action_bar_color_light: string;
-  action_bar_color_dark: string;
   card_background_color: string;
   
   // ============ OTHERS SECTION ============
@@ -127,8 +125,6 @@ export interface BuilderSettingsInput {
   button_style?: ButtonStyle;
   toolbox_icon_color?: string;
   action_bar_color?: string;
-  action_bar_color_light?: string;
-  action_bar_color_dark?: string;
   card_background_color?: string;
   
   // Others
@@ -181,9 +177,7 @@ export const DEFAULT_BUILDER_SETTINGS: Omit<BuilderSettings, 'id' | 'printer_id'
   font_family: 'Inter',
   button_style: 'rounded' as ButtonStyle,
   toolbox_icon_color: '',
-  action_bar_color: '',  // Empty = follows top bar color (legacy, deprecated)
-  action_bar_color_light: '',  // Empty = frosted glass default
-  action_bar_color_dark: '',   // Empty = dark gradient default
+  action_bar_color: '',  // Empty = follows top bar color
   card_background_color: '#ffffff',
   
   // Others
