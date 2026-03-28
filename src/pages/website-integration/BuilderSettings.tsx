@@ -167,6 +167,8 @@ const BuilderSettingsPage = () => {
             button_style: DEFAULT_BUILDER_SETTINGS.button_style,
             toolbox_icon_color: DEFAULT_BUILDER_SETTINGS.toolbox_icon_color,
             action_bar_color: DEFAULT_BUILDER_SETTINGS.action_bar_color,
+            action_bar_color_light: DEFAULT_BUILDER_SETTINGS.action_bar_color_light,
+            action_bar_color_dark: DEFAULT_BUILDER_SETTINGS.action_bar_color_dark,
             card_background_color: DEFAULT_BUILDER_SETTINGS.card_background_color,
           });
           break;
@@ -759,11 +761,19 @@ const BuilderSettingsPage = () => {
                     <div><Label className="font-medium text-sm">Top Bar</Label><p className="text-xs text-gray-400">{settings.color_top_bar}</p></div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <input type="color" value={settings.action_bar_color || settings.color_top_bar} onChange={(e) => updateSetting('action_bar_color', e.target.value)} className="w-9 h-9 rounded cursor-pointer border-2 border-gray-200" />
+                    <input type="color" value={settings.action_bar_color_light || '#ffffff'} onChange={(e) => updateSetting('action_bar_color_light', e.target.value)} className="w-9 h-9 rounded cursor-pointer border-2 border-gray-200" />
                     <div>
-                      <Label className="font-medium text-sm">Action Bar</Label>
-                      <p className="text-xs text-gray-400">{settings.action_bar_color || 'Same as Top Bar'}</p>
-                      {settings.action_bar_color && <button type="button" onClick={() => updateSetting('action_bar_color', '')} className="text-[10px] text-indigo-500 hover:underline">Reset</button>}
+                      <Label className="font-medium text-sm">Bar Light Mode</Label>
+                      <p className="text-xs text-gray-400">{settings.action_bar_color_light || 'Frosted glass'}</p>
+                      {settings.action_bar_color_light && <button type="button" onClick={() => updateSetting('action_bar_color_light', '')} className="text-[10px] text-indigo-500 hover:underline">Reset</button>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input type="color" value={settings.action_bar_color_dark || settings.color_top_bar} onChange={(e) => updateSetting('action_bar_color_dark', e.target.value)} className="w-9 h-9 rounded cursor-pointer border-2 border-gray-200" />
+                    <div>
+                      <Label className="font-medium text-sm">Bar Dark Mode</Label>
+                      <p className="text-xs text-gray-400">{settings.action_bar_color_dark || 'Dark gradient'}</p>
+                      {settings.action_bar_color_dark && <button type="button" onClick={() => updateSetting('action_bar_color_dark', '')} className="text-[10px] text-indigo-500 hover:underline">Reset</button>}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -926,10 +936,10 @@ const BuilderSettingsPage = () => {
                     </div>
 
                     {/* Action Bar */}
-                    <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: settings.action_bar_color || settings.color_top_bar }}>
-                      <span className="text-[10px] text-white/60">Sheet Width: 22 inches (fixed)</span>
+                    <div className="flex items-center justify-between px-4 py-2.5 rounded-b-lg" style={{ backgroundColor: settings.action_bar_color_light || 'rgba(255,255,255,0.85)', backdropFilter: !settings.action_bar_color_light ? 'blur(8px)' : undefined, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                      <span className="text-[10px] text-gray-500">Sheet Width: 22 inches (fixed)</span>
                       <div className="flex items-center gap-2">
-                        <button className="px-3 py-1 text-[10px] font-medium text-white/50 border border-white/20 bg-transparent" style={{ borderRadius: BUTTON_STYLE_OPTIONS.find(o => o.value === settings.button_style)?.preview || '8px' }}>
+                        <button className="px-3 py-1 text-[10px] font-medium text-gray-400 border border-gray-300 bg-transparent" style={{ borderRadius: BUTTON_STYLE_OPTIONS.find(o => o.value === settings.button_style)?.preview || '8px' }}>
                           Preview
                         </button>
                         <button className="px-3 py-1 text-[10px] font-semibold text-white shadow" style={{ backgroundColor: settings.color_primary, borderRadius: BUTTON_STYLE_OPTIONS.find(o => o.value === settings.button_style)?.preview || '8px' }}>
