@@ -68,6 +68,8 @@ function applyDefaults(settings: BuilderSettings): BuilderSettings {
     result.button_style = DEFAULT_BUILDER_SETTINGS.button_style;
     result.toolbox_icon_color = DEFAULT_BUILDER_SETTINGS.toolbox_icon_color;
     result.action_bar_color = DEFAULT_BUILDER_SETTINGS.action_bar_color;
+    result.action_bar_color_light = DEFAULT_BUILDER_SETTINGS.action_bar_color_light;
+    result.action_bar_color_dark = DEFAULT_BUILDER_SETTINGS.action_bar_color_dark;
     result.card_background_color = DEFAULT_BUILDER_SETTINGS.card_background_color;
   }
 
