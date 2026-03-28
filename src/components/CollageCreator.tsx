@@ -2529,9 +2529,7 @@ export const CollageCreator = ({
         isGenerating={isGenerating}
         creditsDisabled={builderMode === "standalone" && getUserCredits() === 0}
         widthReadOnly={builderMode === "public"}
-        barColor={builderSettings?.action_bar_color || undefined}
-        barColorLight={builderSettings?.action_bar_color_light || undefined}
-        barColorDark={builderSettings?.action_bar_color_dark || undefined}
+        barColor={builderSettings?.action_bar_color || builderSettings?.color_top_bar || undefined}
         accentColor={builderSettings?.color_primary || undefined}
         buttonRadius={builderSettings?.button_style === 'pill' ? '9999px' : builderSettings?.button_style === 'square' ? '2px' : undefined}
       />
