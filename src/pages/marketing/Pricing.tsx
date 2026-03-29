@@ -1,10 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import MarketingLayout from "@/components/marketing/MarketingLayout";
-import GradientButton from "@/components/marketing/GradientButton";
-import { Card } from "@/components/ui/card";
-import { Check, Loader2 } from "lucide-react";
-import { Highlighter } from "@/components/ui/highlighter";
+import { useState, useEffect, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/contexts/CreditsContext";
@@ -14,380 +9,557 @@ import {
   UserInfo,
 } from "@/services/paymentService";
 
-// Detect if user is in India based on timezone
-const detectRegion = (): 'india' | 'global' => {
-  try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (tz === 'Asia/Kolkata' || tz === 'Asia/Calcutta') return 'india';
-  } catch {}
-  return 'global';
-};
+/* ══════════ DESIGN TOKENS ══════════ */
+const HF = "'Bricolage Grotesque', sans-serif";
+const BF = "'Inter', sans-serif";
+const P = "#4F46E5";
 
-// Define pricing data outside component to prevent recreation on every render
+/* ══════════ PLAN DATA ══════════ */
 const PLANS = [
-    {
-      id: "free_trial",
-      price: { india: "₹0", global: "$0" },
-      credits: "20,000 sq.inch",
-      creditsValue: 20000,
-      rate: "Free",
-      gradient: "linear-gradient(to bottom, #f0f9ff 0%, #f0f9ff 20%, white 50%, white 100%)",
-      badge: "Free Trial",
-      description: "Experience the platform for free before you commit.",
-      features: [
-        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>20,000 sq. inch</strong></Highlighter> in credit with this recharge.</>,
-        "Easy to use drag & drop editor",
-        "Full access to all tools — Background Remover, Image Enhancer & Trimmer and many other tools included.",
-      ],
-      cta: "Get Started",
-      popular: false,
-    },
-    {
-      id: "starter",
-      price: { india: "₹1,999", global: "$49" },
-      credits: "1.5 Lac sq.inch",
-      creditsValue: 150000,
-      rate: { india: "1.33 paisa/sq.inch", global: "$0.00033/sq.inch" },
-      gradient: "linear-gradient(to bottom, #e0f2fe 0%, #e0f2fe 20%, white 50%, white 100%)",
-      badge: "Starter",
-      description: "More savings with a balanced, budget-smart plan.",
-      features: [
-        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>1,50,000 sq. inch</strong></Highlighter> in credit with this recharge.</>,
-        "Easy to use drag & drop editor",
-        "Full access to all tools — Background Remover, Image Enhancer & Trimmer and many other tools included.",
-      ],
-      cta: "Get Started",
-      popular: false,
-    },
-    {
-      id: "growth",
-      price: { india: "₹5,999", global: "$149" },
-      credits: "5 Lac sq.inch",
-      creditsValue: 500000,
-      rate: { india: "1.2 paisa/sq.inch", global: "$0.0003/sq.inch" },
-      gradient: "linear-gradient(to bottom, #d6f0fd 0%, #d6f0fd 20%, white 50%, white 100%)",
-      badge: "Growth",
-      description: "Significantly cheaper per-inch pricing for heavy users.",
-      features: [
-        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>5,00,000 sq. inch</strong></Highlighter> in credit with this recharge.</>,
-        "Easy to use drag & drop editor",
-        "Full access to all tools — Background Remover, Image Enhancer & Trimmer and many other tools included.",
-      ],
-      cta: "Get Started",
-      popular: false,
-    },
-    {
-      id: "max",
-      price: { india: "₹11,999", global: "$299" },
-      credits: "20 Lac sq.inch",
-      creditsValue: 2000000,
-      rate: { india: "0.6 paisa/sq.inch", global: "$0.00015/sq.inch" },
-      gradient: "linear-gradient(to bottom, #bae6fd 0%, #bae6fd 20%, white 50%, white 100%)",
-      badge: "Max",
-      description: "Our lowest per-inch rates — maximum savings unlocked.",
-      features: [
-        <>Get <Highlighter action="highlight" color="#FEF08A"><strong>20,00,000 sq. inch</strong></Highlighter> in credit with this recharge.</>,
-        "Easy to use drag & drop editor",
-        "Full access to all tools — Background Remover, Image Enhancer & Trimmer and many other tools included.",
-      ],
-      cta: "Get Started",
-      popular: true,
-    },
+  {
+    id: "free_trial", name: "DTF Trial",
+    price: { india: "₹0", global: "$0" },
+    credits: { india: "20,000", global: "20K" }, creditsValue: 20000,
+    rate: "Free",
+    description: "Experience the full platform — no credit card needed.",
+    features: ["20,000 sq.inch credits", "Full access to all tools", "Background Remover & Enhancer", "No credit card required"],
+    cta: "Get Started Free", popular: false,
+    tint: "linear-gradient(135deg, #F0F9FF, #BAE6FD)",
+  },
+  {
+    id: "starter", name: "DTF Starter",
+    price: { india: "₹1,999", global: "$49" },
+    credits: { india: "1,50,000", global: "150K" }, creditsValue: 150000,
+    rate: { india: "1.33 paisa/sq.in", global: "$0.33/1K sq.in" },
+    description: "Balanced and budget-smart for getting started.",
+    features: ["1,50,000 sq.inch credits", "Full access to all tools", "Background Remover & Enhancer", "Image Trimmer & Text Editor"],
+    cta: "Get Started", popular: false,
+    tint: "linear-gradient(135deg, #ECFDF5, #D1FAE5)",
+  },
+  {
+    id: "growth", name: "DTF Growth",
+    price: { india: "₹5,999", global: "$149" },
+    credits: { india: "5,00,000", global: "500K" }, creditsValue: 500000,
+    rate: { india: "1.2 paisa/sq.in", global: "$0.30/1K sq.in" },
+    description: "Significantly cheaper per-inch for heavy users.",
+    features: ["5,00,000 sq.inch credits", "Full access to all tools", "Background Remover & Enhancer", "Image Trimmer & Text Editor"],
+    cta: "Get Started", popular: false,
+    tint: "linear-gradient(135deg, #FFF7ED, #FED7AA)",
+  },
+  {
+    id: "max", name: "DTF Max",
+    price: { india: "₹11,999", global: "$299" },
+    credits: { india: "20,00,000", global: "2M" }, creditsValue: 2000000,
+    rate: { india: "0.6 paisa/sq.in", global: "$0.15/1K sq.in" },
+    description: "Our lowest per-inch rate — maximum savings unlocked.",
+    features: ["20,00,000 sq.inch credits", "Full access to all tools", "Background Remover & Enhancer", "Image Trimmer & Text Editor"],
+    cta: "Get Started", popular: true,
+    tint: "linear-gradient(135deg, #C7D2FE, #A5B4FC)",
+  },
 ];
 
-const Pricing3 = () => {
+/* ══════════ FAQ DATA ══════════ */
+const FAQS = [
+  { q: "How does credit-based pricing work?", a: "You buy credits once — no recurring subscription. Credits are measured in square inches. Every time you generate a gang sheet, the area used is deducted from your balance. When credits run low, just recharge with any plan." },
+  { q: "Is there a free trial?", a: "Yes! Every new account gets 20,000 sq.inch of credits for free — no credit card required. That's enough to create several gang sheets and experience the full platform before purchasing." },
+  { q: "Do credits expire?", a: "No, your credits never expire. Use them at your own pace — there's no time limit or monthly reset." },
+  { q: "Are there any monthly fees or per-order charges?", a: "None at all. DTF Layout uses a pure credit-based model. You pay once for credits and use them whenever you need. No subscriptions, no hidden fees, no per-order cuts." },
+  { q: "What payment methods do you accept?", a: "We accept all major credit/debit cards, UPI, and net banking for Indian customers, and credit/debit cards for international customers. All payments are processed securely via Dodo Payments." },
+  { q: "Can I upgrade to a bigger plan later?", a: "Since there are no subscriptions, you simply purchase additional credits anytime. Your existing credits carry over — new credits are added to your current balance." },
+  { q: "Do you offer refunds?", a: "Yes, we offer refunds within 7 days of purchase for unused credits. Please refer to our refund policy or contact us for details." },
+  { q: "What features are included in every plan?", a: "All plans include full access to the Gang Sheet Builder, Background Remover, Image Enhancer, Trimmer, Text Editor, Website Integration, Quick Store, multi-sheet export, and the white-label builder." },
+];
+
+/* ══════════ SAVINGS CALCULATOR DATA ══════════ */
+const CALC_PLANS = [
+  { name: "Starter", price: 49, sqIn: 150000, ratePerSqIn: 0.00033, tint: "linear-gradient(135deg, #ECFDF5, #D1FAE5)" },
+  { name: "Growth", price: 149, sqIn: 500000, ratePerSqIn: 0.0003, tint: "linear-gradient(135deg, #FFF7ED, #FED7AA)" },
+  { name: "Max", price: 299, sqIn: 2000000, ratePerSqIn: 0.00015, tint: "linear-gradient(135deg, #C7D2FE, #A5B4FC)" },
+];
+const COMPETITORS = [
+  { name: "Drip Apps", type: "percentage" as const, rate: 0.05, subPlans: null },
+  { name: "Kixxl", type: "multi" as const, rate: 0, subPlans: [
+    { name: "Basic (5%)", type: "percentage_capped" as const, rate: 0.05, cap: 10, monthly: 0, sqftLimit: 0 },
+    { name: "Intermediate", type: "subscription" as const, rate: 0, cap: 0, monthly: 149, sqftLimit: 1800 },
+    { name: "Small Business", type: "subscription" as const, rate: 0, cap: 0, monthly: 249, sqftLimit: 3500 },
+    { name: "Professional", type: "subscription" as const, rate: 0, cap: 0, monthly: 399, sqftLimit: 10000 },
+    { name: "Business", type: "subscription" as const, rate: 0, cap: 0, monthly: 499, sqftLimit: 30000 },
+  ]},
+  { name: "DTF Auto Build", type: "percentage" as const, rate: 0.03, subPlans: null },
+  { name: "Other (5%)", type: "percentage" as const, rate: 0.05, subPlans: null },
+];
+const WIDTHS = [10.5, 11, 11.5, 22, 22.5, 23];
+function fmt(v: number) {
+  if (v >= 1000) return `$${v.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+  if (v >= 10) return `$${v.toFixed(0)}`;
+  if (v >= 1) return `$${v.toFixed(2)}`;
+  return `$${v.toFixed(3)}`;
+}
+
+/* ══════════ SHARED COMPONENTS ══════════ */
+function Sq({ top, left, right, bottom, size = 28, rotate = 12 }: any) {
+  const p: any = {}; if (top != null) p.top = top; if (left != null) p.left = left; if (right != null) p.right = right; if (bottom != null) p.bottom = bottom;
+  return <div style={{ position: "absolute", width: size, height: size, borderRadius: size * 0.25, border: "1.5px dashed rgba(79,70,229,0.1)", transform: `rotate(${rotate}deg)`, pointerEvents: "none", ...p }} />;
+}
+function Dots({ o = 0.2 }: { o?: number }) {
+  return <div style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: o, backgroundImage: "radial-gradient(circle, rgba(79,70,229,0.1) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />;
+}
+function Pill({ children }: { children: React.ReactNode }) {
+  return <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 18px", borderRadius: 99, fontSize: 14, fontWeight: 600, fontFamily: BF, background: "#EEF2FF", color: P, border: "1px solid #C7D2FE" }}>{children}</span>;
+}
+function Btn({ children, v = "p", sz = "m", style: sx, onClick, disabled }: any) {
+  const pad: any = { s: "10px 24px", m: "14px 34px", l: "17px 42px" }[sz];
+  const fs: any = { s: 14, m: 16, l: 17 }[sz];
+  const vars: any = {
+    p: { background: "linear-gradient(135deg,#4F46E5,#7C3AED)", color: "#fff", border: "none", boxShadow: "0 6px 28px rgba(79,70,229,0.28)" },
+    o: { background: "#fff", color: "#111827", border: "1.5px solid #E5E7EB", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" },
+  };
+  return <button onClick={onClick} disabled={disabled} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: BF, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", borderRadius: 99, transition: "all 0.25s", padding: pad, fontSize: fs, opacity: disabled ? 0.6 : 1, ...vars[v], ...sx }}>{children}</button>;
+}
+function MovingPattern() {
+  return (
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+      <div className="orb orb-1" style={{ position: "absolute", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(129,140,248,0.4) 0%, rgba(99,102,241,0.12) 40%, transparent 70%)", top: "-15%", left: "-10%", filter: "blur(40px)" }} />
+      <div className="orb orb-2" style={{ position: "absolute", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(167,139,250,0.35) 0%, rgba(139,92,246,0.1) 40%, transparent 70%)", top: "15%", right: "-12%", filter: "blur(30px)" }} />
+      <div className="orb orb-3" style={{ position: "absolute", width: 450, height: 450, borderRadius: "50%", background: "radial-gradient(circle, rgba(165,180,252,0.35) 0%, rgba(99,102,241,0.1) 40%, transparent 70%)", bottom: "5%", left: "25%", filter: "blur(35px)" }} />
+      <div className="orb orb-4" style={{ position: "absolute", width: 350, height: 350, borderRadius: "50%", background: "radial-gradient(circle, rgba(196,181,253,0.3) 0%, transparent 60%)", top: "40%", left: "5%", filter: "blur(25px)" }} />
+      <div className="grid-drift" style={{ position: "absolute", inset: "-50%", width: "200%", height: "200%", opacity: 0.18, backgroundImage: "linear-gradient(rgba(165,180,252,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(165,180,252,0.3) 1px, transparent 1px)", backgroundSize: "80px 80px" }} />
+    </div>
+  );
+}
+
+/* ══════════ CSS ══════════ */
+const ANIM_CSS = `
+  @keyframes orbFloat1{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(60px,40px) scale(1.1)}50%{transform:translate(20px,80px) scale(.95)}75%{transform:translate(-40px,30px) scale(1.05)}}
+  @keyframes orbFloat2{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(-50px,60px) scale(1.08)}50%{transform:translate(-80px,20px) scale(.92)}75%{transform:translate(-20px,-40px) scale(1.03)}}
+  @keyframes orbFloat3{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(70px,-30px) scale(1.12)}66%{transform:translate(-30px,-60px) scale(.9)}}
+  @keyframes orbFloat4{0%,100%{transform:translate(0,0)}25%{transform:translate(40px,-50px)}50%{transform:translate(80px,20px)}75%{transform:translate(30px,60px)}}
+  @keyframes gridDrift{0%{transform:translate(0,0)}100%{transform:translate(60px,60px)}}
+  @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .orb-1{animation:orbFloat1 8s ease-in-out infinite}.orb-2{animation:orbFloat2 10s ease-in-out infinite}.orb-3{animation:orbFloat3 7s ease-in-out infinite}.orb-4{animation:orbFloat4 9s ease-in-out infinite}
+  .grid-drift{animation:gridDrift 8s linear infinite}
+  .pricing-card{transition:all .4s cubic-bezier(.4,0,.2,1)}.pricing-card:hover{transform:translateY(-8px);box-shadow:0 24px 56px rgba(79,70,229,.15)!important}
+  .faq-item{transition:all .3s ease}.faq-item:hover{background:rgba(79,70,229,.03)!important}
+  .savings-calc .bar-fill{transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+  .savings-calc .plan-btn{transition:all .2s cubic-bezier(.4,0,.2,1)}.savings-calc .plan-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(79,70,229,.12)}
+  .savings-calc input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 2px 8px rgba(79,70,229,.4),0 0 0 4px rgba(79,70,229,.08);cursor:grab;border:2.5px solid white;transition:transform .15s,box-shadow .15s}
+  .savings-calc input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.15)}.savings-calc input[type="range"]::-webkit-slider-thumb:active{cursor:grabbing;transform:scale(1.1)}
+  .savings-calc input[type="range"]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 2px 8px rgba(79,70,229,.4),0 0 0 4px rgba(79,70,229,.08);cursor:grab;border:2.5px solid white}
+  .savings-calc .sub-btn{transition:all .15s ease}.savings-calc .sub-btn:hover{transform:translateY(-1px)}
+  .savings-calc .select-field:focus{border-color:#4f46e5!important;box-shadow:0 0 0 3px rgba(79,70,229,.08)}
+`;
+
+const ic = { chev: <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg> };
+const calcLbl: React.CSSProperties = { fontSize: 12, fontWeight: 700, color: "#64748b", letterSpacing: "0.07em", marginBottom: 5, display: "block" };
+const calcSel: React.CSSProperties = {
+  width: "100%", padding: "9px 12px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,0.08)", fontSize: 15, fontWeight: 600,
+  fontFamily: HF, color: "#1e1b4b", outline: "none", cursor: "pointer", background: "white", boxSizing: "border-box" as const,
+  appearance: "none" as const, WebkitAppearance: "none" as any, transition: "border-color 0.2s, box-shadow 0.2s",
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+  backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center",
+};
+
+/* ══════════ SAVINGS CALCULATOR ══════════ */
+function SavingsCalculator() {
+  const [width, setWidth] = useState(22);
+  const [price, setPrice] = useState(35);
+  const [ci, setCi] = useState(0);
+  const [si, setSi] = useState(0);
+  const [sheets, setSheets] = useState(200);
+  const [plan, setPlan] = useState(2);
+  const comp = COMPETITORS[ci];
+
+  const c = useMemo(() => {
+    const p = CALC_PLANS[plan]; const sqIn = width * 100; const dtfPS = sqIn * p.ratePerSqIn; const dtfM = dtfPS * sheets;
+    let cPS = 0, cM = 0, note = "";
+    if (comp.type === "percentage") { cPS = price * comp.rate; cM = cPS * sheets; }
+    else if (comp.subPlans) { const s = comp.subPlans[si];
+      if (s.type === "percentage_capped") { cPS = Math.min(price * s.rate, s.cap); cM = cPS * sheets; }
+      else if (s.type === "subscription") { cM = s.monthly; cPS = sheets > 0 ? cM / sheets : 0; if ((sqIn * sheets) / 144 > s.sqftLimit) note = `Exceeds ${s.sqftLimit.toLocaleString()} sqft limit — would need upgrade`; }
+    }
+    const sM = cM - dtfM, sA = sM * 12;
+    return { dtfPS, dtfM, cPS, cM, note, sM, sA, pct: cM > 0 ? (sM / cM) * 100 : 0, mult: dtfM > 0 ? cM / dtfM : Infinity };
+  }, [width, price, ci, si, sheets, plan, comp]);
+
+  const mx = Math.max(c.cM, c.dtfM, 1); const sp = ((sheets - 10) / 990) * 100;
+
+  return (
+    <div className="savings-calc" style={{ maxWidth: 1000, margin: "0 auto" }}>
+      {/* Intro text */}
+      <div style={{ textAlign: "center", marginBottom: 32 }}>
+        <Pill>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          Savings Calculator
+        </Pill>
+        <h2 style={{ fontFamily: HF, fontSize: 40, fontWeight: 800, color: "#111827", lineHeight: 1.15, letterSpacing: "-0.03em", margin: "18px 0 10px" }}>Already Using a Gang Sheet Builder?</h2>
+        <p style={{ fontSize: 17, color: "#4B5563", margin: 0, lineHeight: 1.6, maxWidth: 560, marginLeft: "auto", marginRight: "auto" }}>
+          Compare your current platform costs with DTF Layout and see exactly how much you could save every month.
+        </p>
+      </div>
+
+      {/* Config */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 14, padding: "16px 18px", borderRadius: 16, background: "rgba(255,255,255,0.7)", border: "1px solid rgba(79,70,229,0.08)", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
+        <div><label style={calcLbl}>SHEET WIDTH</label><select className="select-field" value={width} onChange={e => setWidth(Number(e.target.value))} style={calcSel}>{WIDTHS.map(w => <option key={w} value={w}>{w}" wide</option>)}</select></div>
+        <div><label style={calcLbl}>SELL PRICE / 100"</label><div style={{ position: "relative" }}><span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 15, fontWeight: 600, color: "#64748b" }}>$</span><input className="select-field" type="number" value={price} onChange={e => setPrice(Math.max(0, Number(e.target.value)))} style={{ ...calcSel, paddingLeft: 26, cursor: "text" }} /></div></div>
+        <div><label style={calcLbl}>CURRENTLY USING</label><select className="select-field" value={ci} onChange={e => { setCi(Number(e.target.value)); setSi(0); }} style={calcSel}>{COMPETITORS.map((cc, i) => <option key={i} value={i}>{cc.name}{cc.type === "percentage" ? ` (${cc.rate * 100}%)` : ""}</option>)}</select></div>
+      </div>
+
+      {/* Kixxl sub-plans */}
+      {comp.subPlans && (
+        <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap", alignItems: "center", padding: "8px 12px", borderRadius: 10, background: "rgba(79,70,229,0.02)", border: "1px solid rgba(79,70,229,0.06)" }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b", letterSpacing: "0.06em", marginRight: 4 }}>KIXXL PLAN:</span>
+          {comp.subPlans.map((sp, i) => (
+            <button key={i} className="sub-btn" onClick={() => setSi(i)} style={{ padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 600, border: "1.5px solid", cursor: "pointer", borderColor: si === i ? "#4f46e5" : "rgba(0,0,0,0.06)", background: si === i ? "linear-gradient(135deg,#4f46e5,#6366f1)" : "white", color: si === i ? "white" : "#4B5563", boxShadow: si === i ? "0 2px 8px rgba(79,70,229,0.25)" : "0 1px 2px rgba(0,0,0,0.03)" }}>
+              {sp.name}{sp.type === "subscription" ? ` · $${sp.monthly}/mo` : ""}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Plan selection — with matching card gradients */}
+      <div style={{ marginBottom: 14 }}>
+        <label style={{ ...calcLbl, marginBottom: 8 }}>COMPARE WITH DTF LAYOUT PLAN</label>
+        <div style={{ display: "flex", gap: 10 }}>
+          {CALC_PLANS.map((p, i) => {
+            const a = plan === i; const ps = width * 100 * p.ratePerSqIn;
+            return (
+              <button key={i} className="plan-btn" onClick={() => setPlan(i)} style={{
+                flex: 1, padding: "12px 14px", borderRadius: 16,
+                border: a ? "2px solid #4f46e5" : "1px solid rgba(0,0,0,0.06)",
+                background: a ? p.tint : "rgba(255,255,255,0.8)",
+                cursor: "pointer", textAlign: "left" as const, position: "relative" as const,
+                boxShadow: a ? "0 0 0 3px rgba(79,70,229,0.06), 0 2px 8px rgba(79,70,229,0.08)" : "0 1px 3px rgba(0,0,0,0.03)",
+              }}>
+                {p.name === "Max" && <span style={{ position: "absolute", top: 8, right: 8, fontSize: 9, fontWeight: 800, background: "linear-gradient(135deg, #4f46e5, #7c3aed)", color: "white", padding: "2px 8px", borderRadius: 5, letterSpacing: "0.06em" }}>BEST</span>}
+                <div style={{ fontFamily: HF, fontSize: 17, fontWeight: 700, color: "#1e1b4b" }}>{p.name}</div>
+                <div style={{ fontSize: 13, color: "#4B5563", marginBottom: 3 }}>${p.price} · {(p.sqIn / 1000).toFixed(0)}K sq.in</div>
+                <div style={{ fontFamily: HF, fontSize: 19, fontWeight: 800, color: "#059669" }}>{fmt(ps)}<span style={{ fontSize: 11, fontWeight: 400, color: "#6B7280" }}>/sheet</span></div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Slider */}
+      <div style={{ padding: "14px 20px 8px", borderRadius: 14, marginBottom: 14, background: "rgba(255,255,255,0.8)", border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={calcLbl}>SHEETS / MONTH</span>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}><span style={{ fontFamily: HF, fontSize: 28, fontWeight: 800, color: "#1e1b4b" }}>{sheets}</span><span style={{ fontSize: 13, fontWeight: 500, color: "#6B7280" }}>sheets</span></div>
+        </div>
+        <div style={{ position: "relative", height: 34 }}>
+          <div style={{ position: "absolute", top: 14, left: 0, right: 0, height: 6, borderRadius: 3, background: "rgba(79,70,229,0.06)" }} />
+          <div style={{ position: "absolute", top: 14, left: 0, width: `${sp}%`, height: 6, borderRadius: 3, background: "linear-gradient(90deg, #4f46e5, #818cf8)", transition: "width 0.08s" }} />
+          <input type="range" min={10} max={1000} step={10} value={sheets} onChange={e => setSheets(Number(e.target.value))} style={{ position: "absolute", top: 3, left: 0, width: "100%", height: 24, WebkitAppearance: "none", appearance: "none" as any, background: "transparent", cursor: "pointer" }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9CA3AF" }}><span>10</span><span>1,000</span></div>
+      </div>
+
+      {/* Warning */}
+      {c.note && <div style={{ padding: "8px 14px", borderRadius: 10, marginBottom: 12, background: "linear-gradient(135deg, #fef3c7, #fef9c3)", border: "1px solid #fbbf24", fontSize: 13, color: "#92400e", fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#92400e" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>{c.note}</div>}
+
+      {/* Bars + Savings */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <div style={{ padding: "18px 20px", borderRadius: 16, background: "rgba(255,255,255,0.8)", border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 1px 4px rgba(0,0,0,0.03)" }}>
+          <div style={{ ...calcLbl, marginBottom: 14 }}>MONTHLY PLATFORM COST</div>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}><span style={{ fontSize: 14, fontWeight: 500, color: "#4B5563" }}>{comp.name}</span><span style={{ fontFamily: HF, fontSize: 22, fontWeight: 800, color: "#ef4444" }}>{fmt(c.cM)}</span></div>
+            <div style={{ height: 28, borderRadius: 10, background: "rgba(239,68,68,0.05)", overflow: "hidden" }}><div className="bar-fill" style={{ width: `${Math.max((c.cM / mx) * 100, 3)}%`, height: "100%", borderRadius: 10, background: "linear-gradient(90deg, #fca5a5, #f87171, #ef4444)" }} /></div>
+          </div>
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}><span style={{ fontSize: 14, fontWeight: 500, color: "#4B5563" }}>DTF Layout · {CALC_PLANS[plan].name}</span><span style={{ fontFamily: HF, fontSize: 22, fontWeight: 800, color: "#059669" }}>{fmt(c.dtfM)}</span></div>
+            <div style={{ height: 28, borderRadius: 10, background: "rgba(5,150,105,0.05)", overflow: "hidden" }}><div className="bar-fill" style={{ width: `${Math.max((c.dtfM / mx) * 100, 3)}%`, height: "100%", borderRadius: 10, background: "linear-gradient(90deg, #6ee7b7, #34d399, #059669)" }} /></div>
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 16, paddingTop: 14, borderTop: "1px solid rgba(0,0,0,0.04)" }}>
+            <div style={{ flex: 1, textAlign: "center", padding: "10px 0", borderRadius: 10, background: "rgba(239,68,68,0.03)", border: "1px solid rgba(239,68,68,0.06)" }}><div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.06em", marginBottom: 2 }}>PER SHEET</div><div style={{ fontFamily: HF, fontSize: 18, fontWeight: 800, color: "#ef4444" }}>{fmt(c.cPS)}</div></div>
+            <div style={{ flex: 1, textAlign: "center", padding: "10px 0", borderRadius: 10, background: "rgba(5,150,105,0.03)", border: "1px solid rgba(5,150,105,0.06)" }}><div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.06em", marginBottom: 2 }}>PER SHEET</div><div style={{ fontFamily: HF, fontSize: 18, fontWeight: 800, color: "#059669" }}>{fmt(c.dtfPS)}</div></div>
+          </div>
+        </div>
+        <div style={{ padding: "22px 20px", borderRadius: 16, textAlign: "center", background: "linear-gradient(140deg, #0f0d2e, #1e1b4b 30%, #312e81 65%, #4338ca)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", boxShadow: "0 8px 32px rgba(30,27,75,0.3)" }}>
+          <div style={{ position: "absolute", top: -40, right: -40, width: 100, height: 100, borderRadius: "50%", background: "radial-gradient(circle, rgba(129,140,248,0.15) 0%, transparent 70%)", animation: "float 6s ease-in-out infinite" }} />
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 12px", borderRadius: 100, margin: "0 auto 12px", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.5)", letterSpacing: "0.06em" }}>ANNUAL SAVINGS</span>
+          </div>
+          <div style={{ fontFamily: HF, fontSize: 48, fontWeight: 800, background: "linear-gradient(135deg, #34d399, #6ee7b7, #34d399)", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "shimmer 4s ease-in-out infinite", lineHeight: 1, marginBottom: 4, position: "relative", zIndex: 1 }}>{fmt(c.sA)}</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 18, fontWeight: 500 }}>saved per year</div>
+          <div style={{ display: "flex", justifyContent: "center", background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "12px 0", border: "1px solid rgba(255,255,255,0.04)" }}>
+            <div style={{ flex: 1 }}><div style={{ fontFamily: HF, fontSize: 21, fontWeight: 800, color: "white" }}>{c.mult === Infinity ? "∞" : `${c.mult.toFixed(1)}x`}</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>cheaper</div></div>
+            <div style={{ width: 1, background: "rgba(255,255,255,0.08)", margin: "4px 0" }} />
+            <div style={{ flex: 1 }}><div style={{ fontFamily: HF, fontSize: 21, fontWeight: 800, color: "white" }}>{c.pct.toFixed(0)}%</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>less cost</div></div>
+            <div style={{ width: 1, background: "rgba(255,255,255,0.08)", margin: "4px 0" }} />
+            <div style={{ flex: 1 }}><div style={{ fontFamily: HF, fontSize: 21, fontWeight: 800, color: "white" }}>{fmt(c.sM)}</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>per month</div></div>
+          </div>
+        </div>
+      </div>
+      <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center", margin: "14px 0 0", fontWeight: 450 }}>
+        Pricing based on publicly available information as of March 2026. DTF Layout costs are per-use credits; one-time credit pack purchase required.
+      </p>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   MAIN PAGE
+   ══════════════════════════════════════════ */
+export default function Pricing() {
+  const [dd, setDd] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { refreshCredits, freeTrialClaimed } = useCredits();
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
-  const region = detectRegion();
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [region, setRegion] = useState<"india" | "global">(() => {
+    try { const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; if (tz === "Asia/Kolkata" || tz === "Asia/Calcutta") return "india"; } catch {} return "global";
+  });
 
-  // Handle plan purchase
-  const handleGetStarted = async (plan: typeof PLANS[number]) => {
-    // If user is not logged in, redirect to signup
-    if (!user) {
-      toast.info("Please sign up to get started");
-      navigate("/signup");
-      return;
-    }
+  useEffect(() => {
+    if (!document.querySelector("style[data-dtf-pricing]")) { const tag = document.createElement("style"); tag.setAttribute("data-dtf-pricing", "1"); tag.textContent = ANIM_CSS; document.head.appendChild(tag); }
+    return () => { const tag = document.querySelector("style[data-dtf-pricing]"); if (tag) tag.remove(); };
+  }, []);
 
-    // Prevent double-clicks
+  const handleGetStarted = async (plan: (typeof PLANS)[number]) => {
+    if (!user) { toast.info("Please sign up to get started"); navigate("/signup"); return; }
     if (processingPlanId) return;
-
     setProcessingPlanId(plan.id);
-
     try {
-      const userInfo: UserInfo = {
-        name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
-        email: user?.email || '',
-        userId: user?.id,
-      };
-
-      // Handle free trial — direct server call, no Dodo checkout
-      if (plan.id === 'free_trial') {
-        if (freeTrialClaimed) {
-          toast.error("You have already claimed your free trial");
-          setProcessingPlanId(null);
-          return;
-        }
-
+      const userInfo: UserInfo = { name: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User", email: user?.email || "", userId: user?.id };
+      if (plan.id === "free_trial") {
+        if (freeTrialClaimed) { toast.error("You have already claimed your free trial"); setProcessingPlanId(null); return; }
         const result = await claimFreeTrial(userInfo);
-
-        if (result.success) {
-          toast.success(`Free trial activated! ${plan.credits} added to your account.`);
-          await refreshCredits();
-          navigate("/app");
-        } else if (result.already_claimed) {
-          toast.error("You have already claimed your free trial");
-        } else {
-          toast.error(result.error || "Failed to activate free trial");
-        }
+        if (result.success) { toast.success(`Free trial activated! Credits added to your account.`); await refreshCredits(); navigate("/app"); }
+        else if (result.already_claimed) { toast.error("You have already claimed your free trial"); }
+        else { toast.error(result.error || "Failed to activate free trial"); }
         return;
       }
-
-      // Paid plans — create Dodo Checkout Session and redirect
       const result = await createCheckoutSession(plan.id, region, userInfo);
-
-      if (result.success && result.checkout_url) {
-        // Redirect to Dodo's hosted checkout page
-        window.location.href = result.checkout_url;
-        // Don't reset processingPlanId — user is leaving the page
-        return;
-      } else {
-        toast.error(result.error || "Failed to initiate payment. Please try again.");
-      }
-    } catch (error: any) {
-      console.error("[Payment] Error:", error);
-      toast.error(error?.message || "Payment failed. Please try again.");
-    } finally {
-      setProcessingPlanId(null);
-    }
+      if (result.success && result.checkout_url) { window.location.href = result.checkout_url; return; }
+      else { toast.error(result.error || "Failed to initiate payment. Please try again."); }
+    } catch (error: any) { console.error("[Payment] Error:", error); toast.error(error?.message || "Payment failed. Please try again."); }
+    finally { setProcessingPlanId(null); }
   };
 
   return (
-    <MarketingLayout>
-      {/* Pricing Section with Gradient Background */}
-      <div
-        className="min-h-screen"
-        style={{
-          background: 'linear-gradient(135deg, #ecfdf5 0%, #ede9fe 50%, #fce7f3 100%)',
-        }}
-      >
-        {/* Hero Section */}
-        <section className="pt-12 md:pt-16 pb-8 md:pb-12">
-          <div className="container max-w-7xl mx-auto px-6">
-            <div className="max-w-5xl mx-auto text-center">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold mb-6 text-gray-900 leading-snug">
-                No Fixed Cost<br />
-                Just Recharge & Get Going!
-              </h1>
-              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Pick a plan based on your needs — the higher you go, the less you pay per unit.
-              </p>
+    <div style={{ fontFamily: BF, color: "#111827", background: "#FAFAFB" }}>
+
+      {/* ═══ NAV ═══ */}
+      <div style={{ position: "fixed", top: 16, left: 0, right: 0, zIndex: 100, padding: "0 32px" }}>
+        <nav style={{ maxWidth: 960, margin: "0 auto", background: "linear-gradient(135deg, #1E1B4B, #252272, #1E1B4B)", borderRadius: 16, padding: "0 8px 0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid rgba(99,102,241,0.2)", boxShadow: "0 8px 32px rgba(15,13,46,0.5), 0 2px 8px rgba(0,0,0,0.2)" }}>
+          <Link to="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg></div>
+            <span style={{ fontFamily: HF, fontWeight: 700, fontSize: 16, color: "#fff" }}>DTF Layout</span>
+          </Link>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Link to="/" style={{ fontSize: 14, fontWeight: 500, color: "rgba(255,255,255,0.7)", padding: "8px 14px", textDecoration: "none" }}>Home</Link>
+            <div style={{ position: "relative" }} onMouseEnter={() => setDd(true)} onMouseLeave={() => setDd(false)}>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "rgba(255,255,255,0.7)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "8px 14px", borderRadius: 10, background: dd ? "rgba(255,255,255,0.08)" : "transparent", transition: "background 0.2s" }}>Product {ic.chev}</span>
+              {dd && <div style={{ position: "absolute", top: "calc(100% + 10px)", left: "50%", transform: "translateX(-50%)", width: 260 }}>
+                <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #E5E7EB", boxShadow: "0 20px 56px rgba(0,0,0,0.15)", padding: 5 }}>
+                  {[{ l: "Gang Sheet Builder", d: "Auto-layout optimized gang sheets", to: "/product" }, { l: "Website Integration", d: "Embed builder on any website", to: "/product" }, { l: "Quick Store", d: "Full storefront, zero coding", to: "/product" }].map((it, i) => (
+                    <Link key={i} to={it.to} style={{ padding: "10px 12px", borderRadius: 10, display: "block", textDecoration: "none" }} onMouseEnter={e => e.currentTarget.style.background = "#EEF2FF"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>{it.l}</div>
+                      <div style={{ fontSize: 11, color: "#4B5563" }}>{it.d}</div>
+                    </Link>))}
+                </div>
+              </div>}
             </div>
+            <Link to="/pricing" style={{ fontSize: 14, fontWeight: 500, color: "#fff", padding: "8px 14px", textDecoration: "none" }}>Pricing</Link>
+            {[{ l: "FAQ", to: "/faq" }, { l: "Contact", to: "/contact" }].map(item => <Link key={item.l} to={item.to} style={{ fontSize: 14, fontWeight: 500, color: "rgba(255,255,255,0.7)", padding: "8px 14px", textDecoration: "none" }}>{item.l}</Link>)}
           </div>
-        </section>
-
-        {/* Pricing Cards */}
-        <section className="py-12 pb-24">
-        <div className="container max-w-[1500px] mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-12">
-            {PLANS.map((plan, index) => (
-              <div
-                key={plan.id}
-                className="relative"
-              >
-                <Card
-                  className={`relative h-full p-10 rounded-3xl shadow-2xl hover:-translate-y-2 transition-transform duration-300 ${
-                    plan.popular
-                      ? "border-0 border-teal-200"
-                      : "bg-white border border-gray-100"
-                  }`}
-                >
-                  {/* Border beam effect - First beam (GREEN) with staggered delay */}
-                  <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
-                    <div
-                      className="absolute -inset-[100px]"
-                      style={{
-                        background: 'conic-gradient(from 0deg, transparent 0deg, transparent 200deg, rgba(16, 185, 129, 0) 230deg, rgba(16, 185, 129, 0.9) 260deg, rgba(52, 211, 153, 1) 280deg, rgba(16, 185, 129, 0.9) 300deg, rgba(16, 185, 129, 0) 330deg, transparent 360deg)',
-                        filter: 'blur(2px)',
-                        animation: 'border-beam 8s linear infinite',
-                        animationDelay: `${index * 1.3}s`,
-                        willChange: 'transform',
-                        transform: 'translateZ(0)',
-                      }}
-                    />
-                  </div>
-
-                  {/* Border beam effect - Second beam (BLUE) with offset delay */}
-                  <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
-                    <div
-                      className="absolute -inset-[100px]"
-                      style={{
-                        background: 'conic-gradient(from 0deg, transparent 0deg, transparent 200deg, rgba(59, 130, 246, 0) 230deg, rgba(59, 130, 246, 0.9) 260deg, rgba(37, 99, 235, 1) 280deg, rgba(59, 130, 246, 0.9) 300deg, rgba(59, 130, 246, 0) 330deg, transparent 360deg)',
-                        filter: 'blur(2px)',
-                        animation: 'border-beam 8s linear infinite',
-                        animationDelay: `${index * 1.3 + 4}s`,
-                        willChange: 'transform',
-                        transform: 'translateZ(0)',
-                      }}
-                    />
-                  </div>
-
-                  {/* Background mask - covers the rotating gradient inside the card */}
-                  <div
-                    className="absolute inset-[2px] rounded-3xl z-0"
-                    style={{ background: plan.gradient }}
-                  />
-
-                  {/* Card content - must be above the mask */}
-                  <div className="relative z-10">
-                    <div className="text-left mb-4">
-                      <h3
-                        className={`text-[2.5rem] font-[800] mb-1 ${
-                          plan.popular ? "text-gray-900" : "text-gray-900"
-                        }`}
-                      >
-                        {typeof plan.price === 'object' ? plan.price[region] : plan.price}
-                      </h3>
-                      <p
-                        className={`font-semibold mb-2 ${
-                          plan.popular ? "text-gray-600" : "text-gray-600"
-                        }`}
-                      >
-                        {plan.description}
-                      </p>
-                      <div className="mb-1 flex items-baseline justify-between">
-                        <span
-                          className={`text-[2.8rem] font-[800] ${
-                            plan.popular ? "text-gray-900" : "text-gray-900"
-                          }`}
-                        >
-                          {plan.credits}
-                        </span>
-                        <span className="text-gray-500 text-[1.75rem] font-[700]">
-                          <Highlighter action="underline" color="#4F46E5">{typeof plan.rate === 'object' ? plan.rate[region] : plan.rate}</Highlighter>
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Divider between price and features */}
-                    <div className="h-px mt-0 mb-6 bg-indigo-200"></div>
-
-                    <ul className="space-y-4 mb-10">
-                      {plan.features.map((feature, idx) => (
-                        <li key={`${plan.id}-feature-${idx}`} className="flex items-start">
-                          <Check
-                            className={`w-6 h-6 mr-3 flex-shrink-0 mt-0.5 ${
-                              plan.popular ? "text-indigo-600" : "text-indigo-600"
-                            }`}
-                          />
-                          <span
-                            className={`${
-                              plan.popular ? "text-gray-700" : "text-gray-600"
-                            }`}
-                          >
-                            {feature}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <GradientButton
-                      variant="hero"
-                      className={`w-full ${plan.id === 'free_trial' && user && freeTrialClaimed ? 'opacity-60 cursor-not-allowed' : ''}`}
-                      onClick={() => handleGetStarted(plan)}
-                      disabled={processingPlanId !== null || (plan.id === 'free_trial' && user && freeTrialClaimed)}
-                    >
-                      {processingPlanId === plan.id ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                          Processing...
-                        </span>
-                      ) : plan.id === 'free_trial' && user && freeTrialClaimed ? (
-                        'Already Claimed'
-                      ) : (
-                        plan.cta
-                      )}
-                    </GradientButton>
-                  </div>
-                </Card>
-              </div>
-            ))}
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <Link to="/login" style={{ fontSize: 14, fontWeight: 500, color: "rgba(255,255,255,0.7)", padding: "8px 14px", textDecoration: "none" }}>Login</Link>
+            <button onClick={() => navigate("/signup")} style={{ fontFamily: BF, fontWeight: 600, fontSize: 14, cursor: "pointer", padding: "10px 24px", borderRadius: 12, background: "linear-gradient(135deg, #4F46E5, #7C3AED)", color: "#fff", border: "none", boxShadow: "0 4px 16px rgba(79,70,229,0.4)" }}>Register →</button>
           </div>
-
-        </div>
-      </section>
+        </nav>
       </div>
 
-      {/* FAQ Section */}
-      <section className="py-24 bg-gray-50">
-        <div className="container max-w-7xl mx-auto px-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-                Frequently Asked Questions
-              </h2>
-              <p className="text-xl text-gray-600 leading-relaxed">
-                Everything you need to know about our pricing
-              </p>
+      {/* ═══ HERO — Dark indigo matching homepage feel ═══ */}
+      <section style={{ position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #0A0820 0%, #0A0820 8%, #0F0D2E 18%, #1E1B4B 32%, #312E81 46%, #4F46E5 60%, #6366F1 70%, #818CF8 78%, #C7D2FE 86%, #FAFAFB 96%)", padding: "0 40px 0", minHeight: "100vh" }}>
+        <Dots o={0.04} />
+        <MovingPattern />
+        <div style={{ padding: "160px 0 80px" }}>
+          <Sq top={20} right={140} size={32} rotate={18} /><Sq top={100} right={80} size={22} rotate={-12} /><Sq top={30} left={100} size={28} rotate={22} /><Sq top={150} left={60} size={20} rotate={-8} />
+          <div style={{ position: "relative", zIndex: 2, maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
+            <Pill><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg> Simple, transparent pricing</Pill>
+            <h1 style={{ fontFamily: HF, fontSize: 64, fontWeight: 800, color: "#fff", lineHeight: 1.08, letterSpacing: "-0.03em", margin: "28px 0 20px" }}>No Fixed Costs.<br />Just Recharge & Go.</h1>
+            <p style={{ fontSize: 18, color: "rgba(255,255,255,0.8)", lineHeight: 1.7, maxWidth: 520, margin: "0 auto 36px" }}>Buy credits once, use them forever. No subscriptions, no monthly fees, no per-order cuts. Pay only for what you use.</p>
+            <div style={{ display: "flex", justifyContent: "center", gap: 14 }}>
+              <Btn sz="l" onClick={() => navigate("/signup")} style={{ background: "#fff", color: P, boxShadow: "0 6px 28px rgba(0,0,0,0.15)" }}>Get Started Now →</Btn>
+              <Btn v="o" sz="l" style={{ background: "transparent", color: "#fff", borderColor: "rgba(255,255,255,0.3)", boxShadow: "none" }}>View Plans ↓</Btn>
             </div>
+            <p style={{ fontSize: 16, color: "rgba(255,255,255,0.85)", marginTop: 20, fontWeight: 500 }}>
+              <span style={{ background: "rgba(255,255,255,0.15)", padding: "6px 20px", borderRadius: 99, border: "1px solid rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", display: "inline-flex", alignItems: "center", gap: 8 }}><span style={{ width: 6, height: 6, borderRadius: "50%", background: "#34D399" }} />20,000 sq.inch free · No credit card required</span>
+            </p>
+          </div>
+        </div>
+      </section>
 
-            <div className="space-y-6">
-              <Card className="p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-900 mb-3">
-                  Is there a free trial?
-                </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  Yes! All plans come with a 14-day free trial. No credit card required to get started. You'll have full access to all features during your trial period.
-                </p>
-              </Card>
+      {/* ═══ PRICING CARDS ═══ */}
+      <section style={{ padding: "80px 40px 0", position: "relative" }}>
+        <Sq top={40} right={100} size={30} rotate={20} /><Sq bottom={60} left={80} size={24} rotate={-15} />
+        <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 40 }}>
+            <div style={{ display: "inline-flex", borderRadius: 99, background: "#F3F4F6", padding: 4, border: "1px solid #E5E7EB" }}>
+              {(["india", "global"] as const).map(r => <button key={r} onClick={() => setRegion(r)} style={{ padding: "8px 24px", borderRadius: 99, fontSize: 15, fontWeight: 600, fontFamily: BF, cursor: "pointer", border: "none", transition: "all 0.2s", background: region === r ? "linear-gradient(135deg,#4F46E5,#7C3AED)" : "transparent", color: region === r ? "#fff" : "#4B5563", boxShadow: region === r ? "0 2px 8px rgba(79,70,229,0.3)" : "none" }}>{r === "india" ? "🇮🇳 India (INR)" : "🌍 Global (USD)"}</button>)}
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, alignItems: "start" }}>
+            {PLANS.map((plan) => {
+              const isProcessing = processingPlanId === plan.id;
+              const isTrialClaimed = plan.id === "free_trial" && user && freeTrialClaimed;
+              const isDisabled = !!processingPlanId || !!isTrialClaimed;
+              const priceDisplay = typeof plan.price === "object" ? plan.price[region] : plan.price;
+              const rateDisplay = typeof plan.rate === "object" ? plan.rate[region] : plan.rate;
+              const creditsDisplay = typeof plan.credits === "object" ? plan.credits[region] : plan.credits;
 
-              <Card className="p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-900 mb-3">
-                  Can I change plans later?
-                </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  Absolutely. You can upgrade, downgrade, or cancel your plan at any time from your account settings. Changes take effect immediately, and we'll prorate any differences.
-                </p>
-              </Card>
+              return (
+                <div key={plan.id} className="pricing-card" style={{ background: "#fff", borderRadius: 24, border: plan.popular ? "2px solid #4F46E5" : "1px solid #E5E7EB", overflow: "visible", boxShadow: plan.popular ? "0 20px 56px rgba(79,70,229,0.12)" : "0 2px 8px rgba(0,0,0,0.02)", position: "relative", display: "flex", flexDirection: "column", marginTop: plan.popular ? 16 : 0 }}>
+                  {plan.popular && <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", zIndex: 2, padding: "5px 18px", borderRadius: 99, background: "linear-gradient(135deg,#4F46E5,#7C3AED)", color: "#fff", fontSize: 13, fontWeight: 700, boxShadow: "0 4px 12px rgba(79,70,229,0.3)", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>Best Value</div>}
+                  <div style={{ padding: "28px 24px 20px", background: plan.tint, borderRadius: plan.popular ? "22px 22px 0 0" : "24px 24px 0 0" }}>
+                    <div style={{ fontFamily: HF, fontWeight: 700, fontSize: 24, color: "#111827", marginBottom: 12 }}>{plan.name}</div>
+                    <div style={{ fontFamily: HF, fontSize: 44, fontWeight: 800, color: "#111827", lineHeight: 1, letterSpacing: "-0.03em", marginBottom: 6 }}>{priceDisplay}</div>
+                    <div style={{ fontSize: 14, color: "#4B5563", fontWeight: 500 }}>{plan.description}</div>
+                  </div>
+                  <div style={{ padding: "16px 24px", borderTop: "1px solid #F3F4F6", borderBottom: "1px solid #F3F4F6" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+                      <div><span style={{ fontFamily: HF, fontSize: 30, fontWeight: 800, color: "#111827", letterSpacing: "-0.02em" }}>{creditsDisplay}</span><span style={{ fontSize: 14, color: "#6B7280", marginLeft: 6 }}>sq.in</span></div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: P, background: "#EEF2FF", padding: "4px 12px", borderRadius: 99 }}>{rateDisplay}</span>
+                    </div>
+                  </div>
+                  <div style={{ padding: "20px 24px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14, flex: 1, marginBottom: 24 }}>
+                      {plan.features.map((f, fi) => (
+                        <div key={fi} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                          <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                            <svg width="11" height="11" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="#10B981" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                          </div>
+                          <span style={{ fontSize: 14, color: "#374151", lineHeight: 1.5 }}>{f}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <Btn v={plan.popular ? "p" : "o"} sz="m" disabled={isDisabled} onClick={() => handleGetStarted(plan)}
+                      style={{ width: "100%", ...(plan.popular ? {} : { border: `1.5px solid ${P}`, color: P, background: "transparent" }) }}>
+                      {isProcessing ? <span style={{ display: "flex", alignItems: "center", gap: 8 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>Processing...</span>
+                      : isTrialClaimed ? "Already Claimed"
+                      : <>{plan.cta} <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg></>}
+                    </Btn>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ textAlign: "center", marginTop: 32, display: "flex", justifyContent: "center", gap: 32 }}>
+            {["Credits never expire", "All tools included", "No monthly fees"].map((t, i) => (
+              <span key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "#4B5563", fontWeight: 500 }}>
+                <svg width="14" height="14" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="#10B981" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>{t}
+              </span>
+            ))}
+          </div>
+          <div style={{ marginTop: 80, paddingTop: 80, borderTop: "1px solid #E5E7EB" }}><SavingsCalculator /></div>
+        </div>
+      </section>
 
-              <Card className="p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-900 mb-3">
-                  What payment methods do you accept?
-                </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  We accept all major credit cards (Visa, Mastercard, American Express), PayPal, and bank transfers for Enterprise plans. All payments are processed securely.
-                </p>
-              </Card>
-
-              <Card className="p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-900 mb-3">
-                  Do you offer refunds?
-                </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  Yes, we offer a 30-day money-back guarantee. If you're not satisfied with our service, contact us within 30 days of purchase for a full refund, no questions asked.
-                </p>
-              </Card>
+      {/* ═══ COMPARISON ═══ */}
+      <section style={{ padding: "120px 40px", background: "#fff", position: "relative" }}>
+        <Dots o={0.06} />
+        <div style={{ maxWidth: 940, margin: "0 auto", position: "relative", zIndex: 1 }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <Pill>Feature comparison</Pill>
+            <h2 style={{ fontFamily: HF, fontSize: 46, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "18px 0 14px" }}>How we stack up</h2>
+            <p style={{ fontSize: 17, color: "#4B5563", lineHeight: 1.7 }}>No subscriptions. No per-order cuts. No platform lock-in.</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+            <div style={{ background: "linear-gradient(135deg, #1E1B4B, #312E81)", borderRadius: 20, padding: "32px 32px 28px", color: "#fff" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}><div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg></div><span style={{ fontFamily: HF, fontWeight: 700, fontSize: 22 }}>DTF Layout</span></div>
+              {[["Pricing model","Credits (one-time buy)"],["Monthly fees","None, ever"],["Per-order cut","None"],["Standalone store","Quick Store included"],["Platform support","Any website"],["White-label builder","Full customization"],["Background remover","Included"],["Image enhancer","Included"],["Text editor","Included"],["Multi-sheet export","Up to 5 sheets"]].map(([f,v],i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 0", borderBottom: i < 9 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+                  <span style={{ fontSize: 15, color: "rgba(165,180,252,0.85)", fontWeight: 500 }}>{f}</span>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: "#C7D2FE", display: "flex", alignItems: "center", gap: 6 }}><svg width="14" height="14" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="#34D399" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>{v}</span>
+                </div>))}
+            </div>
+            <div style={{ background: "#FAFAFA", borderRadius: 20, border: "1px solid #E5E7EB", padding: "32px 32px 28px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}><div style={{ width: 36, height: 36, borderRadius: 10, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M8 12h8" /></svg></div><span style={{ fontFamily: HF, fontWeight: 700, fontSize: 22, color: "#4B5563" }}>Others</span></div>
+              {[["Pricing model","5% per order or $149–999/mo",true],["Monthly fees","$0–999/month",true],["Per-order cut","Up to $12/order",true],["Standalone store","Not available",true],["Platform support","Shopify / WooCommerce only",true],["White-label builder","Logo only or limited",true],["Background remover","Paid or unavailable",true],["Image enhancer","Not available",true],["Text editor","Limited or unavailable",true],["Multi-sheet export","Available",false]].map(([f,v,bad],i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 0", borderBottom: i < 9 ? "1px solid #F3F4F6" : "none" }}>
+                  <span style={{ fontSize: 15, color: "#4B5563", fontWeight: 500 }}>{f as string}</span>
+                  <span style={{ fontSize: 15, fontWeight: 500, color: bad ? "#6B7280" : "#374151", display: "flex", alignItems: "center", gap: 6 }}>
+                    {bad ? <svg width="14" height="14" viewBox="0 0 12 12"><line x1="3" y1="3" x2="9" y2="9" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" /><line x1="9" y1="3" x2="3" y2="9" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                    : <svg width="14" height="14" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="#6B7280" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                    {v as string}
+                  </span>
+                </div>))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Full-screen overlay when processing payment */}
-      {processingPlanId && (
-        <div className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 max-w-sm mx-4">
-            <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
-            <div className="text-center">
-              <p className="text-lg font-semibold text-gray-900">Processing payment...</p>
-              <p className="text-sm text-gray-500 mt-1">Please wait, do not close this page</p>
+      {/* ═══ FAQ ═══ */}
+      <section style={{ padding: "120px 40px", position: "relative" }}>
+        <Dots o={0.06} /><Sq top={60} right={120} size={30} rotate={15} /><Sq bottom={80} left={100} size={24} rotate={-20} />
+        <div style={{ maxWidth: 720, margin: "0 auto", position: "relative", zIndex: 1 }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <Pill><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg> Got questions?</Pill>
+            <h2 style={{ fontFamily: HF, fontSize: 46, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "18px 0 14px" }}>Frequently Asked Questions</h2>
+            <p style={{ fontSize: 17, color: "#4B5563", lineHeight: 1.7 }}>Everything you need to know about our pricing</p>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {FAQS.map((faq, i) => {
+              const isOpen = openFaq === i;
+              return (
+                <div key={i} className="faq-item" onClick={() => setOpenFaq(isOpen ? null : i)} style={{ background: "#fff", borderRadius: 16, border: isOpen ? "1px solid #C7D2FE" : "1px solid #E5E7EB", padding: "22px 26px", cursor: "pointer", boxShadow: isOpen ? "0 4px 16px rgba(79,70,229,0.08)" : "0 1px 3px rgba(0,0,0,0.02)", transition: "all 0.3s ease" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 18, fontWeight: 600, color: "#111827", fontFamily: HF }}>{faq.q}</span>
+                    <div style={{ width: 30, height: 30, borderRadius: 8, background: isOpen ? "#EEF2FF" : "#F9FAFB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 16, transition: "all 0.3s", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke={isOpen ? P : "#9CA3AF"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </div>
+                  </div>
+                  {isOpen && <p style={{ fontSize: 16, color: "#4B5563", lineHeight: 1.7, margin: "16px 0 0", paddingRight: 44 }}>{faq.a}</p>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ CTA ═══ */}
+      <section style={{ padding: "120px 40px", position: "relative", overflow: "hidden" }}>
+        <Dots o={0.1} /><Sq top={60} right={160} size={34} rotate={15} /><Sq bottom={60} left={140} size={28} rotate={-20} />
+        <div style={{ maxWidth: 620, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
+          <h2 style={{ fontFamily: HF, fontSize: 46, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "0 0 18px" }}>Ready to speed up your workflow?</h2>
+          <p style={{ fontSize: 17, color: "#4B5563", lineHeight: 1.7, margin: "0 0 40px" }}>Start with 20,000 sq.inch free. No credit card required. No monthly fees, ever.</p>
+          <div style={{ display: "flex", justifyContent: "center", gap: 14 }}><Btn sz="l" onClick={() => navigate("/signup")}>Get Started Now →</Btn><Btn v="o" sz="l" onClick={() => navigate("/contact")}>Contact Us →</Btn></div>
+        </div>
+      </section>
+
+      {/* ═══ FOOTER ═══ */}
+      <footer style={{ position: "relative", padding: "0 40px 32px", background: "linear-gradient(180deg, #1E1B4B, #0F0D2E)", color: "rgba(165,180,252,0.6)" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent 5%, rgba(99,102,241,0.3) 20%, rgba(129,140,248,0.5) 50%, rgba(99,102,241,0.3) 80%, transparent 95%)" }} />
+        <div style={{ paddingTop: 64 }}>
+          <div style={{ maxWidth: 1060, margin: "0 auto" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 16 }}><div style={{ width: 28, height: 28, borderRadius: 7, background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg></div><span style={{ fontFamily: HF, fontWeight: 700, fontSize: 15, color: "#fff" }}>DTF Layout</span></div>
+                <p style={{ fontSize: 14, lineHeight: 1.7, maxWidth: 260 }}>Smart DTF sheet builder for printers worldwide. Auto-arrange, optimize, and print — all from one platform.</p>
+              </div>
+              <div><h4 style={{ fontSize: 11, fontWeight: 600, color: "#A5B4FC", marginBottom: 16, letterSpacing: "0.08em", textTransform: "uppercase" }}>Product</h4>{[{ l: "Gang Sheet Builder", to: "/product" }, { l: "Website Integration", to: "/product" }, { l: "Quick Store", to: "/product" }, { l: "Pricing", to: "/pricing" }].map(item => <Link key={item.l} to={item.to} style={{ fontSize: 14, marginBottom: 10, display: "block", color: "inherit", textDecoration: "none" }}>{item.l}</Link>)}</div>
+              <div><h4 style={{ fontSize: 11, fontWeight: 600, color: "#A5B4FC", marginBottom: 16, letterSpacing: "0.08em", textTransform: "uppercase" }}>Company</h4>{[{ l: "FAQ", to: "/faq" }, { l: "Contact", to: "/contact" }, { l: "Blog", to: "/" }].map(item => <Link key={item.l} to={item.to} style={{ fontSize: 14, marginBottom: 10, display: "block", color: "inherit", textDecoration: "none" }}>{item.l}</Link>)}</div>
+              <div><h4 style={{ fontSize: 11, fontWeight: 600, color: "#A5B4FC", marginBottom: 16, letterSpacing: "0.08em", textTransform: "uppercase" }}>Legal</h4>{[{ l: "Privacy Policy", to: "/privacy-policy" }, { l: "Terms & Conditions", to: "/terms-conditions" }, { l: "Refund Policy", to: "/refund-policy" }].map(item => <Link key={item.l} to={item.to} style={{ fontSize: 14, marginBottom: 10, display: "block", color: "inherit", textDecoration: "none" }}>{item.l}</Link>)}</div>
             </div>
+            <div style={{ borderTop: "1px solid rgba(99,102,241,0.12)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontSize: 13 }}>© 2026 DTF Layout · Data Canvas Tech. All rights reserved.</span><span style={{ fontSize: 13, cursor: "pointer" }}>dtflayout@gmail.com</span></div>
+          </div>
+        </div>
+      </footer>
+
+      {/* PAYMENT OVERLAY */}
+      {processingPlanId && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#fff", borderRadius: 20, padding: 32, boxShadow: "0 32px 80px rgba(0,0,0,0.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, maxWidth: 320 }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={P} strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+            <div style={{ textAlign: "center" }}><p style={{ fontSize: 18, fontWeight: 700, color: "#111827", fontFamily: HF, margin: "0 0 4px" }}>Processing payment...</p><p style={{ fontSize: 15, color: "#4B5563", margin: 0 }}>Please wait, do not close this page</p></div>
           </div>
         </div>
       )}
-    </MarketingLayout>
+    </div>
   );
-};
-
-export default Pricing3;
+}
