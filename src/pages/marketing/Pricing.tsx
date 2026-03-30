@@ -264,29 +264,10 @@ function SavingsCalculator() {
 
       {/* STEP 2 & 3 */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-        {/* STEP 2 — Plan */}
-        <div style={{ padding: "14px 20px", borderRadius: 18, background: "linear-gradient(135deg, #ECFDF5, #D1FAE5)", border: "1.5px solid #A7F3D0", boxShadow: "0 4px 16px rgba(16,185,129,0.06)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-            <StepBadge n={2} />
-            <span style={{ fontFamily: HF, fontSize: 18, fontWeight: 700, color: "#064E3B" }}>DTF Layout Plan</span>
-          </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            {CALC_PLANS.map((p, i) => {
-              const a = plan === i;
-              return (
-                <button key={i} className="sc3-pill" onClick={() => setPlan(i)} style={{ flex: 1, padding: "10px 6px", borderRadius: 10, cursor: "pointer", textAlign: "center" as const, border: a ? "2px solid #059669" : "1.5px solid rgba(0,0,0,0.06)", background: a ? "white" : "rgba(255,255,255,0.7)", boxShadow: a ? "0 2px 10px rgba(5,150,105,0.15)" : "none", position: "relative" as const }}>
-                  {p.name === "Max" && <span style={{ position: "absolute", top: -7, right: -4, fontSize: 8, fontWeight: 800, background: "linear-gradient(135deg, #4f46e5, #7c3aed)", color: "white", padding: "2px 6px", borderRadius: 4, letterSpacing: "0.06em" }}>BEST</span>}
-                  <div style={{ fontFamily: HF, fontSize: 15, fontWeight: 700, color: "#1e1b4b" }}>{p.name}</div>
-                  <div style={{ fontFamily: HF, fontSize: 15, fontWeight: 700, color: "#059669", marginTop: 2 }}>${p.price} <span style={{ fontSize: 11, fontWeight: 500, color: "#6B7280" }}>({fmtK(p.sqIn)} sq.in)</span></div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        {/* STEP 3 — Slider */}
+        {/* STEP 2 — Slider */}
         <div style={{ padding: "14px 20px 10px", borderRadius: 18, background: "linear-gradient(135deg, #F5F3FF, #EDE9FE)", border: "1.5px solid #DDD6FE", boxShadow: "0 4px 16px rgba(124,58,237,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-            <StepBadge n={3} />
+            <StepBadge n={2} />
             <div>
               <span style={{ fontFamily: HF, fontSize: 18, fontWeight: 700, color: "#3B0764" }}>Sheets / Month</span>
               <div style={{ fontSize: 13, color: "#7C3AED", fontWeight: 500, marginTop: 1, lineHeight: 1.3 }}>Each sheet is assumed 100" in length for this calculation</div>
@@ -302,6 +283,25 @@ function SavingsCalculator() {
             <input type="range" className="sc3-range" min={10} max={1000} step={10} value={sheets} onChange={e => setSheets(Number(e.target.value))} style={{ position: "absolute", top: 3, left: 0, width: "100%", WebkitAppearance: "none", appearance: "none" as any, background: "transparent", cursor: "pointer", height: 24 }} />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#A78BFA" }}><span>10</span><span>1,000</span></div>
+        </div>
+        {/* STEP 3 — Plan */}
+        <div style={{ padding: "14px 20px", borderRadius: 18, background: "linear-gradient(135deg, #ECFDF5, #D1FAE5)", border: "1.5px solid #A7F3D0", boxShadow: "0 4px 16px rgba(16,185,129,0.06)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+            <StepBadge n={3} />
+            <span style={{ fontFamily: HF, fontSize: 18, fontWeight: 700, color: "#064E3B" }}>DTF Layout Plan</span>
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            {CALC_PLANS.map((p, i) => {
+              const a = plan === i;
+              return (
+                <button key={i} className="sc3-pill" onClick={() => setPlan(i)} style={{ flex: 1, padding: "10px 6px", borderRadius: 10, cursor: "pointer", textAlign: "center" as const, border: a ? "2px solid #059669" : "1.5px solid rgba(0,0,0,0.06)", background: a ? "white" : "rgba(255,255,255,0.7)", boxShadow: a ? "0 2px 10px rgba(5,150,105,0.15)" : "none", position: "relative" as const }}>
+                  {p.name === "Max" && <span style={{ position: "absolute", top: -7, right: -4, fontSize: 8, fontWeight: 800, background: "linear-gradient(135deg, #4f46e5, #7c3aed)", color: "white", padding: "2px 6px", borderRadius: 4, letterSpacing: "0.06em" }}>BEST</span>}
+                  <div style={{ fontFamily: HF, fontSize: 15, fontWeight: 700, color: "#1e1b4b" }}>{p.name}</div>
+                  <div style={{ fontFamily: HF, fontSize: 15, fontWeight: 700, color: "#059669", marginTop: 2 }}>${p.price} <span style={{ fontSize: 11, fontWeight: 500, color: "#6B7280" }}>({fmtK(p.sqIn)} sq.in)</span></div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -466,7 +466,7 @@ export default function Pricing() {
           <Sq top={20} right={140} size={32} rotate={18} /><Sq top={100} right={80} size={22} rotate={-12} /><Sq top={30} left={100} size={28} rotate={22} /><Sq top={150} left={60} size={20} rotate={-8} />
           <div style={{ position: "relative", zIndex: 2, maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
             <Pill><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg> Simple, transparent pricing</Pill>
-            <h1 style={{ fontFamily: HF, fontSize: 64, fontWeight: 800, color: "#fff", lineHeight: 1.08, letterSpacing: "-0.03em", margin: "28px 0 20px" }}>No Fixed Costs.<br />Just Recharge & Go.</h1>
+            <h1 style={{ fontFamily: HF, fontSize: 64, fontWeight: 800, color: "#fff", lineHeight: 1.08, letterSpacing: "-0.03em", margin: "28px 0 20px" }}>No Fixed Costs.<br />No Commissions.<br />Just Recharge & Go.</h1>
             <p style={{ fontSize: 18, color: "rgba(255,255,255,0.8)", lineHeight: 1.7, maxWidth: 520, margin: "0 auto 36px" }}>Buy credits once, use them forever. No subscriptions, no monthly fees, no per-order cuts. Pay only for what you use.</p>
             <div style={{ display: "flex", justifyContent: "center", gap: 14 }}>
               <Btn sz="l" onClick={() => navigate("/signup")} style={{ background: "#fff", color: P, boxShadow: "0 6px 28px rgba(0,0,0,0.15)" }}>Get Started Now →</Btn>
