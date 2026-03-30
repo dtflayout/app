@@ -22,7 +22,7 @@ const PLANS = [
     credits: { india: "20,000", global: "20K" }, creditsValue: 20000,
     rate: "Free",
     description: "Experience the full platform — no credit card needed.",
-    features: ["20,000 sq.inch credits", "Full access to all tools", "Background Remover & Enhancer", "No credit card required"],
+    features: ["Full access to all tools", "BG Remover, Enhancer, Crop, Text Editor & more", "Integrate with any website", "No credit card required"],
     cta: "Get Started Free", popular: false,
     tint: "linear-gradient(135deg, #F0F9FF, #BAE6FD)",
   },
@@ -32,7 +32,7 @@ const PLANS = [
     credits: { india: "1,50,000", global: "150K" }, creditsValue: 150000,
     rate: { india: "1.33 paisa/sq.in", global: "$0.33/1K sq.in" },
     description: "Balanced and budget-smart for getting started.",
-    features: ["1,50,000 sq.inch credits", "Full access to all tools", "Background Remover & Enhancer", "Image Trimmer & Text Editor"],
+    features: ["Full access to all tools", "BG Remover, Enhancer, Crop, Text Editor & more", "White-label builder — your brand colors, logo & fonts", "In-depth user behavior analytics", "Integrate with any website"],
     cta: "Get Started", popular: false,
     tint: "linear-gradient(135deg, #ECFDF5, #D1FAE5)",
   },
@@ -42,7 +42,7 @@ const PLANS = [
     credits: { india: "5,00,000", global: "500K" }, creditsValue: 500000,
     rate: { india: "1.2 paisa/sq.in", global: "$0.30/1K sq.in" },
     description: "Significantly cheaper per-inch for heavy users.",
-    features: ["5,00,000 sq.inch credits", "Full access to all tools", "Background Remover & Enhancer", "Image Trimmer & Text Editor"],
+    features: ["Full access to all tools", "BG Remover, Enhancer, Crop, Text Editor & more", "White-label builder — your brand colors, logo & fonts", "In-depth user behavior analytics", "Integrate with any website"],
     cta: "Get Started", popular: false,
     tint: "linear-gradient(135deg, #FFF7ED, #FED7AA)",
   },
@@ -52,7 +52,7 @@ const PLANS = [
     credits: { india: "20,00,000", global: "2M" }, creditsValue: 2000000,
     rate: { india: "0.6 paisa/sq.in", global: "$0.15/1K sq.in" },
     description: "Our lowest per-inch rate — maximum savings unlocked.",
-    features: ["20,00,000 sq.inch credits", "Full access to all tools", "Background Remover & Enhancer", "Image Trimmer & Text Editor"],
+    features: ["Full access to all tools", "BG Remover, Enhancer, Crop, Text Editor & more", "White-label builder — your brand colors, logo & fonts", "In-depth user behavior analytics", "Integrate with any website"],
     cta: "Get Started", popular: true,
     tint: "linear-gradient(135deg, #C7D2FE, #A5B4FC)",
   },
@@ -459,7 +459,7 @@ export default function Pricing() {
       </div>
 
       {/* ═══ HERO ═══ */}
-      <section style={{ position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #0A0820 0%, #0A0820 8%, #0F0D2E 18%, #1E1B4B 32%, #312E81 46%, #4F46E5 60%, #6366F1 70%, #818CF8 78%, #C7D2FE 86%, #FAFAFB 96%)", padding: "0 40px 0", minHeight: "100vh" }}>
+      <section style={{ position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #0A0820 0%, #0A0820 8%, #0F0D2E 18%, #1E1B4B 32%, #312E81 46%, #4F46E5 60%, #6366F1 70%, #818CF8 78%, #C7D2FE 86%, #FAFAFB 96%)", padding: "0 40px 0", minHeight: "90vh" }}>
         <Dots o={0.04} />
         <MovingPattern />
         <div style={{ padding: "160px 0 80px" }}>
@@ -480,9 +480,9 @@ export default function Pricing() {
       </section>
 
       {/* ═══ PRICING CARDS ═══ */}
-      <section style={{ padding: "80px 40px 0", position: "relative" }}>
+      <section style={{ padding: "10px 40px 0", position: "relative" }}>
         <Sq top={40} right={100} size={30} rotate={20} /><Sq bottom={60} left={80} size={24} rotate={-15} />
-        <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1240, margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 40 }}>
             <div style={{ display: "inline-flex", borderRadius: 99, background: "#F3F4F6", padding: 4, border: "1px solid #E5E7EB" }}>
               {(["india", "global"] as const).map(r => <button key={r} onClick={() => setRegion(r)} style={{ padding: "8px 24px", borderRadius: 99, fontSize: 15, fontWeight: 600, fontFamily: BF, cursor: "pointer", border: "none", transition: "all 0.2s", background: region === r ? "linear-gradient(135deg,#4F46E5,#7C3AED)" : "transparent", color: region === r ? "#fff" : "#4B5563", boxShadow: region === r ? "0 2px 8px rgba(79,70,229,0.3)" : "none" }}>{r === "india" ? "🇮🇳 India (INR)" : "🌍 Global (USD)"}</button>)}
