@@ -442,6 +442,18 @@ const StoreBuilder: React.FC<Props> = ({ store }) => {
     }
   };
 
+  // Appearance CSS custom properties from builder settings (mirrors PublicBuilder)
+  const buttonRadius = builderSettings.button_style === 'pill' ? '9999px' : builderSettings.button_style === 'square' ? '2px' : '8px';
+
+  const appearanceStyle = useMemo(() => ({
+    '--builder-bg': builderSettings.color_background,
+    '--builder-topbar': builderSettings.color_top_bar,
+    '--builder-primary': builderSettings.color_primary,
+    '--builder-secondary': builderSettings.color_secondary,
+    '--builder-text': builderSettings.color_text,
+    '--builder-button-radius': buttonRadius,
+  } as React.CSSProperties), [builderSettings, buttonRadius]);
+
   // Loading state
   if (isLoading) {
     const loaderContent = builderSettings.use_logo_as_loader && store.logo_url ? (
@@ -484,7 +496,7 @@ const StoreBuilder: React.FC<Props> = ({ store }) => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100" style={{ fontFamily: `'${builderSettings.font_family || 'Inter'}', sans-serif` }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: builderSettings.color_background || '#f3f4f6', fontFamily: `'${builderSettings.font_family || 'Inter'}', sans-serif`, ...appearanceStyle }}>
       <QSBuilderTopBar
         store={store}
         product={product}
@@ -494,6 +506,10 @@ const StoreBuilder: React.FC<Props> = ({ store }) => {
         onSubmitOrder={handleSubmitClick}
         hasLayout={hasLayout}
         basePath={basePath}
+        topBarColor={builderSettings.color_top_bar}
+        primaryColor={builderSettings.color_primary}
+        textColor={builderSettings.color_text}
+        buttonRadius={buttonRadius}
       />
       
       <div className="flex-1">
