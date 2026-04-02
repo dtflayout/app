@@ -58,14 +58,14 @@ export function useSubdomain(): SubdomainInfo {
     // Check if it's the builder subdomain
     const isBuilder = subdomain === 'builder';
     
-    // Quick Store no longer uses subdomains (uses /s/slug path instead)
-    const isStorefront = false;
+    // Check if it's a valid store subdomain (not reserved)
+    const isStorefront = subdomain !== null && !RESERVED_SUBDOMAINS.includes(subdomain);
     
     return {
       isStorefront,
       isBuilder,
-      storeSlug: null,
-      isMainSite: !isBuilder,
+      storeSlug: isStorefront ? subdomain : null,
+      isMainSite: !isBuilder && !isStorefront,
     };
   }, []);
 }
@@ -84,16 +84,16 @@ export function getStoreSlugFromPath(pathname: string): string | null {
 }
 
 /**
- * Build store URL from slug (always path-based)
+ * Build store URL from slug
  */
 export function buildStoreUrl(slug: string): string {
-  // In production, use path-based routing
+  // In production, use subdomain
   if (window.location.hostname === 'dtflayout.com' || 
       window.location.hostname.endsWith('.dtflayout.com')) {
-    return `https://dtflayout.com/s/${slug}`;
+    return `https://${slug}.dtflayout.com`;
   }
   
-  // In development, use path-based routing
+  // In development, use path-based fallback
   return `${window.location.origin}/s/${slug}`;
 }
 

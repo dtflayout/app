@@ -23,7 +23,7 @@ const StoreNotFound: React.FC<Props> = ({ type = 'store', slug }) => {
               <>
                 We couldn&apos;t find a store at{' '}
                 <span className="font-mono bg-gray-100 px-2 py-1 rounded">
-                  dtflayout.com/s/{slug}
+                  {slug}.dtflayout.com
                 </span>
               </>
             ) : (
