@@ -78,7 +78,7 @@ function ScrollToTop() { const { pathname } = useLocation(); useEffect(() => { w
 // Inner app component that uses hooks
 const AppContent = () => {
   // useSubdomain returns: { isStorefront, isBuilder, storeSlug, isMainSite }
-  const { isBuilder } = useSubdomain();
+  const { isBuilder, isStorefront, storeSlug } = useSubdomain();
 
   // If on builder subdomain (builder.dtflayout.com), render public builder routes
   if (isBuilder) {
@@ -95,6 +95,11 @@ const AppContent = () => {
         </Routes>
       </BrowserRouter>
     );
+  }
+
+  // If on a storefront subdomain (e.g., thaneprints.dtflayout.com), render storefront app
+  if (isStorefront && storeSlug) {
+    return <StorefrontApp slug={storeSlug} />;
   }
 
   // Otherwise, render normal app with routes

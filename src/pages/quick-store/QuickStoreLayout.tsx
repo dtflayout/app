@@ -151,7 +151,7 @@ const QuickStoreLayout: React.FC = () => {
                 )}
               </div>
               <p className="text-gray-500 text-sm">
-                {store?.slug ? `dtflayout.com/s/${store.slug}` : 'Set up your store to get started'}
+                {store?.slug ? `${store.slug}.dtflayout.com` : 'Set up your store to get started'}
               </p>
             </div>
           </div>
