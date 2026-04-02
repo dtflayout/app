@@ -99,7 +99,11 @@ const AppContent = () => {
 
   // If on a storefront subdomain (e.g., thaneprints.dtflayout.com), render storefront app
   if (isStorefront && storeSlug) {
-    return <StorefrontApp slug={storeSlug} />;
+    return (
+      <BrowserRouter>
+        <StorefrontApp storeSlug={storeSlug} />
+      </BrowserRouter>
+    );
   }
 
   // Otherwise, render normal app with routes
