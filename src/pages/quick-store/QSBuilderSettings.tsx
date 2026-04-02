@@ -66,7 +66,7 @@ const QSBuilderSettings: React.FC = () => {
 
   // Render the shared BuilderSettings component
   // It loads printer + settings internally via getPrinter(user.id)
-  return <BuilderSettings />;
+  return <BuilderSettings context="qs" />;
 };
 
 export default QSBuilderSettings;

@@ -65,7 +65,7 @@ const StoreBuilder: React.FC<Props> = ({ store }) => {
   const { customer, isLoggedIn } = useCustomerAuth();
 
   // Load printer's builder settings (userId primary, slug fallback)
-  const { settings: builderSettings } = useBuilderSettings({ userId: store.user_id, slug: store.slug });
+  const { settings: builderSettings } = useBuilderSettings({ userId: store.user_id, slug: store.slug, context: 'qs' });
 
   // Data state
   const [product, setProduct] = useState<QSProduct | null>(null);

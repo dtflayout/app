@@ -96,6 +96,7 @@ interface UseBuilderSettingsReturn {
 interface UseBuilderSettingsOptions {
   slug?: string;
   userId?: string;
+  context?: 'wi' | 'qs';
 }
 
 export function useBuilderSettings(
@@ -107,9 +108,9 @@ export function useBuilderSettings(
     ? { slug: slugOrOptions }
     : slugOrOptions || {};
 
-  const { slug, userId } = options;
+  const { slug, userId, context } = options;
   const lookupKey = userId || slug; // for determining if we should fetch
-  const cacheKey = `${userId || ''}_${slug || ''}`; // for effect dependency
+  const cacheKey = `${userId || ''}_${slug || ''}_${context || ''}`; // for effect dependency
 
   const [settings, setSettings] = useState<BuilderSettings>(FALLBACK_SETTINGS);
   const [isLoading, setIsLoading] = useState(false);
@@ -128,16 +129,16 @@ export function useBuilderSettings(
 
         // Try userId lookup first (more reliable for QS where slugs may differ)
         if (userId) {
-          console.log("[useBuilderSettings] Trying userId lookup:", userId);
-          result = await getBuilderSettingsByUserId(userId);
+          console.log("[useBuilderSettings] Trying userId lookup:", userId, "context:", context);
+          result = await getBuilderSettingsByUserId(userId, context);
           // Fall back to slug if userId lookup fails (e.g. RLS restrictions)
           if (!result.success && slug) {
             console.warn("[useBuilderSettings] userId lookup failed, trying slug fallback:", slug);
-            result = await getBuilderSettingsBySlug(slug);
+            result = await getBuilderSettingsBySlug(slug, context);
           }
         } else if (slug) {
-          console.log("[useBuilderSettings] Using slug lookup:", slug);
-          result = await getBuilderSettingsBySlug(slug);
+          console.log("[useBuilderSettings] Using slug lookup:", slug, "context:", context);
+          result = await getBuilderSettingsBySlug(slug, context);
         } else {
           return;
         }
