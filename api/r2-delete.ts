@@ -15,7 +15,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { initSentry, Sentry } from './lib/sentry';
+import { initSentry, Sentry } from './lib/sentry.js';
 import {
   DeleteObjectsCommand,
   ListObjectsV2Command,

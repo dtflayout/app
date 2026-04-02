@@ -16,7 +16,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { initSentry, Sentry } from './lib/sentry';
+import { initSentry, Sentry } from './lib/sentry.js';
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getR2Client, getR2BucketName, getR2PublicUrl } from "./lib/r2.js";
