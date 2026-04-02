@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 interface SubdomainInfo {
   isStorefront: boolean;
+  isBuilder: boolean;
   storeSlug: string | null;
   isMainSite: boolean;
 }
@@ -12,17 +13,18 @@ const RESERVED_SUBDOMAINS = [
   'login', 'signup', 'auth', 'oauth', 'pricing',
   'about', 'contact', 'terms', 'privacy', 'faq',
   'docs', 'developer', 'developers', 'store', 'stores',
-  'quick-store', 'quickstore', 'test', 'demo'
+  'quick-store', 'quickstore', 'test', 'demo', 'builder'
 ];
 
 /**
- * Hook to detect if current URL is a Quick Store subdomain
+ * Hook to detect if current URL is a Quick Store subdomain or builder subdomain
  * 
  * Examples:
- * - mumbai-prints.dtflayout.com -> { isStorefront: true, storeSlug: 'mumbai-prints' }
- * - dtflayout.com -> { isStorefront: false, storeSlug: null }
- * - www.dtflayout.com -> { isStorefront: false, storeSlug: null }
- * - app.dtflayout.com -> { isStorefront: false, storeSlug: null }
+ * - builder.dtflayout.com -> { isBuilder: true, isStorefront: false }
+ * - dtflayout.com -> { isStorefront: false, isBuilder: false, isMainSite: true }
+ * - www.dtflayout.com -> { isStorefront: false, isBuilder: false, isMainSite: true }
+ * 
+ * Note: Quick Store uses path-based routing (/s/store-slug) instead of subdomains
  */
 export function useSubdomain(): SubdomainInfo {
   return useMemo(() => {
@@ -30,14 +32,14 @@ export function useSubdomain(): SubdomainInfo {
     
     let subdomain: string | null = null;
     
-    // Production: store-slug.dtflayout.com
+    // Production: subdomain.dtflayout.com
     if (hostname.endsWith('.dtflayout.com')) {
       const parts = hostname.split('.');
       if (parts.length === 3) {
         subdomain = parts[0].toLowerCase();
       }
     }
-    // Dev: store-slug.localhost or store-slug.localhost:port
+    // Dev: subdomain.localhost or subdomain.localhost:port
     else if (hostname.includes('.localhost')) {
       const hostWithoutPort = hostname.split(':')[0];
       const parts = hostWithoutPort.split('.');
@@ -45,7 +47,7 @@ export function useSubdomain(): SubdomainInfo {
         subdomain = parts[0].toLowerCase();
       }
     }
-    // Also support: store-slug.local.dtflayout.com for staging
+    // Also support: subdomain.local.dtflayout.com for staging
     else if (hostname.endsWith('.local.dtflayout.com')) {
       const parts = hostname.split('.');
       if (parts.length === 4) {
@@ -53,20 +55,23 @@ export function useSubdomain(): SubdomainInfo {
       }
     }
     
-    // Check if it's a valid store subdomain (not reserved)
-    const isStorefront = subdomain !== null && !RESERVED_SUBDOMAINS.includes(subdomain);
+    // Check if it's the builder subdomain
+    const isBuilder = subdomain === 'builder';
+    
+    // Quick Store no longer uses subdomains (uses /s/slug path instead)
+    const isStorefront = false;
     
     return {
       isStorefront,
-      storeSlug: isStorefront ? subdomain : null,
-      isMainSite: !isStorefront,
+      isBuilder,
+      storeSlug: null,
+      isMainSite: !isBuilder,
     };
   }, []);
 }
 
 /**
- * Get store slug from URL path (fallback for path-based routing)
- * Used when subdomain isn't available
+ * Get store slug from URL path (for path-based routing)
  * 
  * Examples:
  * - /s/mumbai-prints -> 'mumbai-prints'
@@ -79,16 +84,16 @@ export function getStoreSlugFromPath(pathname: string): string | null {
 }
 
 /**
- * Build store URL from slug
+ * Build store URL from slug (always path-based)
  */
 export function buildStoreUrl(slug: string): string {
-  // In production, use subdomain
+  // In production, use path-based routing
   if (window.location.hostname === 'dtflayout.com' || 
       window.location.hostname.endsWith('.dtflayout.com')) {
-    return `https://${slug}.dtflayout.com`;
+    return `https://dtflayout.com/s/${slug}`;
   }
   
-  // In development, use path-based fallback
+  // In development, use path-based routing
   return `${window.location.origin}/s/${slug}`;
 }
 
@@ -96,7 +101,15 @@ export function buildStoreUrl(slug: string): string {
  * Check if a slug is reserved
  */
 export function isSlugReserved(slug: string): boolean {
-  return RESERVED_SUBDOMAINS.includes(slug.toLowerCase());
+  const RESERVED = [
+    'www', 'app', 'api', 'admin', 'blog', 'help', 
+    'support', 'status', 'mail', 'billing', 'dashboard',
+    'login', 'signup', 'auth', 'oauth', 'pricing',
+    'about', 'contact', 'terms', 'privacy', 'faq',
+    'docs', 'developer', 'developers', 'store', 'stores',
+    'quick-store', 'quickstore', 'test', 'demo', 'builder'
+  ];
+  return RESERVED.includes(slug.toLowerCase());
 }
 
 export default useSubdomain;

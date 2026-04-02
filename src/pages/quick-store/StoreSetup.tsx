@@ -360,6 +360,7 @@ const StoreSetup: React.FC = () => {
               <div className="space-y-2">
                 <Label htmlFor="slug">Store URL *</Label>
                 <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500 whitespace-nowrap">dtflayout.com/s/</span>
                   <div className="flex-1 relative">
                     <Input
                       id="slug"
@@ -380,7 +381,6 @@ const StoreSetup: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  <span className="text-sm text-gray-500 whitespace-nowrap">.dtflayout.com</span>
                 </div>
                 {slugStatus === 'taken' && (
                   <p className="text-sm text-red-500">This URL is not available</p>

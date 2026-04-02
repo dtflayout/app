@@ -543,12 +543,12 @@ export default function Home() {
                 Product {ic.chev}
               </span>
               {dd && (
-                <div style={{ position: "absolute", top: "calc(100% + 10px)", left: "50%", transform: "translateX(-50%)", width: 260 }}>
+                <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", width: 260, paddingTop: 10 }}>
                   <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #E5E7EB", boxShadow: "0 20px 56px rgba(0,0,0,0.15)", padding: 5 }}>
                     {[
-                      { l: "Gang Sheet Builder", d: "Auto-layout optimized gang sheets", to: "/product" },
-                      { l: "Website Integration", d: "Embed builder on any website", to: "/product" },
-                      { l: "Quick Store", d: "Full storefront, zero coding", to: "/product" },
+                      { l: "Gang Sheet Builder", d: "Auto-layout optimized gang sheets", to: "/product/gang-sheet-builder" },
+                      { l: "Website Integration", d: "Embed builder on any website", to: "/product/website-integration" },
+                      { l: "Quick Store", d: "Full storefront, zero coding", to: "/product/quick-store" },
                     ].map((it, i) => (
                       <Link key={i} to={it.to} style={{ padding: "10px 12px", borderRadius: 10, cursor: "pointer", transition: "background 0.15s", display: "block", textDecoration: "none" }} onMouseEnter={e => e.currentTarget.style.background = "#EEF2FF"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{it.l}</div>
@@ -584,7 +584,7 @@ export default function Home() {
       {/* ═══ HERO — no white gap ═══ */}
       <section style={{
         position: "relative", overflow: "hidden",
-        background: "linear-gradient(180deg, #0A0820 0%, #0F0D2E 12%, #1E1B4B 24%, #312E81 36%, #4F46E5 48%, #6366F1 55%, #818CF8 62%, #A5B4FC 68%, #C7D2FE 74%, #E0E7FF 80%, #EEF2FF 86%, #FAFAFB 92%)",
+        background: "linear-gradient(180deg, #0A0820 0%, #0F0D2E 12%, #1E1B4B 24%, #312E81 36%, #4F46E5 48%, #6366F1 55%, #818CF8 62%, #A5B4FC 68%, #C7D2FE 74%, #E0E7FF 80%, #EEF2FF 86%, #F5F5F7 92%, #FAFAFB 100%)",
         padding: "0 40px 0",
       }}>
         <Dots o={0.04} />
@@ -619,7 +619,7 @@ export default function Home() {
           <div style={{ position: "relative", zIndex: 2, maxWidth: 1100, margin: "72px auto 0", padding: "0 20px" }}>
             <HeroShot />
           </div>
-          <div style={{ height: 60, background: "#FAFAFB" }} />
+          <div style={{ height: 80, background: "linear-gradient(180deg, transparent, #FAFAFB)" }} />
         </div>
       </section>
 
@@ -637,17 +637,17 @@ export default function Home() {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
             {[
-              { t: "Auto-layout gang sheet builder", d: "Upload images, hit build. Our algorithm arranges everything in seconds — what used to take hours, now takes minutes. Built-in BG remover, enhancer, trimmer, and text editor.", ui: <BentoBuilder /> },
-              { t: "Embed on any website", d: "Your customers build their own gang sheets on your store. Manage orders with drag-and-drop Kanban. Works with Shopify, WooCommerce, and more.", ui: <BentoKanban /> },
-              { t: "No website? No problem.", d: "Get a fully functional storefront at your own subdomain. Customers browse, build sheets, and place orders — managed from your dashboard.", ui: <BentoStore /> },
-              { t: "Make it look like your tool", d: "Customize colors, fonts, button styles, logo, and favicon. 8 color zones, 20 Google Fonts, live chat injection, and more.", ui: <BentoWhiteLabel /> },
+              { t: "Auto-layout gang sheet builder", d: "Upload images, hit build. Our algorithm arranges everything in seconds — what used to take hours, now takes minutes. Built-in BG remover, enhancer, trimmer, and text editor.", ui: <BentoBuilder />, to: "/product/gang-sheet-builder" },
+              { t: "Embed on any website", d: "Your customers build their own gang sheets on your store. Manage orders with drag-and-drop Kanban. Works with Shopify, WooCommerce, and more.", ui: <BentoKanban />, to: "/product/website-integration" },
+              { t: "No website? No problem.", d: "Get a fully functional storefront at your own subdomain. Customers browse, build sheets, and place orders — managed from your dashboard.", ui: <BentoStore />, to: "/product/quick-store" },
+              { t: "Make it look like your tool", d: "Customize colors, fonts, button styles, logo, and favicon. 8 color zones, 20 Google Fonts, live chat injection, and more.", ui: <BentoWhiteLabel />, to: "/product/website-integration" },
             ].map((card, i) => (
               <div key={i} className="bento-card" style={{ background: "#fff", borderRadius: 24, border: "1px solid #E5E7EB", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.02)", cursor: "default" }}>
                 <div className="bento-inner" style={{ padding: 20 }}>{card.ui}</div>
                 <div style={{ padding: "4px 28px 32px" }}>
                   <h3 style={{ fontFamily: HF, fontSize: 24, fontWeight: 700, margin: "0 0 8px", color: "#111827" }}>{card.t}</h3>
                   <p style={{ fontSize: 14, color: "#6B7280", lineHeight: 1.65, margin: "0 0 14px" }}>{card.d}</p>
-                  <Link to="/product" style={{ fontSize: 14, fontWeight: 600, color: P, cursor: "pointer", textDecoration: "none" }}>Learn More ↗</Link>
+                  <Link to={card.to} style={{ fontSize: 14, fontWeight: 600, color: P, cursor: "pointer", textDecoration: "none" }}>Learn More ↗</Link>
                 </div>
               </div>
             ))}
@@ -911,7 +911,7 @@ export default function Home() {
               </div>
               <p style={{ fontSize: 14, lineHeight: 1.7, maxWidth: 260 }}>Smart DTF sheet builder for printers worldwide. Auto-arrange, optimize, and print — all from one platform.</p>
             </div>
-            <div><h4 style={{ fontSize: 11, fontWeight: 600, color: "#A5B4FC", marginBottom: 16, letterSpacing: "0.08em", textTransform: "uppercase" }}>Product</h4>{[{l:"Gang Sheet Builder",to:"/product"},{l:"Website Integration",to:"/product"},{l:"Quick Store",to:"/product"},{l:"Pricing",to:"/pricing"}].map(item => <Link key={item.l} to={item.to} style={{ fontSize: 14, marginBottom: 10, cursor: "pointer", display: "block", color: "inherit", textDecoration: "none" }}>{item.l}</Link>)}</div>
+            <div><h4 style={{ fontSize: 11, fontWeight: 600, color: "#A5B4FC", marginBottom: 16, letterSpacing: "0.08em", textTransform: "uppercase" }}>Product</h4>{[{l:"Gang Sheet Builder",to:"/product/gang-sheet-builder"},{l:"Website Integration",to:"/product/website-integration"},{l:"Quick Store",to:"/product/quick-store"},{l:"Pricing",to:"/pricing"}].map(item => <Link key={item.l} to={item.to} style={{ fontSize: 14, marginBottom: 10, cursor: "pointer", display: "block", color: "inherit", textDecoration: "none" }}>{item.l}</Link>)}</div>
             <div><h4 style={{ fontSize: 11, fontWeight: 600, color: "#A5B4FC", marginBottom: 16, letterSpacing: "0.08em", textTransform: "uppercase" }}>Company</h4>{[{l:"FAQ",to:"/faq"},{l:"Contact",to:"/contact"},{l:"Blog",to:"/"}].map(item => <Link key={item.l} to={item.to} style={{ fontSize: 14, marginBottom: 10, cursor: "pointer", display: "block", color: "inherit", textDecoration: "none" }}>{item.l}</Link>)}</div>
             <div><h4 style={{ fontSize: 11, fontWeight: 600, color: "#A5B4FC", marginBottom: 16, letterSpacing: "0.08em", textTransform: "uppercase" }}>Legal</h4>{[{l:"Privacy Policy",to:"/privacy-policy"},{l:"Terms & Conditions",to:"/terms-conditions"},{l:"Refund Policy",to:"/refund-policy"}].map(item => <Link key={item.l} to={item.to} style={{ fontSize: 14, marginBottom: 10, cursor: "pointer", display: "block", color: "inherit", textDecoration: "none" }}>{item.l}</Link>)}</div>
           </div>
