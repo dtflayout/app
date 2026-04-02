@@ -46,7 +46,7 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
 
   const navLinks = [
     { label: "Home", href: "/" },
-    { label: "Product", href: "/product" },
+    { label: "Product", href: "/product/gang-sheet-builder" },
     { label: "Pricing", href: "/pricing" },
     { label: "FAQ", href: "/faq" },
     { label: "Contact", href: "/contact" },

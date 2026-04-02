@@ -1,9 +1,11 @@
 import * as Sentry from "@sentry/react";
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
 import AuthPage from "./pages/AuthPage";
@@ -21,11 +23,14 @@ import ProductForm from "./pages/website-integration/ProductForm";
 import Orders from "./pages/website-integration/Orders";
 import BuilderSettings from "./pages/website-integration/BuilderSettings";
 import { PublicBuilder } from "./pages/public-builder";
+import BuilderLanding from "./pages/public-builder/BuilderLanding";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Home from "./pages/marketing/Home";
-import Product from "./pages/marketing/Product";
+import GangSheetBuilder from "./pages/marketing/GangSheetBuilder";
+import WebsiteIntegration from "./pages/marketing/WebsiteIntegration";
+import QuickStore from "./pages/marketing/QuickStore";
 import Pricing from "./pages/marketing/Pricing";
 import Contact from "./pages/marketing/Contact";
 import PrivacyPolicy from "./pages/marketing/PrivacyPolicy";
@@ -68,23 +73,41 @@ import { useSubdomain } from "./hooks/useSubdomain";
 
 const queryClient = new QueryClient();
 
+function ScrollToTop() { const { pathname } = useLocation(); useEffect(() => { window.scrollTo(0, 0); }, [pathname]); return null; }
+
 // Inner app component that uses hooks
 const AppContent = () => {
-  // useSubdomain returns: { isStorefront, storeSlug, isMainSite }
-  const { isStorefront, storeSlug } = useSubdomain();
+  // useSubdomain returns: { isStorefront, isBuilder, storeSlug, isMainSite }
+  const { isBuilder } = useSubdomain();
 
-  // If on a storefront subdomain (e.g., mumbai-prints.dtflayout.com), render storefront app
-  if (isStorefront && storeSlug) {
-    return <StorefrontApp slug={storeSlug} />;
+  // If on builder subdomain (builder.dtflayout.com), render public builder routes
+  if (isBuilder) {
+    return (
+      <BrowserRouter>
+        <ScrollToTop />
+        <Routes>
+          {/* builder.dtflayout.com/:printerSlug/:productSlug */}
+          <Route path="/:printerSlug/:productSlug" element={<PublicBuilder />} />
+          {/* builder.dtflayout.com/:printerSlug — product listing/redirect */}
+          <Route path="/:printerSlug" element={<BuilderLanding />} />
+          {/* Catch-all for builder subdomain */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    );
   }
 
   // Otherwise, render normal app with routes
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         {/* Public Marketing Pages */}
         <Route path="/" element={<Home />} />
-        <Route path="/product" element={<Product />} />
+        <Route path="/product/gang-sheet-builder" element={<GangSheetBuilder />} />
+        <Route path="/product/website-integration" element={<WebsiteIntegration />} />
+        <Route path="/product/quick-store" element={<QuickStore />} />
+        <Route path="/product" element={<GangSheetBuilder />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />

@@ -47,6 +47,32 @@ export async function getPublicPrinter(
 }
 
 /**
+ * Fetch all active products for a printer (public access)
+ */
+export async function getPublicProducts(
+  printerId: string
+): Promise<{ success: boolean; data?: Array<{ id: string; product_name: string; product_slug: string }>; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from("printer_products")
+      .select("id, product_name, product_slug")
+      .eq("printer_id", printerId)
+      .eq("is_active", true)
+      .order("product_name", { ascending: true });
+
+    if (error) {
+      console.error("[PublicBuilderService] Error fetching products:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data || [] };
+  } catch (err: any) {
+    console.error("[PublicBuilderService] Exception fetching products:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
  * Fetch product with variants by slug (public access)
  */
 export async function getPublicProduct(
