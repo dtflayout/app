@@ -10,20 +10,25 @@ import {
   DEFAULT_BUILDER_SETTINGS 
 } from "@/types/builderSettings";
 
+/** Which product the settings belong to */
+export type BuilderContext = 'wi' | 'qs';
+
 /**
  * Get builder settings for a printer
  * Creates default settings if none exist
  */
 export async function getBuilderSettings(
-  printerId: string
+  printerId: string,
+  context: BuilderContext = 'wi'
 ): Promise<{ success: boolean; data?: BuilderSettings; error?: string }> {
   try {
-    console.log("[BuilderSettingsService] Fetching settings for printer:", printerId);
+    console.log("[BuilderSettingsService] Fetching settings for printer:", printerId, "context:", context);
 
     const { data, error } = await supabase
       .from("printer_builder_settings")
       .select("*")
       .eq("printer_id", printerId)
+      .eq("context", context)
       .single();
 
     if (error) {
@@ -56,10 +61,11 @@ export async function getBuilderSettings(
  * Get builder settings by printer slug (for public builder, no auth required)
  */
 export async function getBuilderSettingsBySlug(
-  printerSlug: string
+  printerSlug: string,
+  context: BuilderContext = 'wi'
 ): Promise<{ success: boolean; data?: BuilderSettings; error?: string }> {
   try {
-    console.log("[BuilderSettingsService] Fetching settings for printer slug:", printerSlug);
+    console.log("[BuilderSettingsService] Fetching settings for printer slug:", printerSlug, "context:", context);
 
     // First get the printer ID
     const { data: printer, error: printerError } = await supabase
@@ -74,7 +80,7 @@ export async function getBuilderSettingsBySlug(
     }
 
     // Then get the settings
-    return getBuilderSettings(printer.id);
+    return getBuilderSettings(printer.id, context);
   } catch (err: any) {
     console.error("[BuilderSettingsService] Exception:", err);
     return { success: false, error: err.message };
@@ -87,10 +93,11 @@ export async function getBuilderSettingsBySlug(
  * may differ from the QS store slug.
  */
 export async function getBuilderSettingsByUserId(
-  userId: string
+  userId: string,
+  context: BuilderContext = 'wi'
 ): Promise<{ success: boolean; data?: BuilderSettings; error?: string }> {
   try {
-    console.log("[BuilderSettingsService] Fetching settings for user:", userId);
+    console.log("[BuilderSettingsService] Fetching settings for user:", userId, "context:", context);
 
     const { data: printer, error: printerError } = await supabase
       .from("printers")
@@ -106,7 +113,7 @@ export async function getBuilderSettingsByUserId(
 
     console.log("[BuilderSettingsService] Found printer for user:", printer.id);
 
-    return getBuilderSettings(printer.id);
+    return getBuilderSettings(printer.id, context);
   } catch (err: any) {
     console.error("[BuilderSettingsService] Exception:", err);
     return { success: false, error: err.message };
@@ -117,19 +124,22 @@ export async function getBuilderSettingsByUserId(
  * Save builder settings (create or update)
  */
 export async function saveBuilderSettings(
-  settings: BuilderSettingsInput
+  settings: BuilderSettingsInput,
+  context: BuilderContext = 'wi'
 ): Promise<{ success: boolean; data?: BuilderSettings; error?: string }> {
   try {
-    console.log("[BuilderSettingsService] Saving settings for printer:", settings.printer_id);
+    console.log("[BuilderSettingsService] Saving settings for printer:", settings.printer_id, "context:", context);
 
     // Strip fields that Supabase manages automatically (timestamps, id)
     const { id, created_at, updated_at, ...settingsToSave } = settings as any;
+    settingsToSave.context = context;
 
-    // Check if settings already exist
+    // Check if settings already exist for this printer+context
     const { data: existing } = await supabase
       .from("printer_builder_settings")
       .select("id")
       .eq("printer_id", settings.printer_id)
+      .eq("context", context)
       .single();
 
     let result;
@@ -140,6 +150,7 @@ export async function saveBuilderSettings(
         .from("printer_builder_settings")
         .update(settingsToSave)
         .eq("printer_id", settings.printer_id)
+        .eq("context", context)
         .select()
         .single();
 
@@ -175,17 +186,18 @@ export async function saveBuilderSettings(
  * Reset builder settings to defaults
  */
 export async function resetBuilderSettings(
-  printerId: string
+  printerId: string,
+  context: BuilderContext = 'wi'
 ): Promise<{ success: boolean; data?: BuilderSettings; error?: string }> {
   try {
-    console.log("[BuilderSettingsService] Resetting settings to defaults for printer:", printerId);
+    console.log("[BuilderSettingsService] Resetting settings to defaults for printer:", printerId, "context:", context);
 
     const defaultSettings: BuilderSettingsInput = {
       printer_id: printerId,
       ...DEFAULT_BUILDER_SETTINGS,
     };
 
-    return saveBuilderSettings(defaultSettings);
+    return saveBuilderSettings(defaultSettings, context);
   } catch (err: any) {
     console.error("[BuilderSettingsService] Exception resetting settings:", err);
     return { success: false, error: err.message };
@@ -197,7 +209,8 @@ export async function resetBuilderSettings(
  */
 export async function resetSectionToDefaults(
   printerId: string,
-  section: 'uploads' | 'sheet_settings' | 'tools' | 'appearance' | 'others'
+  section: 'uploads' | 'sheet_settings' | 'tools' | 'appearance' | 'others',
+  context: BuilderContext = 'wi'
 ): Promise<{ success: boolean; error?: string }> {
   try {
     console.log("[BuilderSettingsService] Resetting section to defaults:", section);
@@ -258,7 +271,8 @@ export async function resetSectionToDefaults(
     const { error } = await supabase
       .from("printer_builder_settings")
       .update(updateData)
-      .eq("printer_id", printerId);
+      .eq("printer_id", printerId)
+      .eq("context", context);
 
     if (error) {
       console.error("[BuilderSettingsService] Error resetting section:", error);

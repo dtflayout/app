@@ -54,7 +54,11 @@ import {
 } from "@/types/builderSettings";
 import { FormSkeleton } from "@/components/Skeletons";
 
-const BuilderSettingsPage = () => {
+interface BuilderSettingsPageProps {
+  context?: 'wi' | 'qs';
+}
+
+const BuilderSettingsPage = ({ context = 'wi' }: BuilderSettingsPageProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -90,7 +94,7 @@ const BuilderSettingsPage = () => {
         setPrinter(printerResult.data);
 
         // Load settings
-        const settingsResult = await getBuilderSettings(printerResult.data.id);
+        const settingsResult = await getBuilderSettings(printerResult.data.id, context);
         if (settingsResult.success && settingsResult.data) {
           setSettings(settingsResult.data);
         }
@@ -210,7 +214,7 @@ const BuilderSettingsPage = () => {
         ...settings,
       };
 
-      const result = await saveBuilderSettings(input);
+      const result = await saveBuilderSettings(input, context);
       if (result.success) {
         toast.success("Settings saved successfully!");
         setHasChanges(false);
