@@ -8,6 +8,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Loader2, ArrowRight } from "lucide-react";
 import { getPublicPrinter, getPublicProducts } from "@/services/publicBuilderService";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const BuilderLanding: React.FC = () => {
   const { printerSlug } = useParams<{ printerSlug: string }>();
@@ -62,8 +63,18 @@ const BuilderLanding: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+      <div className="min-h-screen bg-gray-50 p-8">
+        <div className="max-w-md mx-auto pt-20">
+          <div className="flex flex-col items-center gap-4">
+            <Skeleton className="w-16 h-16 rounded-xl" />
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-64" />
+            <div className="w-full mt-6 space-y-3">
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -72,7 +83,7 @@ const BuilderLanding: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Store Not Found</h1>
+          <h1 className="font-heading text-2xl font-extrabold text-gray-900 tracking-tight mb-2">Store Not Found</h1>
           <p className="text-gray-500">The store you're looking for doesn't exist or isn't active.</p>
         </div>
       </div>
@@ -83,7 +94,7 @@ const BuilderLanding: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">{storeName}</h1>
+          <h1 className="font-heading text-2xl font-extrabold text-gray-900 tracking-tight mb-2">{storeName}</h1>
           <p className="text-gray-500">No products are available at this time.</p>
         </div>
       </div>
@@ -102,7 +113,7 @@ const BuilderLanding: React.FC = () => {
               className="h-12 w-auto mx-auto mb-4 object-contain"
             />
           )}
-          <h1 className="text-2xl font-bold text-gray-900">{storeName}</h1>
+          <h1 className="font-heading text-2xl font-extrabold text-gray-900 tracking-tight">{storeName}</h1>
           <p className="text-gray-500 mt-1">Choose a product to start building your gang sheet</p>
         </div>
 

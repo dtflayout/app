@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Loader2, Mail, MailOpen, Phone, AtSign, Clock, X, ChevronRight, MessageSquare, Inbox,
 } from 'lucide-react';
+import { MessageListSkeleton } from "@/components/Skeletons";
 
 interface OutletContextType {
   store: QuickStore | null;
@@ -75,11 +76,7 @@ const QSMessages: React.FC = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
+    return <MessageListSkeleton count={5} />;
   }
 
   return (
@@ -87,7 +84,7 @@ const QSMessages: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold">Messages</h1>
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight">Messages</h1>
           <p className="text-sm text-[#7c7c7c]">
             {messages.length} total · {unreadCount} unread
           </p>

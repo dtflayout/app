@@ -68,12 +68,14 @@ export const DownloadProgressModal: React.FC<DownloadProgressModalProps> = ({
     }
   };
 
+  const allDone = isComplete || hasError;
+
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && allDone && onClose) onClose(); }}>
       <DialogContent 
         className="sm:max-w-md"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => { if (!allDone) e.preventDefault(); }}
+        onEscapeKeyDown={(e) => { if (!allDone) e.preventDefault(); }}
       >
         <div className="flex flex-col items-center py-4">
           {/* Header */}
@@ -90,7 +92,7 @@ export const DownloadProgressModal: React.FC<DownloadProgressModalProps> = ({
             )}
           </div>
           
-          <h3 className="text-xl font-bold text-gray-900 mb-1">
+          <h3 className="font-heading text-xl font-bold text-gray-900 tracking-tight mb-1">
             {isComplete 
               ? 'Download Complete!' 
               : hasError

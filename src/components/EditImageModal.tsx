@@ -1521,7 +1521,7 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold flex items-center gap-2">
+            <DialogTitle className="font-heading text-xl font-bold tracking-tight flex items-center gap-2">
               {initialTool === "trim" && <Scissors className="w-5 h-5 text-indigo-600" />}
               {initialTool === "flip-rotate" && <RotateCw className="w-5 h-5 text-sky-600" />}
               {(initialTool === "remove-bg" || initialTool === "replace-color") && <Pipette className="w-5 h-5 text-purple-600" />}

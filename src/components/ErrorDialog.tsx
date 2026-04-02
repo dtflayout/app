@@ -48,7 +48,7 @@ export const ErrorDialog: React.FC<ErrorDialogProps> = ({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-lg p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-red-600">
+            <DialogTitle className="font-heading flex items-center gap-3 text-2xl font-extrabold text-red-600 tracking-tight">
               <AlertCircle className="h-7 w-7" />
               Sheet Too Large
             </DialogTitle>

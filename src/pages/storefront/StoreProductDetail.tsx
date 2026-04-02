@@ -21,7 +21,7 @@ function ProductFaq({ store }: { store: QuickStore }) {
 
   return (
     <div>
-      <h2 className="text-2xl md:text-3xl font-bold text-center mb-8" style={{ color: store.color_text }}>
+      <h2 className="font-heading text-2xl md:text-3xl font-extrabold text-center tracking-tight mb-8" style={{ color: store.color_text }}>
         {title}
       </h2>
       <div className="max-w-3xl mx-auto space-y-2">
@@ -138,7 +138,7 @@ function ProductHowItWorks({ store }: { store: QuickStore }) {
 
   return (
     <div>
-      <h2 className="text-2xl md:text-3xl font-bold text-center mb-3" style={{ color: store.color_text }}>
+      <h2 className="font-heading text-2xl md:text-3xl font-extrabold text-center tracking-tight mb-3" style={{ color: store.color_text }}>
         How It Works — 3 Simple Steps
       </h2>
       <p className="text-[#7c7c7c] text-lg text-center mb-10">Create your DTF print sheet in minutes</p>
@@ -310,7 +310,7 @@ const StoreProductDetail: React.FC<Props> = ({ store }) => {
 
         {/* Product Info */}
         <div>
-          <h1 className="text-3xl font-bold mb-3" style={{ color: store.color_text }}>
+          <h1 className="font-heading text-3xl font-extrabold tracking-tight mb-3" style={{ color: store.color_text }}>
             {product.product_name}
           </h1>
 

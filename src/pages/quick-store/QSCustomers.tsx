@@ -39,6 +39,7 @@ import {
 import { QuickStore, formatPrice } from '@/types/quickStore';
 import { getStoreCustomers, QSCustomer } from '@/services/qsCustomerService';
 import { format, formatDistanceToNow } from 'date-fns';
+import { TableSkeleton } from "@/components/Skeletons";
 
 let _qsCustomersLoaded = false;
 
@@ -98,7 +99,7 @@ const QSCustomers: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Customers</p>
-                <p className="text-2xl font-bold">{stats.totalCustomers}</p>
+                <p className="text-2xl font-heading font-bold">{stats.totalCustomers}</p>
               </div>
               <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
                 <Users className="h-5 w-5 text-blue-600" />
@@ -112,7 +113,7 @@ const QSCustomers: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">With Orders</p>
-                <p className="text-2xl font-bold">{stats.activeCustomers}</p>
+                <p className="text-2xl font-heading font-bold">{stats.activeCustomers}</p>
               </div>
               <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
                 <ShoppingBag className="h-5 w-5 text-indigo-600" />
@@ -126,7 +127,7 @@ const QSCustomers: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-heading font-bold">
                   {formatPrice(stats.totalRevenue, store?.currency || 'INR')}
                 </p>
               </div>
@@ -142,7 +143,7 @@ const QSCustomers: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Avg Order Value</p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-heading font-bold">
                   {formatPrice(stats.avgOrderValue, store?.currency || 'INR')}
                 </p>
               </div>
@@ -195,9 +196,7 @@ const QSCustomers: React.FC = () => {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-            </div>
+            <TableSkeleton rows={6} cols={4} />
           ) : customers.length === 0 ? (
             <div className="text-center py-12">
               <UserPlus className="h-12 w-12 text-gray-300 mx-auto mb-4" />

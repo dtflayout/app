@@ -32,6 +32,7 @@ import {
   ProductWithVariants,
 } from "@/services/printerService";
 import { formatPrice } from "@/types/publicBuilder";
+import { FormSkeleton } from "@/components/Skeletons";
 
 interface Variant {
   id?: string;
@@ -289,11 +290,7 @@ const ProductForm = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-      </div>
-    );
+    return <FormSkeleton fields={6} />;
   }
 
   return (

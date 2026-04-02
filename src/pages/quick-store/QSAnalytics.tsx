@@ -5,6 +5,7 @@ import { getOrderStats } from '@/services/qsOrderService';
 import { QuickStore } from '@/types/quickStore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, Eye, Package, ShoppingCart, TrendingUp, Users, MousePointer } from 'lucide-react';
+import { AnalyticsSkeleton } from "@/components/Skeletons";
 
 interface OutletContextType {
   store: QuickStore | null;
@@ -57,11 +58,7 @@ const QSAnalytics: React.FC = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   const conversionRate = analytics.total_views > 0 
@@ -81,7 +78,7 @@ const QSAnalytics: React.FC = () => {
                   <Eye className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{analytics.total_views}</p>
+                  <p className="text-2xl font-heading font-bold">{analytics.total_views}</p>
                   <p className="text-sm text-gray-500">Total Views</p>
                 </div>
               </div>
@@ -95,7 +92,7 @@ const QSAnalytics: React.FC = () => {
                   <TrendingUp className="h-5 w-5 text-indigo-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{analytics.views_today}</p>
+                  <p className="text-2xl font-heading font-bold">{analytics.views_today}</p>
                   <p className="text-sm text-gray-500">Views Today</p>
                 </div>
               </div>
@@ -109,7 +106,7 @@ const QSAnalytics: React.FC = () => {
                   <Users className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{analytics.views_this_week}</p>
+                  <p className="text-2xl font-heading font-bold">{analytics.views_this_week}</p>
                   <p className="text-sm text-gray-500">This Week</p>
                 </div>
               </div>
@@ -123,7 +120,7 @@ const QSAnalytics: React.FC = () => {
                   <MousePointer className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{analytics.product_views}</p>
+                  <p className="text-2xl font-heading font-bold">{analytics.product_views}</p>
                   <p className="text-sm text-gray-500">Product Views</p>
                 </div>
               </div>
@@ -178,7 +175,7 @@ const QSAnalytics: React.FC = () => {
                   <ShoppingCart className="h-5 w-5 text-gray-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{orderStats.total}</p>
+                  <p className="text-2xl font-heading font-bold">{orderStats.total}</p>
                   <p className="text-sm text-gray-500">Total Orders</p>
                 </div>
               </div>
@@ -192,7 +189,7 @@ const QSAnalytics: React.FC = () => {
                   <Package className="h-5 w-5 text-yellow-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{orderStats.pending}</p>
+                  <p className="text-2xl font-heading font-bold">{orderStats.pending}</p>
                   <p className="text-sm text-gray-500">Pending</p>
                 </div>
               </div>
@@ -206,7 +203,7 @@ const QSAnalytics: React.FC = () => {
                   <Package className="h-5 w-5 text-indigo-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{orderStats.completed}</p>
+                  <p className="text-2xl font-heading font-bold">{orderStats.completed}</p>
                   <p className="text-sm text-gray-500">Completed</p>
                 </div>
               </div>
@@ -220,7 +217,7 @@ const QSAnalytics: React.FC = () => {
                   <TrendingUp className="h-5 w-5 text-indigo-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{orderStats.thisMonth}</p>
+                  <p className="text-2xl font-heading font-bold">{orderStats.thisMonth}</p>
                   <p className="text-sm text-gray-500">This Month</p>
                 </div>
               </div>

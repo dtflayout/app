@@ -1967,7 +1967,7 @@ export const CollageCreator = ({
         <div className="px-8 md:px-16 pt-16 pb-14">
           {/* Headline */}
           <div className="text-center mb-10">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+            <h1 className="font-heading text-4xl md:text-5xl font-extrabold text-gray-900 mb-3 tracking-tight">
               Create Your Gang Sheet
             </h1>
             <p className="text-lg text-gray-500 font-medium">
@@ -2062,7 +2062,7 @@ export const CollageCreator = ({
       <Dialog open={showInsufficientCreditsModal} onOpenChange={setShowInsufficientCreditsModal}>
         <DialogContent className="sm:max-w-xl p-8">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+            <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight flex items-center gap-3">
               <div className="flex-shrink-0 w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-amber-600" />
               </div>
@@ -2131,7 +2131,7 @@ export const CollageCreator = ({
       <Dialog open={showDownloadConfirmDialog} onOpenChange={setShowDownloadConfirmDialog}>
         <DialogContent className="sm:max-w-xl p-8">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Confirm Download</DialogTitle>
+            <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">Confirm Download</DialogTitle>
             <DialogDescription className="text-base pt-4">
               <div className="space-y-5">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">
@@ -2308,7 +2308,7 @@ export const CollageCreator = ({
       <Dialog open={showFeatureGuideModal} onOpenChange={setShowFeatureGuideModal}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto p-8">
           <DialogHeader className="mb-2">
-            <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+            <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight flex items-center gap-3">
               <span className="text-3xl">📚</span>
               Feature Guide
             </DialogTitle>
@@ -2439,7 +2439,7 @@ export const CollageCreator = ({
               <div className="absolute inset-0 rounded-full border-4" style={{ borderColor: builderSettings?.color_primary ? `${builderSettings.color_primary}20` : '#e0e7ff' }}></div>
               <div className="absolute inset-0 rounded-full border-4 border-transparent animate-spin" style={{ borderTopColor: builderSettings?.color_primary || '#6366f1', borderRightColor: builderSettings?.color_primary || '#6366f1' }}></div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+            <h3 className="font-heading text-2xl font-extrabold text-gray-900 tracking-tight mb-3">
               Generating Layout...
             </h3>
             <p className="text-lg text-gray-500 mb-4">
@@ -2457,7 +2457,7 @@ export const CollageCreator = ({
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[80] flex items-center justify-center">
           <div className="bg-white rounded-2xl p-10 shadow-2xl max-w-lg w-full mx-4 text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-4 mx-auto mb-6" style={{ borderBottomColor: builderSettings?.color_primary || '#2563eb' }}></div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+            <h3 className="font-heading text-2xl font-extrabold text-gray-900 tracking-tight mb-3">
               Exporting High-Resolution PNG...
             </h3>
             <p className="text-lg text-gray-500 mb-4">

@@ -34,6 +34,7 @@ import {
 import { QuickStore, formatPrice } from '@/types/quickStore';
 import { getCustomerWithOrders, QSCustomer } from '@/services/qsCustomerService';
 import { format, formatDistanceToNow } from 'date-fns';
+import { CustomerDetailSkeleton } from "@/components/Skeletons";
 
 const getStatusBadge = (status: string) => {
   const styles: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
@@ -77,11 +78,7 @@ const QSCustomerDetail: React.FC = () => {
   }, [customerId]);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
+    return <CustomerDetailSkeleton />;
   }
 
   if (!customer) {
@@ -113,7 +110,7 @@ const QSCustomerDetail: React.FC = () => {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">{customer.name || 'Customer'}</h1>
+          <h1 className="font-heading text-2xl font-extrabold text-gray-900 tracking-tight">{customer.name || 'Customer'}</h1>
           <p className="text-muted-foreground">{customer.email}</p>
         </div>
         <div className="flex gap-2">
@@ -187,12 +184,12 @@ const QSCustomerDetail: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-3 bg-muted/50 rounded-lg">
                 <ShoppingBag className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-                <p className="text-2xl font-bold">{customer.total_orders}</p>
+                <p className="text-2xl font-heading font-bold">{customer.total_orders}</p>
                 <p className="text-xs text-muted-foreground">Total Orders</p>
               </div>
               <div className="text-center p-3 bg-muted/50 rounded-lg">
                 <TrendingUp className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-heading font-bold">
                   {formatPrice(customer.total_spent || 0, store?.currency || 'INR')}
                 </p>
                 <p className="text-xs text-muted-foreground">Total Spent</p>
@@ -202,12 +199,12 @@ const QSCustomerDetail: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-3 bg-muted/50 rounded-lg">
                 <Package className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-                <p className="text-2xl font-bold">{completedOrders}</p>
+                <p className="text-2xl font-heading font-bold">{completedOrders}</p>
                 <p className="text-xs text-muted-foreground">Completed</p>
               </div>
               <div className="text-center p-3 bg-muted/50 rounded-lg">
                 <ShoppingBag className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-heading font-bold">
                   {formatPrice(avgOrderValue, store?.currency || 'INR')}
                 </p>
                 <p className="text-xs text-muted-foreground">Avg Order</p>

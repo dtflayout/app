@@ -667,7 +667,7 @@ export const ImageManager = ({
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">Uploaded Images</h2>
+            <h2 className="font-heading text-2xl font-extrabold text-gray-800 tracking-tight">Uploaded Images</h2>
             <p className="text-sm text-gray-500 mt-1">
               {images.length} image{images.length !== 1 ? 's' : ''} ready for layout
             </p>

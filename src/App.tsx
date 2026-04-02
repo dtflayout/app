@@ -53,6 +53,7 @@ import {
   QSCustomers,
   QSCustomerDetail,
   QSMessages,
+  QSBuilderSettings,
 } from "./pages/quick-store";
 
 // Storefront Pages (Customer side)
@@ -134,7 +135,7 @@ const AppContent = () => {
         
         {/* Protected App Pages */}
         <Route
-          path="/app"
+          path="/builder-150"
           element={
             <ProtectedRoute>
               <AppPage />
@@ -142,13 +143,16 @@ const AppContent = () => {
           }
         />
         <Route
-          path="/app-300"
+          path="/builder-300"
           element={
             <ProtectedRoute>
               <AppPage300 />
             </ProtectedRoute>
           }
         />
+        {/* Redirects from old URLs */}
+        <Route path="/app" element={<Navigate to="/builder-150" replace />} />
+        <Route path="/app-300" element={<Navigate to="/builder-300" replace />} />
         <Route
           path="/logs"
           element={
@@ -237,6 +241,7 @@ const AppContent = () => {
           <Route path="customers/:customerId" element={<QSCustomerDetail />} />
           <Route path="analytics" element={<QSAnalytics />} />
           <Route path="settings" element={<QSSettings />} />
+          <Route path="builder-settings" element={<QSBuilderSettings />} />
         </Route>
         
         {/* Public Builder (Website Integration) - No auth required */}

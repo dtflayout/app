@@ -111,7 +111,7 @@ const StoreOrderStatus: React.FC<Props> = ({ store }) => {
         </Link>
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Track Your Order</h1>
+          <h1 className="font-heading text-3xl font-extrabold tracking-tight mb-2">Track Your Order</h1>
           <p className="text-muted-foreground">
             Enter your order code to check the status of your order.
           </p>

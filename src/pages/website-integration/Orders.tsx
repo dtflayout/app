@@ -60,6 +60,7 @@ import {
   OrderDesign,
   OrderStats,
 } from "@/services/orderService";
+import { StatsCardsSkeleton, KanbanSkeleton } from "@/components/Skeletons";
 import { formatPrice } from "@/types/publicBuilder";
 import { toast } from "sonner";
 import { format, startOfDay, endOfDay, subDays, startOfMonth, startOfWeek } from "date-fns";
@@ -733,8 +734,9 @@ const Orders = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+      <div className="space-y-6">
+        <StatsCardsSkeleton count={5} />
+        <KanbanSkeleton columns={4} />
       </div>
     );
   }
@@ -821,25 +823,25 @@ const Orders = () => {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold">{filteredStats.total}</div>
+            <div className="text-2xl font-heading font-bold">{filteredStats.total}</div>
             <p className="text-xs text-muted-foreground">Total Orders</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold text-amber-600">{filteredStats.pending}</div>
+            <div className="text-2xl font-heading font-bold text-amber-600">{filteredStats.pending}</div>
             <p className="text-xs text-muted-foreground">Pending</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold text-green-600">{filteredStats.paid}</div>
+            <div className="text-2xl font-heading font-bold text-green-600">{filteredStats.paid}</div>
             <p className="text-xs text-muted-foreground">Paid</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold text-blue-600">{filteredStats.downloaded}</div>
+            <div className="text-2xl font-heading font-bold text-blue-600">{filteredStats.downloaded}</div>
             <p className="text-xs text-muted-foreground">Downloaded</p>
           </CardContent>
         </Card>
@@ -847,7 +849,7 @@ const Orders = () => {
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold text-red-600">{filteredStats.expired}</div>
+                <div className="text-2xl font-heading font-bold text-red-600">{filteredStats.expired}</div>
                 <p className="text-xs text-muted-foreground">Expired</p>
               </div>
               {filteredStats.expired > 0 && (

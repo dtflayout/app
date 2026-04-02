@@ -11,3 +11,4 @@ export { default as QSSettings } from './QSSettings';
 export { default as QSCustomers } from './QSCustomers';
 export { default as QSCustomerDetail } from './QSCustomerDetail';
 export { default as QSMessages } from './QSMessages';
+export { default as QSBuilderSettings } from './QSBuilderSettings';

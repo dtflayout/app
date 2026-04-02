@@ -40,7 +40,7 @@ export function MemoryWarningModal({
               <Info className="h-5 w-5" />
             </div>
             <div>
-              <AlertDialogTitle className="text-xl font-semibold text-white">
+              <AlertDialogTitle className="font-heading text-xl font-bold text-white tracking-tight">
                 Performance Notice
               </AlertDialogTitle>
               <p className="text-sm text-white/80 mt-0.5">

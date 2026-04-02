@@ -205,7 +205,7 @@ const ConfirmationModal: React.FC<{
               </div>
             </div>
             {showPrice && (
-            <div className="text-3xl font-bold text-indigo-700">
+            <div className="font-heading text-3xl font-bold text-indigo-700">
               {formatCurrency(totalPrice, currency)}
             </div>
             )}

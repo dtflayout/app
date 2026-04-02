@@ -1,42 +1,28 @@
-# DTF Layout
+# Changed Files — QS Builder Settings Fix
 
-Smart DTF Sheet Builder - Create optimized layouts for Direct-to-Film printing.
+## Step 1: Replace these files in your project
+Copy each file to the matching path in your project:
 
-## Features
+| File | What changed |
+|------|-------------|
+| `src/App.tsx` | Added QSBuilderSettings import + route |
+| `src/hooks/useBuilderSettings.ts` | userId lookup with slug fallback + debug logging |
+| `src/hooks/useSubdomain.ts` | buildStoreUrl always returns production subdomain |
+| `src/services/builderSettingsService.ts` | Added getBuilderSettingsByUserId() |
+| `src/services/quickStoreService.ts` | Added ensurePrinterForQS() + called from createQuickStore |
+| `src/pages/storefront/StoreBuilder.tsx` | Uses { userId, slug } for settings lookup |
+| `src/pages/quick-store/QuickStoreLayout.tsx` | Calls ensurePrinterForQS on every QS load |
+| `src/pages/quick-store/QSBuilderSettings.tsx` | NEW — wrapper for Builder Settings tab |
+| `src/pages/quick-store/index.ts` | Added QSBuilderSettings export |
 
-- Drag & drop image upload
-- Automatic layout optimization
-- Support for 150 DPI and 300 DPI exports
-- Background removal tool
-- Image enhancement tool
-- Image trimming tool
-- Credit-based usage system
-- Multiple film widths (23" and 11")
+## Step 2: Run the SQL in Supabase
+Open Supabase → SQL Editor → run `RLS_POLICY.sql`
 
-## Tech Stack
+This adds anonymous SELECT policies on `printers` and `printer_builder_settings` 
+so the public storefront builder can load settings without authentication.
 
-- React 18
-- TypeScript
-- Vite
-- Tailwind CSS
-- shadcn/ui
-- Fabric.js for canvas manipulation
-- Supabase for backend and authentication
-- Razorpay for payments
-
-## Development
-
-```sh
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-```
-
-## Environment Variables
-
-Create a `.env` file with the required environment variables for Supabase and Razorpay integration.
+## Step 3: Test
+1. Open QS dashboard → console should show `[QS] Printer already exists for user:`
+2. Go to Builder Settings tab → toggle OFF "Use Defaults" on Appearance → change colors → Save
+3. Open storefront builder → console should show `[useBuilderSettings] Trying userId lookup:`
+4. Changes should now reflect

@@ -17,7 +17,7 @@ const StoreNotFound: React.FC<Props> = ({ type = 'store', slug }) => {
             <Store className="w-12 h-12 text-gray-400" />
           </div>
 
-          <h1 className="text-3xl font-bold mb-3">Store Not Found</h1>
+          <h1 className="font-heading text-3xl font-extrabold tracking-tight mb-3">Store Not Found</h1>
           <p className="text-muted-foreground mb-8">
             {slug ? (
               <>
@@ -77,7 +77,7 @@ const StoreNotFound: React.FC<Props> = ({ type = 'store', slug }) => {
       <div className="max-w-md w-full text-center">
         <div className="text-8xl font-bold text-gray-200 mb-4">404</div>
 
-        <h1 className="text-2xl font-bold mb-2">Page Not Found</h1>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight mb-2">Page Not Found</h1>
         <p className="text-muted-foreground mb-8">
           The page you&apos;re looking for doesn&apos;t exist or has been moved.
         </p>

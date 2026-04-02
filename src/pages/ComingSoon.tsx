@@ -14,7 +14,7 @@ const ComingSoon = () => {
     <div
       style={{
         minHeight: "100vh",
-        background: "#0a0f0d",
+        background: "linear-gradient(180deg, #0F0D2E 0%, #1E1B4B 100%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -24,7 +24,7 @@ const ComingSoon = () => {
         overflow: "hidden",
       }}
     >
-      {/* Subtle gradient orb */}
+      {/* Subtle gradient orbs */}
       <div
         style={{
           position: "absolute",
@@ -32,11 +32,37 @@ const ComingSoon = () => {
           height: "600px",
           borderRadius: "50%",
           background:
-            "radial-gradient(circle, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.02) 50%, transparent 70%)",
+            "radial-gradient(circle, rgba(99,102,241,0.15) 0%, rgba(99,102,241,0.03) 50%, transparent 70%)",
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
           pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          width: "400px",
+          height: "400px",
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(167,139,250,0.12) 0%, transparent 60%)",
+          top: "20%",
+          right: "10%",
+          pointerEvents: "none",
+          filter: "blur(30px)",
+        }}
+      />
+
+      {/* Dot grid */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          opacity: 0.04,
+          pointerEvents: "none",
+          backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px)",
+          backgroundSize: "32px 32px",
         }}
       />
 
@@ -56,10 +82,11 @@ const ComingSoon = () => {
       <h1
         style={{
           fontSize: "clamp(28px, 5vw, 48px)",
-          fontWeight: 700,
+          fontWeight: 800,
+          fontFamily: "'Bricolage Grotesque', sans-serif",
           color: "#ffffff",
           margin: "0 0 16px 0",
-          letterSpacing: "-0.02em",
+          letterSpacing: "-0.03em",
           position: "relative",
           zIndex: 1,
         }}
@@ -70,7 +97,7 @@ const ComingSoon = () => {
             display: "inline-block",
             width: "36px",
             textAlign: "left",
-            color: "#10b981",
+            color: "#818CF8",
           }}
         >
           {dots}
@@ -81,7 +108,7 @@ const ComingSoon = () => {
       <p
         style={{
           fontSize: "clamp(15px, 2.5vw, 18px)",
-          color: "#6b7280",
+          color: "#A5B4FC",
           margin: "0 0 56px 0",
           fontWeight: 400,
           letterSpacing: "0.01em",
@@ -91,6 +118,7 @@ const ComingSoon = () => {
           lineHeight: 1.6,
           position: "relative",
           zIndex: 1,
+          opacity: 0.7,
         }}
       >
         We're building something new for DTF printers worldwide.
@@ -101,7 +129,7 @@ const ComingSoon = () => {
         style={{
           width: "40px",
           height: "2px",
-          background: "linear-gradient(90deg, #10b981, #059669)",
+          background: "linear-gradient(90deg, #4F46E5, #7C3AED)",
           borderRadius: "1px",
           marginBottom: "32px",
           position: "relative",
@@ -114,15 +142,15 @@ const ComingSoon = () => {
         href="mailto:dtflayout@gmail.com"
         style={{
           fontSize: "14px",
-          color: "#4b5563",
+          color: "rgba(165,180,252,0.5)",
           textDecoration: "none",
           letterSpacing: "0.02em",
           transition: "color 0.2s ease",
           position: "relative",
           zIndex: 1,
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.color = "#10b981")}
-        onMouseLeave={(e) => (e.currentTarget.style.color = "#4b5563")}
+        onMouseEnter={(e) => (e.currentTarget.style.color = "#A5B4FC")}
+        onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(165,180,252,0.5)")}
       >
         dtflayout@gmail.com
       </a>

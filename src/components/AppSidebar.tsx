@@ -40,8 +40,8 @@ const menuItems: MenuItem[] = [
     label: "Sheet Builder",
     icon: <Layers className="w-5 h-5 flex-shrink-0" />,
     submenu: [
-      { label: "150 DPI", icon: <Layers className="w-4 h-4 flex-shrink-0" />, path: "/app" },
-      { label: "300 DPI", icon: <Zap className="w-4 h-4 flex-shrink-0" />, path: "/app-300" },
+      { label: "150 DPI", icon: <Layers className="w-4 h-4 flex-shrink-0" />, path: "/builder-150" },
+      { label: "300 DPI", icon: <Zap className="w-4 h-4 flex-shrink-0" />, path: "/builder-300" },
     ],
   },
   {

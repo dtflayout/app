@@ -153,7 +153,12 @@ export async function createQuickStore(
     }
 
     console.log("[QuickStoreService] Store created:", data.slug);
-    return { success: true, data: data as QuickStore };
+
+    // Auto-create a printer row so Builder Settings work for this user
+    const store = data as QuickStore;
+    await ensurePrinterForQS(userId, store.slug, store.store_name, store.logo_url);
+
+    return { success: true, data: store };
   } catch (err: any) {
     console.error("[QuickStoreService] Exception:", err);
     return { success: false, error: err.message };
@@ -427,6 +432,97 @@ export async function deleteStoreAsset(
 
     return { success: true };
   } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Ensure a `printers` row exists for a Quick Store user.
+ * 
+ * Builder Settings are stored in `printer_builder_settings` linked to `printers.id`.
+ * When a QS store is created, we auto-create a printer row so that:
+ * 1. The Builder Settings page works (it loads via `getPrinter(user.id)`)
+ * 2. The storefront builder can load custom settings
+ * 
+ * If a printer already exists (e.g. user also set up Website Integration),
+ * we DON'T overwrite it — we just return the existing one.
+ */
+export async function ensurePrinterForQS(
+  userId: string,
+  slug: string,
+  storeName: string,
+  logoUrl?: string | null
+): Promise<{ success: boolean; printerId?: string; error?: string }> {
+  try {
+    // Check if user already has a printer row (from WI or a previous QS setup)
+    const { data: existing, error: fetchError } = await supabase
+      .from("printers")
+      .select("id, slug")
+      .eq("user_id", userId)
+      .single();
+
+    if (fetchError && fetchError.code !== "PGRST116") {
+      console.error("[QS] Error checking printer:", fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    if (existing) {
+      console.log("[QS] Printer already exists for user:", existing.id, "slug:", existing.slug);
+      return { success: true, printerId: existing.id };
+    }
+
+    // No printer exists — create one from QS store data
+    console.log("[QS] Creating printer row for QS user:", userId, "slug:", slug);
+
+    const { data: created, error: createError } = await supabase
+      .from("printers")
+      .insert({
+        user_id: userId,
+        store_name: storeName,
+        store_url: "",
+        slug: slug.toLowerCase().trim(),
+        logo_url: logoUrl || null,
+        currency: "USD",
+        is_active: true,
+      })
+      .select("id")
+      .single();
+
+    if (createError) {
+      // If slug conflict (another user's printer has this slug), append a suffix
+      if (createError.code === "23505") {
+        console.warn("[QS] Printer slug conflict, trying with suffix");
+        const suffixed = `${slug}-qs`;
+        const { data: retry, error: retryError } = await supabase
+          .from("printers")
+          .insert({
+            user_id: userId,
+            store_name: storeName,
+            store_url: "",
+            slug: suffixed,
+            logo_url: logoUrl || null,
+            currency: "USD",
+            is_active: true,
+          })
+          .select("id")
+          .single();
+
+        if (retryError) {
+          console.error("[QS] Printer creation failed even with suffix:", retryError);
+          return { success: false, error: retryError.message };
+        }
+        console.log("[QS] Printer created with suffixed slug:", suffixed);
+        return { success: true, printerId: retry.id };
+      }
+
+      console.error("[QS] Printer creation failed:", createError);
+      return { success: false, error: createError.message };
+    }
+
+    console.log("[QS] Printer created:", created.id);
+    return { success: true, printerId: created.id };
+  } catch (err: any) {
+    console.error("[QS] ensurePrinterForQS exception:", err);
     return { success: false, error: err.message };
   }
 }

@@ -22,7 +22,7 @@ function FeaturesGrid({ store }: { store: QuickStore }) {
     <section className="py-24 px-4 bg-white">
       <div className="container mx-auto">
         <div className="mb-16 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold" style={{ color: store.color_text }}>
+          <h2 className="font-heading text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: store.color_text }}>
             {store.features_title || 'Why customers choose us'}
           </h2>
           <p className="text-[#7c7c7c] mt-3 text-lg">{store.features_subtitle || 'Everything you need for professional DTF printing'}</p>
@@ -63,7 +63,7 @@ function FeaturesAlternating({ store }: { store: QuickStore }) {
   return (
     <section className="py-20 px-4" style={{ background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)' }}>
       <div className="container mx-auto max-w-6xl mb-14 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold" style={{ color: store.color_text }}>
+        <h2 className="font-heading text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: store.color_text }}>
           {store.features_title || 'Why customers choose us'}
         </h2>
         <p className="text-[#7c7c7c] mt-3 text-lg">{store.features_subtitle || 'Everything you need for professional DTF printing'}</p>
@@ -102,7 +102,7 @@ function FeaturesAlternating({ store }: { store: QuickStore }) {
                 >
                   {feat.heading}
                 </div>
-                <h3 className="text-2xl md:text-3xl font-bold mb-3 leading-tight" style={{ color: store.color_text }}>
+                <h3 className="font-heading text-2xl md:text-3xl font-extrabold mb-3 leading-tight tracking-tight" style={{ color: store.color_text }}>
                   {feat.heading}
                 </h3>
                 <p className="text-[#7c7c7c] leading-relaxed text-base max-w-md">{feat.description}</p>
@@ -124,7 +124,7 @@ function FeaturesBento({ store }: { store: QuickStore }) {
     <section className="py-20 px-4" style={{ background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)' }}>
       <div className="container mx-auto max-w-6xl">
         <div className="mb-14 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold" style={{ color: store.color_text }}>{store.features_title || 'Why customers choose us'}</h2>
+          <h2 className="font-heading text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: store.color_text }}>{store.features_title || 'Why customers choose us'}</h2>
           <p className="text-[#7c7c7c] mt-3 text-lg">{store.features_subtitle || 'Everything you need for professional DTF printing'}</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -138,7 +138,7 @@ function FeaturesBento({ store }: { store: QuickStore }) {
                     <span className="[&>svg]:w-7 [&>svg]:h-7">{ICON_MAP[hero.icon] ?? <LayoutGrid className="h-7 w-7" />}</span>
                   </div>
                 )}
-                <h3 className="text-2xl font-bold" style={{ color: store.color_text }}>{hero.heading}</h3>
+                <h3 className="font-heading text-2xl font-extrabold tracking-tight" style={{ color: store.color_text }}>{hero.heading}</h3>
                 <p className="text-[#7c7c7c] leading-relaxed">{hero.description}</p>
               </div>
             </div>
@@ -176,7 +176,7 @@ function FeaturesIconRow({ store }: { store: QuickStore }) {
     <section className="py-20 px-4" style={{ background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)' }}>
       <div className="container mx-auto max-w-6xl">
         <div className="mb-14 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold" style={{ color: store.color_text }}>{store.features_title || 'Why customers choose us'}</h2>
+          <h2 className="font-heading text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: store.color_text }}>{store.features_title || 'Why customers choose us'}</h2>
           <p className="text-[#7c7c7c] mt-3 text-lg">{store.features_subtitle || 'Everything you need for professional DTF printing'}</p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-6">
@@ -212,7 +212,7 @@ function FeaturesSteps({ store }: { store: QuickStore }) {
     <section className="py-20 px-4" style={{ background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)' }}>
       <div className="container mx-auto max-w-6xl">
         <div className="mb-14 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold" style={{ color: store.color_text }}>{store.features_title || 'Why customers choose us'}</h2>
+          <h2 className="font-heading text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: store.color_text }}>{store.features_title || 'Why customers choose us'}</h2>
           <p className="text-[#7c7c7c] mt-3 text-lg">{store.features_subtitle || 'Everything you need for professional DTF printing'}</p>
         </div>
         {/* Desktop: horizontal steps */}
@@ -981,7 +981,7 @@ const StoreHome: React.FC<Props> = ({ store }) => {
           <section key="products" className="py-16 px-4 bg-gray-50">
             <div className="container mx-auto">
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-3xl md:text-4xl font-bold" style={{ color: store.color_text }}>Our Products</h2>
+                <h2 className="font-heading text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: store.color_text }}>Our Products</h2>
                 <Link to={`${basePath}/products`} className="text-sm font-medium" style={{ color: store.color_primary }}>View All →</Link>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

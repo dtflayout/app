@@ -97,23 +97,23 @@ export const Navbar = () => {
     <nav className="bg-white border-b shadow-sm">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <h1 className="text-xl font-bold text-gray-900">DTF Collage Creator</h1>
+          <h1 className="font-heading text-xl font-bold text-gray-900">DTF Layout</h1>
 
           {/* Navigation Links */}
           <div className="flex items-center gap-2">
             <Button
-              variant={location.pathname === '/app' ? 'default' : 'ghost'}
+              variant={location.pathname === '/builder-150' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => navigate('/app')}
+              onClick={() => navigate('/builder-150')}
               className="gap-2"
             >
               <LayoutDashboard className="h-4 w-4" />
               Create
             </Button>
             <Button
-              variant={location.pathname === '/app-300' ? 'default' : 'ghost'}
+              variant={location.pathname === '/builder-300' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => navigate('/app-300')}
+              onClick={() => navigate('/builder-300')}
               className="gap-2"
             >
               <Zap className="h-4 w-4" />

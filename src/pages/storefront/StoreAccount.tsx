@@ -99,7 +99,7 @@ const StoreAccount: React.FC<Props> = ({ store }) => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Account</h1>
+          <h1 className="font-heading text-2xl font-extrabold text-gray-900 tracking-tight">My Account</h1>
           <p className="text-muted-foreground">Manage your profile and view orders</p>
         </div>
         <Button variant="outline" onClick={handleLogout} className="gap-2">

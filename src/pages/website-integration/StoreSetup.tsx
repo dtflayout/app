@@ -15,6 +15,7 @@ import { Loader2, Store, Copy, Check, ExternalLink, Upload, X, Hash } from "luci
 import { toast } from "sonner";
 import { getPrinter, savePrinter, Printer } from "@/services/printerService";
 import { uploadToR2 } from "@/lib/r2Client";
+import { FormSkeleton } from "@/components/Skeletons";
 
 // Currency options
 const CURRENCY_OPTIONS = [
@@ -207,11 +208,7 @@ const StoreSetup = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-      </div>
-    );
+    return <FormSkeleton fields={5} />;
   }
 
   return (
