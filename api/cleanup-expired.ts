@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { initSentry, Sentry } from './lib/sentry';
+import { initSentry, Sentry } from './lib/sentry.js';
 import { createClient } from '@supabase/supabase-js';
 import { ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import { getR2Client, getR2BucketName } from './lib/r2.js';
@@ -179,16 +179,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let analyticsPurged = 0;
     try {
-      const { count, error: analyticsError } = await supabase
+      const { data: deletedRows, error: analyticsError } = await supabase
         .from('quick_store_analytics')
         .delete()
         .lt('created_at', ninetyDaysAgoISO)
-        .select('id', { count: 'exact', head: true });
+        .select('id');
 
       if (analyticsError) {
         console.error('[Cleanup] Analytics purge error:', analyticsError.message);
       } else {
-        analyticsPurged = count || 0;
+        analyticsPurged = deletedRows?.length || 0;
         console.log(`[Cleanup] Analytics: Purged ${analyticsPurged} records older than 90 days`);
       }
     } catch (err) {
