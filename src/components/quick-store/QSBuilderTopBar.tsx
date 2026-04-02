@@ -30,6 +30,10 @@ interface QSBuilderTopBarProps {
   onSubmitOrder: () => void;
   hasLayout: boolean;
   basePath: string;
+  topBarColor?: string;
+  primaryColor?: string;
+  textColor?: string;
+  buttonRadius?: string;
 }
 
 const QSBuilderTopBar: React.FC<QSBuilderTopBarProps> = ({
@@ -41,7 +45,18 @@ const QSBuilderTopBar: React.FC<QSBuilderTopBarProps> = ({
   onSubmitOrder,
   hasLayout,
   basePath,
+  topBarColor,
+  primaryColor,
+  textColor,
+  buttonRadius,
 }) => {
+  // Resolve colors: builder settings override → store defaults
+  const hasCustomTopBar = !!topBarColor && topBarColor !== '#ffffff' && topBarColor !== '#FFFFFF';
+  const resolvedPrimary = primaryColor || store.color_primary;
+  const barBg = topBarColor || '#ffffff';
+  const barText = hasCustomTopBar ? '#ffffff' : '#111827';
+  const barTextMuted = hasCustomTopBar ? 'rgba(255,255,255,0.7)' : '#6b7280';
+
   // Calculate total dimensions
   const totalHeightInches = sheets.reduce((sum, sheet) => sum + sheet.heightInches, 0);
   const totalAreaSqInches = sheets.reduce(
@@ -115,15 +130,16 @@ const QSBuilderTopBar: React.FC<QSBuilderTopBarProps> = ({
     (!meetsMinimum && product.below_minimum_action === "block");
 
   return (
-    <div className="sticky top-0 z-50 bg-white border-b shadow-sm">
+    <div className="sticky top-0 z-50 border-b shadow-sm" style={{ backgroundColor: barBg }}>
       <div className="flex items-center justify-between px-4 py-3 max-w-screen-2xl mx-auto">
         {/* Left: Back button, Logo and Store Name */}
         <div className="flex items-center gap-3">
           <Link
             to={`${basePath}/p/${product.product_slug}`}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 rounded-lg transition-colors"
+            style={{ color: barTextMuted }}
           >
-            <ArrowLeft className="h-5 w-5 text-gray-600" />
+            <ArrowLeft className="h-5 w-5" />
           </Link>
           
           {store.logo_url ? (
@@ -135,45 +151,45 @@ const QSBuilderTopBar: React.FC<QSBuilderTopBarProps> = ({
           ) : (
             <div 
               className="h-10 w-10 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: store.color_primary }}
+              style={{ backgroundColor: resolvedPrimary }}
             >
               <Store className="h-5 w-5 text-white" />
             </div>
           )}
           <div className="hidden sm:block">
-            <h1 className="font-semibold text-gray-900 text-sm">
+            <h1 className="font-semibold text-sm" style={{ color: barText }}>
               {store.store_name}
             </h1>
-            <p className="text-xs text-gray-500">{product.product_name}</p>
+            <p className="text-xs" style={{ color: barTextMuted }}>{product.product_name}</p>
           </div>
         </div>
 
         {/* Center: Dimensions & Images */}
         <div className="hidden md:flex items-center gap-6 text-sm">
           <div className="text-center">
-            <span className="text-gray-500 text-xs block">Sheet Size</span>
-            <span className="font-mono font-medium text-gray-900">
+            <span className="text-xs block" style={{ color: barTextMuted }}>Sheet Size</span>
+            <span className="font-mono font-medium" style={{ color: barText }}>
               {getDimensionsDisplay()}
             </span>
           </div>
           
           {hasLayout && sheets.length > 0 && (
             <>
-              <div className="h-8 w-px bg-gray-200" />
+              <div className="h-8 w-px" style={{ backgroundColor: hasCustomTopBar ? 'rgba(255,255,255,0.2)' : '#e5e7eb' }} />
               <div className="text-center">
-                <span className="text-gray-500 text-xs block">
+                <span className="text-xs block" style={{ color: barTextMuted }}>
                   {product.pricing_basis === "area" ? "Area" : "Length"}
                 </span>
-                <span className="font-mono font-medium text-gray-900">
+                <span className="font-mono font-medium" style={{ color: barText }}>
                   {product.pricing_basis === "area"
                     ? `${totalAreaSqInches.toFixed(0)} sq.in`
                     : `${totalHeightInches.toFixed(1)}"`}
                 </span>
               </div>
-              <div className="h-8 w-px bg-gray-200" />
+              <div className="h-8 w-px" style={{ backgroundColor: hasCustomTopBar ? 'rgba(255,255,255,0.2)' : '#e5e7eb' }} />
               <div className="text-center">
-                <span className="text-gray-500 text-xs block">Images</span>
-                <span className="font-medium text-gray-900">{totalImages}</span>
+                <span className="text-xs block" style={{ color: barTextMuted }}>Images</span>
+                <span className="font-medium" style={{ color: barText }}>{totalImages}</span>
               </div>
             </>
           )}
@@ -182,8 +198,8 @@ const QSBuilderTopBar: React.FC<QSBuilderTopBarProps> = ({
             <span 
               className="text-xs px-2 py-0.5 rounded-full"
               style={{ 
-                backgroundColor: `${store.color_primary}20`,
-                color: store.color_primary 
+                backgroundColor: `${resolvedPrimary}20`,
+                color: resolvedPrimary 
               }}
             >
               {sheets.length} sheets
@@ -200,8 +216,8 @@ const QSBuilderTopBar: React.FC<QSBuilderTopBarProps> = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="cursor-help">
-                      <p className="text-xs text-gray-500">Total</p>
-                      <p className="text-lg font-bold" style={{ color: store.color_primary }}>
+                      <p className="text-xs" style={{ color: barTextMuted }}>Total</p>
+                      <p className="text-lg font-bold" style={{ color: barText }}>
                         {getPriceDisplay()}
                       </p>
                     </div>
@@ -217,8 +233,8 @@ const QSBuilderTopBar: React.FC<QSBuilderTopBarProps> = ({
                 </Tooltip>
               ) : (
                 <div>
-                  <p className="text-xs text-gray-500">Price</p>
-                  <p className="text-lg font-bold" style={{ color: store.color_primary }}>
+                  <p className="text-xs" style={{ color: barTextMuted }}>Price</p>
+                  <p className="text-lg font-bold" style={{ color: barText }}>
                     {getPriceDisplay()}
                   </p>
                 </div>
@@ -231,7 +247,7 @@ const QSBuilderTopBar: React.FC<QSBuilderTopBarProps> = ({
             onClick={onSubmitOrder}
             disabled={isSubmitDisabled}
             className="text-white gap-2"
-            style={{ backgroundColor: store.color_primary }}
+            style={{ backgroundColor: resolvedPrimary, borderRadius: buttonRadius || undefined }}
             size="lg"
           >
             {isSubmitting ? (
