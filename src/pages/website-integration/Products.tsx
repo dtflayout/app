@@ -30,6 +30,7 @@ import {
   deleteProduct,
   ProductWithVariants,
 } from "@/services/printerService";
+import { ProductGridSkeleton } from "@/components/Skeletons";
 
 let _productsLoaded = false;
 
@@ -131,11 +132,7 @@ const Products = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-      </div>
-    );
+    return <ProductGridSkeleton count={4} />;
   }
 
   // Show message if store is not set up
@@ -145,7 +142,7 @@ const Products = () => {
         <CardContent className="py-12">
           <div className="text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="font-heading text-lg font-bold text-gray-900 mb-2">
               Store Setup Required
             </h3>
             <p className="text-gray-600 mb-4">
@@ -167,7 +164,7 @@ const Products = () => {
         <CardContent className="py-12">
           <div className="text-center">
             <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="font-heading text-lg font-bold text-gray-900 mb-2">
               No Products Configured
             </h3>
             <p className="text-gray-600 mb-4">
@@ -188,7 +185,7 @@ const Products = () => {
       {/* Header with Add button */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Your Products</h2>
+          <h2 className="font-heading text-lg font-bold text-gray-900">Your Products</h2>
           <p className="text-sm text-gray-600">
             {products.length} product{products.length !== 1 ? "s" : ""} configured
           </p>

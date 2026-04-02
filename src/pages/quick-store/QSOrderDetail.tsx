@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Download, CheckCircle, XCircle, Phone, Mail, MessageSquare, Clock, Package, User, FileText, CreditCard, AlertTriangle, Trash2 } from 'lucide-react';
+import { OrderDetailSkeleton } from "@/components/Skeletons";
 import { format } from 'date-fns';
 
 interface OutletContextType { store: QuickStore | null; }
@@ -133,7 +134,7 @@ const QSOrderDetail: React.FC = () => {
   const handleWhatsApp = () => { if (!order?.customer_phone) return; window.open(`https://wa.me/${order.customer_phone.replace(/\D/g, '')}`, '_blank'); };
   const handleCall = () => { if (!order?.customer_phone) return; window.open(`tel:${order.customer_phone}`, '_blank'); };
 
-  if (loading) return <div className="flex items-center justify-center h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>;
+  if (loading) return <OrderDetailSkeleton />;
   if (!order || !store) return null;
 
   const config = statusConfig[effectiveStatus] || statusConfig.pending;
@@ -145,7 +146,7 @@ const QSOrderDetail: React.FC = () => {
         <Button variant="ghost" size="sm" onClick={() => navigate('/app/quick-store/orders')}><ArrowLeft className="h-4 w-4 mr-1" />Back</Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold font-mono">{order.order_code}</h1>
+            <h1 className="font-heading text-2xl font-extrabold tracking-tight font-mono">{order.order_code}</h1>
             <Badge className={config.color}>{config.label}</Badge>
           </div>
           <p className="text-sm text-gray-500">Submitted {format(new Date(order.created_at), 'PPP p')}</p>
@@ -299,7 +300,7 @@ const QSOrderDetail: React.FC = () => {
         <div className="space-y-4">
           <div className="bg-gray-50 rounded-lg p-4">
             <p className="text-sm text-gray-500 mb-1">Sheet dimensions:</p>
-            <p className="text-2xl font-bold">{order.sheets[0]?.width_inches}" × {Number(order.sheets[0]?.height_inches || 0).toFixed(2)}"</p>
+            <p className="text-2xl font-heading font-bold">{order.sheets[0]?.width_inches}" × {Number(order.sheets[0]?.height_inches || 0).toFixed(2)}"</p>
             {order.sheet_count > 1 && <p className="text-sm text-gray-500 mt-1">({order.sheet_count} sheets total)</p>}
           </div>
           <div>

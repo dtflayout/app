@@ -22,6 +22,7 @@ import { getR2PublicUrl } from "@/lib/r2Client";
 import { toast } from "sonner";
 import { format, startOfDay, endOfDay, subDays, startOfMonth, startOfWeek, formatDistanceToNow } from "date-fns";
 import { Loader2, Package, Clock, CheckCircle, Download, XCircle, MoreVertical, Eye, Trash2, RefreshCw, FileDown, Search, LayoutGrid, List, CalendarIcon, Phone, User, AlertTriangle, Mail, MessageSquare } from "lucide-react";
+import { StatsCardsSkeleton, KanbanSkeleton } from "@/components/Skeletons";
 
 interface OutletContextType { store: QuickStore | null; }
 
@@ -307,7 +308,7 @@ const QSOrders = () => {
 
   // ─── Render ────────────────────────────────────────────────────────────────
   if (!store) return <div className="p-6 text-center text-gray-500">Please complete store setup first</div>;
-  if (isLoading) return <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div>;
+  if (isLoading) return <div className="space-y-6"><StatsCardsSkeleton count={5} /><KanbanSkeleton columns={4} /></div>;
 
   return (
     <div className="space-y-6">
@@ -333,13 +334,13 @@ const QSOrders = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card><CardContent className="pt-4 pb-4"><div className="text-2xl font-bold">{filteredStats.total}</div><p className="text-xs text-muted-foreground">Total Orders</p></CardContent></Card>
-        <Card><CardContent className="pt-4 pb-4"><div className="text-2xl font-bold text-amber-600">{filteredStats.pending}</div><p className="text-xs text-muted-foreground">Pending</p></CardContent></Card>
-        <Card><CardContent className="pt-4 pb-4"><div className="text-2xl font-bold text-green-600">{filteredStats.paid}</div><p className="text-xs text-muted-foreground">Paid</p></CardContent></Card>
-        <Card><CardContent className="pt-4 pb-4"><div className="text-2xl font-bold text-blue-600">{filteredStats.downloaded}</div><p className="text-xs text-muted-foreground">Downloaded</p></CardContent></Card>
+        <Card><CardContent className="pt-4 pb-4"><div className="text-2xl font-heading font-bold">{filteredStats.total}</div><p className="text-xs text-muted-foreground">Total Orders</p></CardContent></Card>
+        <Card><CardContent className="pt-4 pb-4"><div className="text-2xl font-heading font-bold text-amber-600">{filteredStats.pending}</div><p className="text-xs text-muted-foreground">Pending</p></CardContent></Card>
+        <Card><CardContent className="pt-4 pb-4"><div className="text-2xl font-heading font-bold text-green-600">{filteredStats.paid}</div><p className="text-xs text-muted-foreground">Paid</p></CardContent></Card>
+        <Card><CardContent className="pt-4 pb-4"><div className="text-2xl font-heading font-bold text-blue-600">{filteredStats.downloaded}</div><p className="text-xs text-muted-foreground">Downloaded</p></CardContent></Card>
         <Card><CardContent className="pt-4 pb-4">
           <div className="flex items-center justify-between">
-            <div><div className="text-2xl font-bold text-red-600">{filteredStats.expired}</div><p className="text-xs text-muted-foreground">Expired</p></div>
+            <div><div className="text-2xl font-heading font-bold text-red-600">{filteredStats.expired}</div><p className="text-xs text-muted-foreground">Expired</p></div>
             {filteredStats.expired > 0 && <Button variant="ghost" size="sm" className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2" onClick={handleClearExpired} disabled={isProcessing}><Trash2 className="h-3 w-3 mr-1" />Clear</Button>}
           </div>
         </CardContent></Card>
@@ -608,7 +609,7 @@ const QSOrders = () => {
             {paidConfirmOrders.length === 1 && paidConfirmOrders[0] && (
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-sm text-gray-500 mb-1">Sheet dimensions:</p>
-                <p className="text-2xl font-bold">{paidConfirmOrders[0].sheets[0]?.width_inches}" × {Number(paidConfirmOrders[0].sheets[0]?.height_inches || 0).toFixed(2)}"</p>
+                <p className="text-2xl font-heading font-bold">{paidConfirmOrders[0].sheets[0]?.width_inches}" × {Number(paidConfirmOrders[0].sheets[0]?.height_inches || 0).toFixed(2)}"</p>
                 {paidConfirmOrders[0].sheet_count > 1 && <p className="text-sm text-gray-500 mt-1">({paidConfirmOrders[0].sheet_count} sheets total)</p>}
               </div>
             )}

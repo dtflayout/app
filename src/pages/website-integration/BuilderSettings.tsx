@@ -52,6 +52,7 @@ import {
   GOOGLE_FONTS,
   BUTTON_STYLE_OPTIONS
 } from "@/types/builderSettings";
+import { FormSkeleton } from "@/components/Skeletons";
 
 const BuilderSettingsPage = () => {
   const { user } = useAuth();
@@ -239,11 +240,7 @@ const BuilderSettingsPage = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-      </div>
-    );
+    return <FormSkeleton fields={8} />;
   }
 
   if (!printer || !settings) {
@@ -289,7 +286,7 @@ const BuilderSettingsPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Public Builder Settings</h2>
+          <h2 className="font-heading text-2xl font-extrabold text-gray-900 tracking-tight">Public Builder Settings</h2>
           <p className="text-gray-600 mt-1">
             Customize how your public builder looks and behaves for customers
           </p>

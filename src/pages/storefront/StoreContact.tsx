@@ -130,7 +130,7 @@ const StoreContact: React.FC<Props> = ({ store }) => {
           {/* Contact Information */}
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Contact Us</h1>
+              <h1 className="font-heading text-3xl font-extrabold tracking-tight mb-2">Contact Us</h1>
               <p className="text-muted-foreground">
                 Get in touch with {store.store_name}. We're here to help with all your DTF printing needs.
               </p>

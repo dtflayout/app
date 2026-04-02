@@ -348,7 +348,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
         {/* Header - Fixed at top */}
         <DialogHeader className="px-6 py-3 border-b bg-white flex-shrink-0">
           <div className="flex items-center justify-between pr-8">
-            <DialogTitle className="text-xl font-bold">Sheet Preview</DialogTitle>
+            <DialogTitle className="font-heading text-xl font-bold tracking-tight">Sheet Preview</DialogTitle>
             <div className="flex items-center gap-4">
               {/* Sheet dimensions */}
               <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">

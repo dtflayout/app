@@ -24,6 +24,7 @@ import {
   Printer,
   ProductWithVariants,
 } from "@/services/printerService";
+import { FormSkeleton } from "@/components/Skeletons";
 
 interface Variant {
   id?: string;
@@ -289,9 +290,7 @@ const WebsiteIntegration = () => {
     return (
       <AppLayout>
         <div className="p-6 max-w-4xl mx-auto">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
+          <FormSkeleton fields={5} />
         </div>
       </AppLayout>
     );
@@ -302,7 +301,7 @@ const WebsiteIntegration = () => {
       <div className="p-6 max-w-4xl mx-auto space-y-6">
         {/* Page Header */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Website Integration</h1>
+          <h1 className="font-heading text-3xl font-extrabold text-gray-900 tracking-tight mb-2">Website Integration</h1>
           <p className="text-gray-600">
             Connect your Shopify store and let customers design directly on your website
           </p>

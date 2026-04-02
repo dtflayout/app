@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { Plus, MoreVertical, Pencil, Trash2, Copy, GripVertical, Package, Loader2, Eye, EyeOff } from 'lucide-react';
+import { ProductGridSkeleton } from "@/components/Skeletons";
 
 interface OutletContextType {
   store: QuickStore | null;
@@ -90,7 +91,7 @@ const QSProducts: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Your Products</h2>
+          <h2 className="font-heading text-lg font-bold text-gray-900">Your Products</h2>
           <p className="text-sm text-gray-600">
             {products.length} product{products.length !== 1 ? 's' : ''} configured
           </p>
@@ -102,9 +103,7 @@ const QSProducts: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-        </div>
+        <ProductGridSkeleton count={4} />
       ) : products.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">

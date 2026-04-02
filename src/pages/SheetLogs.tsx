@@ -20,13 +20,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
+import { TableSkeleton } from "@/components/Skeletons";
 import { format, startOfDay, endOfDay, subDays, startOfMonth, startOfWeek, differenceInDays } from "date-fns";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 
 // ─── Source Config ────────────────────────────────────────────────────────────
 
 const SOURCE_CONFIG: Record<UsageSource, { label: string; className: string; color: string }> = {
-  standalone: { label: "Builder", className: "bg-blue-100 text-blue-700 border-blue-200", color: "#3b82f6" },
+  standalone: { label: "Builder", className: "bg-indigo-100 text-indigo-700 border-indigo-200", color: "#4F46E5" },
   website_integration: { label: "Website", className: "bg-indigo-100 text-indigo-700 border-indigo-200", color: "#6366f1" },
   quick_store: { label: "Quick Store", className: "bg-purple-100 text-purple-700 border-purple-200", color: "#a855f7" },
 };
@@ -241,11 +242,11 @@ export const SheetLogs = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <FileText className="w-6 h-6 text-blue-600" />
+            <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+              <FileText className="w-6 h-6 text-indigo-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Generation History</h1>
+              <h1 className="font-heading text-2xl font-extrabold tracking-tight">Generation History</h1>
               <p className="text-sm text-muted-foreground">Track your credit usage across all builders</p>
             </div>
           </div>
@@ -360,10 +361,10 @@ export const SheetLogs = () => {
           <Card>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1">
-                <Layers className="h-4 w-4 text-blue-500" />
+                <Layers className="h-4 w-4 text-indigo-500" />
                 <span className="text-xs font-medium text-muted-foreground">Generations</span>
               </div>
-              <div className="text-2xl font-bold">{filteredStats.totalGenerations}</div>
+              <div className="text-2xl font-heading font-bold">{filteredStats.totalGenerations}</div>
             </CardContent>
           </Card>
           <Card>
@@ -372,7 +373,7 @@ export const SheetLogs = () => {
                 <LayoutGrid className="h-4 w-4 text-indigo-500" />
                 <span className="text-xs font-medium text-muted-foreground">Total Area</span>
               </div>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-heading font-bold">
                 {formatCompact(filteredStats.totalAreaUsed)}
                 <span className="text-sm font-normal text-muted-foreground ml-1">sq.in</span>
               </div>
@@ -384,7 +385,7 @@ export const SheetLogs = () => {
                 <BarChart3 className="h-4 w-4 text-purple-500" />
                 <span className="text-xs font-medium text-muted-foreground">Avg / Generation</span>
               </div>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-heading font-bold">
                 {formatNumber(filteredStats.avgPerGeneration)}
                 <span className="text-sm font-normal text-muted-foreground ml-1">sq.in</span>
               </div>
@@ -396,7 +397,7 @@ export const SheetLogs = () => {
                 <TrendingDown className="h-4 w-4 text-red-500" />
                 <span className="text-xs font-medium text-muted-foreground">Credits Used</span>
               </div>
-              <div className="text-2xl font-bold text-red-600">
+              <div className="text-2xl font-heading font-bold text-red-600">
                 {formatCompact(filteredStats.totalCreditsUsed)}
               </div>
             </CardContent>
@@ -407,7 +408,7 @@ export const SheetLogs = () => {
                 <Wallet className="h-4 w-4 text-green-500" />
                 <span className="text-xs font-medium text-muted-foreground">Balance</span>
               </div>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-heading font-bold text-green-600">
                 {formatCompact(currentBalance)}
               </div>
             </CardContent>
@@ -464,12 +465,7 @@ export const SheetLogs = () => {
 
         {/* Table */}
         {isLoading ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading history...</p>
-            </CardContent>
-          </Card>
+          <TableSkeleton rows={8} cols={5} />
         ) : filteredLogs.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
@@ -513,7 +509,7 @@ export const SheetLogs = () => {
                           <td className="px-4 py-3.5 text-sm text-gray-600">
                             {formatNumber(log.sheet_width)}" × {formatNumber(log.sheet_height)}"
                           </td>
-                          <td className="px-4 py-3.5 text-sm text-right font-medium text-blue-600">
+                          <td className="px-4 py-3.5 text-sm text-right font-medium text-indigo-600">
                             {formatNumber(log.sq_inches_used)}
                           </td>
                           <td className="px-4 py-3.5 text-right">
@@ -572,7 +568,7 @@ export const SheetLogs = () => {
                         <span className="text-muted-foreground">Sheet Size</span>
                         <span className="text-right">{formatNumber(log.sheet_width)}" × {formatNumber(log.sheet_height)}"</span>
                         <span className="text-muted-foreground">Area Used</span>
-                        <span className="text-right font-medium text-blue-600">{formatNumber(log.sq_inches_used)} sq.in</span>
+                        <span className="text-right font-medium text-indigo-600">{formatNumber(log.sq_inches_used)} sq.in</span>
                         <span className="text-muted-foreground">Credits Used</span>
                         <span className="text-right font-semibold text-red-600">−{formatNumber(creditsUsed)}</span>
                         <span className="text-muted-foreground">Images</span>

@@ -15,6 +15,7 @@ import {
   TrendingUp, TrendingDown, Wallet, Sparkles, Loader2,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { TableSkeleton } from "@/components/Skeletons";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -39,7 +40,7 @@ const formatDate = (dateString: string): string => {
 
 const TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   free_trial: { label: "Free Trial", icon: <Sparkles className="h-4 w-4" />, color: "text-purple-600 bg-purple-50" },
-  recharge: { label: "Recharge", icon: <CreditCard className="h-4 w-4" />, color: "text-blue-600 bg-blue-50" },
+  recharge: { label: "Recharge", icon: <CreditCard className="h-4 w-4" />, color: "text-indigo-600 bg-indigo-50" },
   manual_adjustment: { label: "Adjustment", icon: <TrendingUp className="h-4 w-4" />, color: "text-gray-600 bg-gray-50" },
 };
 
@@ -153,7 +154,7 @@ const Billing = () => {
               <Wallet className="w-6 h-6 text-indigo-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Billing & Credits</h1>
+              <h1 className="font-heading text-2xl font-extrabold tracking-tight">Billing & Credits</h1>
               <p className="text-sm text-muted-foreground">
                 Manage your balance and recharges — for usage details, see{" "}
                 <a href="/logs" className="text-indigo-600 hover:underline font-medium">History</a>
@@ -173,12 +174,12 @@ const Billing = () => {
         </div>
 
         {/* Balance Card */}
-        <Card className="bg-gradient-to-r from-slate-800 to-slate-900 text-white overflow-hidden">
+        <Card className="bg-gradient-dark text-white overflow-hidden border-indigo-500/20">
           <CardContent className="pt-6 pb-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400 text-sm mb-1">Current Balance</p>
-                <p className="text-4xl font-bold text-indigo-400">
+                <p className="text-4xl font-heading font-extrabold text-indigo-400">
                   {formatNumber(currentBalance)}
                   <span className="text-lg font-normal text-gray-400 ml-2">sq.in</span>
                 </p>
@@ -203,7 +204,7 @@ const Billing = () => {
                 <TrendingUp className="h-4 w-4 text-green-500" />
                 <span className="text-xs font-medium text-muted-foreground">Total Credits In</span>
               </div>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-heading font-bold text-green-600">
                 +{summary ? formatCompact(summary.totalCredits) : "0"}
               </div>
             </CardContent>
@@ -214,7 +215,7 @@ const Billing = () => {
                 <TrendingDown className="h-4 w-4 text-red-500" />
                 <span className="text-xs font-medium text-muted-foreground">Total Used</span>
               </div>
-              <div className="text-2xl font-bold text-red-600">
+              <div className="text-2xl font-heading font-bold text-red-600">
                 −{summary ? formatCompact(summary.totalDebits) : "0"}
               </div>
             </CardContent>
@@ -225,7 +226,7 @@ const Billing = () => {
                 <Sparkles className="h-4 w-4 text-purple-500" />
                 <span className="text-xs font-medium text-muted-foreground">Free Trial</span>
               </div>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-heading font-bold">
                 {summary?.byType?.free_trial ? formatCompact(summary.byType.free_trial) : "0"}
               </div>
             </CardContent>
@@ -233,10 +234,10 @@ const Billing = () => {
           <Card>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1">
-                <CreditCard className="h-4 w-4 text-blue-500" />
+                <CreditCard className="h-4 w-4 text-indigo-500" />
                 <span className="text-xs font-medium text-muted-foreground">From Recharges</span>
               </div>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-heading font-bold">
                 {summary?.byType?.recharge ? formatCompact(summary.byType.recharge) : "0"}
               </div>
             </CardContent>
@@ -245,12 +246,7 @@ const Billing = () => {
 
         {/* Credit Activity */}
         {isLoading ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">Loading...</p>
-            </CardContent>
-          </Card>
+          <TableSkeleton rows={6} cols={5} />
         ) : (
           <Card>
             <CardHeader className="pb-2">

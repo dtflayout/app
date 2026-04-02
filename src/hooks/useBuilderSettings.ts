@@ -1,6 +1,11 @@
 /**
  * useBuilderSettings Hook
- * Loads a printer's builder settings by slug for use in public/store builders.
+ * Loads a printer's builder settings for use in public/store builders.
+ * 
+ * Supports two lookup modes:
+ * - By slug: used by WI public builder (builder.dtflayout.com/:printerSlug)
+ * - By userId: used by QS storefront builder (more reliable when slugs may differ)
+ * 
  * Returns DEFAULT_BUILDER_SETTINGS while loading or on error, so consumers
  * always have a valid settings object.
  * 
@@ -11,7 +16,7 @@
 
 import { useState, useEffect } from "react";
 import { BuilderSettings, DEFAULT_BUILDER_SETTINGS } from "@/types/builderSettings";
-import { getBuilderSettingsBySlug } from "@/services/builderSettingsService";
+import { getBuilderSettingsBySlug, getBuilderSettingsByUserId } from "@/services/builderSettingsService";
 
 /** Always-valid settings object (defaults until loaded) */
 const FALLBACK_SETTINGS: BuilderSettings = {
@@ -88,13 +93,30 @@ interface UseBuilderSettingsReturn {
   error: string | null;
 }
 
-export function useBuilderSettings(printerSlug: string | undefined): UseBuilderSettingsReturn {
+interface UseBuilderSettingsOptions {
+  slug?: string;
+  userId?: string;
+}
+
+export function useBuilderSettings(
+  slugOrOptions: string | undefined | UseBuilderSettingsOptions
+): UseBuilderSettingsReturn {
+  // Normalize: support both old signature useBuilderSettings("slug") 
+  // and new signature useBuilderSettings({ slug?, userId? })
+  const options: UseBuilderSettingsOptions = typeof slugOrOptions === "string"
+    ? { slug: slugOrOptions }
+    : slugOrOptions || {};
+
+  const { slug, userId } = options;
+  const lookupKey = userId || slug; // for determining if we should fetch
+  const cacheKey = `${userId || ''}_${slug || ''}`; // for effect dependency
+
   const [settings, setSettings] = useState<BuilderSettings>(FALLBACK_SETTINGS);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!printerSlug) return;
+    if (!lookupKey) return;
 
     let cancelled = false;
     setIsLoading(true);
@@ -102,13 +124,27 @@ export function useBuilderSettings(printerSlug: string | undefined): UseBuilderS
 
     (async () => {
       try {
-        console.log("[useBuilderSettings] Loading settings for slug:", printerSlug);
-        const result = await getBuilderSettingsBySlug(printerSlug);
+        let result;
+
+        // Try userId lookup first (more reliable for QS where slugs may differ)
+        if (userId) {
+          console.log("[useBuilderSettings] Trying userId lookup:", userId);
+          result = await getBuilderSettingsByUserId(userId);
+          // Fall back to slug if userId lookup fails (e.g. RLS restrictions)
+          if (!result.success && slug) {
+            console.warn("[useBuilderSettings] userId lookup failed, trying slug fallback:", slug);
+            result = await getBuilderSettingsBySlug(slug);
+          }
+        } else if (slug) {
+          console.log("[useBuilderSettings] Using slug lookup:", slug);
+          result = await getBuilderSettingsBySlug(slug);
+        } else {
+          return;
+        }
 
         if (cancelled) return;
 
         if (result.success && result.data) {
-          // Apply _use_defaults flags before storing
           const resolved = applyDefaults(result.data);
           console.log("[useBuilderSettings] Settings loaded and defaults applied");
           setSettings(resolved);
@@ -126,7 +162,7 @@ export function useBuilderSettings(printerSlug: string | undefined): UseBuilderS
     })();
 
     return () => { cancelled = true; };
-  }, [printerSlug]);
+  }, [cacheKey]);
 
   return { settings, isLoading, error };
 }

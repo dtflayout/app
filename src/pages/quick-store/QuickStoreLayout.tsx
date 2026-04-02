@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { getQuickStore } from '@/services/quickStoreService';
+import { getQuickStore, ensurePrinterForQS } from '@/services/quickStoreService';
 import { getPendingOrdersCount } from '@/services/qsOrderService';
 import { getStoreMessages } from '@/services/storefrontService';
 import { QuickStore } from '@/types/quickStore';
 import { buildStoreUrl } from '@/hooks/useSubdomain';
 import { AppLayout } from '@/components/AppLayout';
+import { FullPageSkeleton } from "@/components/Skeletons";
 import {
   Store,
   Home,
@@ -14,6 +15,7 @@ import {
   ShoppingCart,
   BarChart3,
   Settings,
+  Settings2,
   ExternalLink,
   Eye,
   Loader2,
@@ -40,6 +42,16 @@ const QuickStoreLayout: React.FC = () => {
       const result = await getQuickStore(user.id);
       if (result.success && result.data) {
         setStore(result.data);
+        
+        // Ensure a printer row exists for this user (required for Builder Settings)
+        // This is idempotent — returns existing printer if already present
+        await ensurePrinterForQS(
+          user.id,
+          result.data.slug,
+          result.data.store_name,
+          result.data.logo_url
+        );
+        
         // Get pending orders count
         const countResult = await getPendingOrdersCount(result.data.id);
         setPendingCount(countResult.count);
@@ -91,6 +103,7 @@ const QuickStoreLayout: React.FC = () => {
     { to: '/app/quick-store/customers', icon: Users, label: 'Customers' },
     { to: '/app/quick-store/analytics', icon: BarChart3, label: 'Analytics' },
     { to: '/app/quick-store/settings', icon: Settings, label: 'Settings' },
+    { to: '/app/quick-store/builder-settings', icon: Settings2, label: 'Builder Settings' },
   ];
 
   const handlePreview = () => {
@@ -103,9 +116,7 @@ const QuickStoreLayout: React.FC = () => {
   if (loading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-        </div>
+        <FullPageSkeleton />
       </AppLayout>
     );
   }
@@ -143,7 +154,7 @@ const QuickStoreLayout: React.FC = () => {
             {/* Store Name & Status */}
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-gray-900">{store?.store_name || 'Quick Store'}</h1>
+                <h1 className="font-heading text-2xl font-extrabold text-gray-900 tracking-tight">{store?.store_name || 'Quick Store'}</h1>
                 {store?.is_published ? (
                   <Badge variant="default" className="bg-indigo-500">Live</Badge>
                 ) : (

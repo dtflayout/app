@@ -38,14 +38,12 @@ export const SessionRecoveryModal: React.FC<SessionRecoveryModalProps> = ({
   if (!metadata) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onDiscard(); }}>
       <DialogContent 
         className="sm:max-w-md"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
+          <DialogTitle className="font-heading flex items-center gap-2 text-xl font-bold tracking-tight">
             <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: primaryColor ? `${primaryColor}20` : '#eef2ff' }}>
               <RotateCcw className="h-5 w-5" style={{ color: primaryColor || '#4f46e5' }} />
             </div>

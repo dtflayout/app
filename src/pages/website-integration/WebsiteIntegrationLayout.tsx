@@ -32,8 +32,8 @@ const WebsiteIntegrationLayout = () => {
       <div className="p-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Website Integration</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="font-heading text-3xl font-extrabold text-gray-900 tracking-tight">Website Integration</h1>
+          <p className="text-gray-500 mt-1">
             Connect your Shopify store and let customers design directly on your website
           </p>
         </div>

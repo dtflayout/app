@@ -56,7 +56,7 @@ export const ConfirmLayoutDialog: React.FC<ConfirmLayoutDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl p-8">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Confirm Layout Generation</DialogTitle>
+          <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">Confirm Layout Generation</DialogTitle>
           <DialogDescription className="text-base pt-4">
             <div className="space-y-5">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">

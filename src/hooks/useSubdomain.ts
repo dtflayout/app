@@ -87,14 +87,9 @@ export function getStoreSlugFromPath(pathname: string): string | null {
  * Build store URL from slug
  */
 export function buildStoreUrl(slug: string): string {
-  // In production, use subdomain
-  if (window.location.hostname === 'dtflayout.com' || 
-      window.location.hostname.endsWith('.dtflayout.com')) {
-    return `https://${slug}.dtflayout.com`;
-  }
-  
-  // In development, use path-based fallback
-  return `${window.location.origin}/s/${slug}`;
+  // Always return the production subdomain URL
+  // This is used for Preview/Visit Store buttons and display text
+  return `https://${slug}.dtflayout.com`;
 }
 
 /**

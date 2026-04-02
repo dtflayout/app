@@ -99,9 +99,9 @@ export const PreviewDrawer: React.FC<PreviewDrawerProps> = ({
   // Determine ruler interval based on zoom level
   const getRulerInterval = () => {
     if (zoom >= 250) return 1;    // Show every inch when very zoomed in
-    if (zoom >= 150) return 5;    // Show every 5 inches
-    if (zoom >= 75) return 10;    // Show every 10 inches
-    return 20;                     // Show every 20 inches when zoomed out
+    if (zoom >= 100) return 2;    // Show every 2 inches
+    if (zoom >= 35) return 5;     // Show every 5 inches (default 50% zoom)
+    return 10;                     // Show every 10 inches when very zoomed out
   };
 
   const rulerInterval = getRulerInterval();
@@ -437,7 +437,7 @@ export const PreviewDrawer: React.FC<PreviewDrawerProps> = ({
           {/* Header */}
           <div className="px-6 py-4 border-b bg-gradient-to-r from-gray-50 to-gray-100 flex-shrink-0">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-800">Sheet Preview</h2>
+              <h2 className="font-heading text-xl font-bold text-gray-800 tracking-tight">Sheet Preview</h2>
               
               {/* Toolbar - Always visible when there's a layout, regardless of mode */}
               {hasLayout && (

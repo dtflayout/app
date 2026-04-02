@@ -82,6 +82,38 @@ export async function getBuilderSettingsBySlug(
 }
 
 /**
+ * Get builder settings by user ID.
+ * Used by Quick Store's storefront builder where the printer slug
+ * may differ from the QS store slug.
+ */
+export async function getBuilderSettingsByUserId(
+  userId: string
+): Promise<{ success: boolean; data?: BuilderSettings; error?: string }> {
+  try {
+    console.log("[BuilderSettingsService] Fetching settings for user:", userId);
+
+    const { data: printer, error: printerError } = await supabase
+      .from("printers")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .single();
+
+    if (printerError || !printer) {
+      console.warn("[BuilderSettingsService] No printer found for user:", userId, printerError?.message || "no data");
+      return { success: false, error: "Printer not found for user" };
+    }
+
+    console.log("[BuilderSettingsService] Found printer for user:", printer.id);
+
+    return getBuilderSettings(printer.id);
+  } catch (err: any) {
+    console.error("[BuilderSettingsService] Exception:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
  * Save builder settings (create or update)
  */
 export async function saveBuilderSettings(

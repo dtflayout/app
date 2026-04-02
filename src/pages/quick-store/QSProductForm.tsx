@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Loader2, Upload, ArrowLeft, Plus, Trash2, DollarSign, Ruler, Image as ImageIcon, ShoppingBag, RotateCcw } from 'lucide-react';
+import { FormSkeleton } from "@/components/Skeletons";
 
 interface OutletContextType {
   store: QuickStore | null;
@@ -245,11 +246,7 @@ const QSProductForm: React.FC = () => {
     : UNIT_LABELS[store?.measurement_unit || 'inch'].singular;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
+    return <FormSkeleton fields={6} />;
   }
 
   if (!store) {
@@ -269,7 +266,7 @@ const QSProductForm: React.FC = () => {
           Back
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold">
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight">
             {isEditing ? 'Edit Product' : 'Add Product'}
           </h1>
         </div>
