@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Phone,
   Mail,
@@ -16,7 +15,8 @@ import {
   MessageCircle,
   Send,
   ExternalLink,
-  CheckCircle
+  CheckCircle,
+  ArrowRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -34,12 +34,12 @@ interface BusinessHour {
 const StoreContact: React.FC<Props> = ({ store }) => {
   const location = useLocation();
   const basePath = location.pathname.startsWith('/s/') ? `/s/${store.slug}` : '';
-  
+
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     email: '',
-    message: ''
+    message: '',
   });
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -48,7 +48,6 @@ const StoreContact: React.FC<Props> = ({ store }) => {
     trackEvent(store.id, 'contact_view');
   }, [store.id]);
 
-  // Parse business hours from settings
   const businessHours: BusinessHour[] = store.business_hours || [
     { day: 'Monday', open: '09:00', close: '18:00', closed: false },
     { day: 'Tuesday', open: '09:00', close: '18:00', closed: false },
@@ -56,7 +55,7 @@ const StoreContact: React.FC<Props> = ({ store }) => {
     { day: 'Thursday', open: '09:00', close: '18:00', closed: false },
     { day: 'Friday', open: '09:00', close: '18:00', closed: false },
     { day: 'Saturday', open: '10:00', close: '16:00', closed: false },
-    { day: 'Sunday', open: '', close: '', closed: true }
+    { day: 'Sunday', open: '', close: '', closed: true },
   ];
 
   const formatTime = (time: string): string => {
@@ -70,7 +69,7 @@ const StoreContact: React.FC<Props> = ({ store }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.phone || !formData.message) {
       toast.error('Please fill in all required fields');
       return;
@@ -79,9 +78,7 @@ const StoreContact: React.FC<Props> = ({ store }) => {
     setSending(true);
 
     try {
-      trackEvent(store.id, 'contact_submit', {
-        hasEmail: !!formData.email
-      });
+      trackEvent(store.id, 'contact_submit', { hasEmail: !!formData.email });
 
       const result = await submitContactMessage(store.id, formData);
 
@@ -122,108 +119,145 @@ const StoreContact: React.FC<Props> = ({ store }) => {
     }
   };
 
+  const primary = store.color_primary || '#4f46e5';
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen">
+      {/* ── Hero Banner ── */}
+      <div
+        className="relative py-16 sm:py-20"
+        style={{ background: `linear-gradient(135deg, ${primary}, ${primary}dd)` }}
+      >
+        <div className="absolute inset-0 opacity-10">
+          <div
+            className="w-full h-full"
+            style={{
+              backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
+              backgroundSize: '24px 24px',
+            }}
+          />
+        </div>
+        <div className="container mx-auto px-4 relative z-10 text-center">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-3">
+            Get in Touch
+          </h1>
+          <p className="text-white/80 text-lg max-w-lg mx-auto">
+            We'd love to hear from you. Reach out and let's talk about your printing needs.
+          </p>
+        </div>
+      </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Contact Information */}
-          <div className="space-y-6">
+      {/* ── Quick Action Buttons ── */}
+      <div className="container mx-auto px-4 -mt-7 relative z-20">
+        <div className="flex flex-wrap justify-center gap-3">
+          {store.whatsapp && (
+            <button
+              onClick={handleWhatsApp}
+              className="flex items-center gap-2.5 bg-white rounded-full px-6 py-3 shadow-lg hover:shadow-xl transition-all text-sm font-semibold border border-gray-100 hover:-translate-y-0.5"
+            >
+              <MessageCircle className="w-[18px] h-[18px] text-green-600" />
+              <span>WhatsApp Us</span>
+            </button>
+          )}
+          {store.phone && (
+            <button
+              onClick={handleCall}
+              className="flex items-center gap-2.5 bg-white rounded-full px-6 py-3 shadow-lg hover:shadow-xl transition-all text-sm font-semibold border border-gray-100 hover:-translate-y-0.5"
+            >
+              <Phone className="w-[18px] h-[18px]" style={{ color: primary }} />
+              <span>Call Now</span>
+            </button>
+          )}
+          {store.email && (
+            <button
+              onClick={handleEmail}
+              className="flex items-center gap-2.5 bg-white rounded-full px-6 py-3 shadow-lg hover:shadow-xl transition-all text-sm font-semibold border border-gray-100 hover:-translate-y-0.5"
+            >
+              <Mail className="w-[18px] h-[18px]" style={{ color: primary }} />
+              <span>Send Email</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Main Content ── */}
+      <div className="container mx-auto px-4 py-12 sm:py-16">
+        <div className="grid lg:grid-cols-5 gap-10 lg:gap-14">
+          {/* ── Left: Contact Info ── */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Contact Details */}
             <div>
-              <h1 className="font-heading text-3xl font-extrabold tracking-tight mb-2">Contact Us</h1>
-              <p className="text-muted-foreground">
-                Get in touch with {store.store_name}. We're here to help with all your DTF printing needs.
-              </p>
-            </div>
-
-            {/* Quick Contact Buttons */}
-            <div className="flex flex-wrap gap-3">
-              {store.whatsapp && (
-                <Button
-                  onClick={handleWhatsApp}
-                  className="bg-indigo-600 hover:bg-indigo-700 gap-2"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  WhatsApp
-                </Button>
-              )}
-              {store.phone && (
-                <Button variant="outline" onClick={handleCall} className="gap-2">
-                  <Phone className="w-4 h-4" />
-                  Call Now
-                </Button>
-              )}
-              {store.email && (
-                <Button variant="outline" onClick={handleEmail} className="gap-2">
-                  <Mail className="w-4 h-4" />
-                  Email
-                </Button>
-              )}
-            </div>
-
-            {/* Contact Details Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Contact Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <span className="w-8 h-0.5 rounded-full" style={{ backgroundColor: primary }} />
+                Contact Details
+              </h2>
+              <div className="space-y-5">
                 {store.phone && (
-                  <div className="flex items-start gap-3">
-                    <Phone className="w-5 h-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="font-medium">Phone</p>
-                      <a
-                        href={`tel:${store.phone}`}
-                        className="text-primary hover:underline"
-                      >
-                        {store.phone}
-                      </a>
+                  <a href={`tel:${store.phone}`} className="flex items-start gap-4 group">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: `${primary}12` }}
+                    >
+                      <Phone className="w-[18px] h-[18px]" style={{ color: primary }} />
                     </div>
-                  </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wider text-gray-400 mb-0.5">Phone</p>
+                      <p className="font-medium group-hover:underline">{store.phone}</p>
+                    </div>
+                  </a>
                 )}
 
                 {store.whatsapp && (
-                  <div className="flex items-start gap-3">
-                    <MessageCircle className="w-5 h-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="font-medium">WhatsApp</p>
-                      <button
-                        onClick={handleWhatsApp}
-                        className="text-primary hover:underline"
-                      >
-                        {store.whatsapp}
-                      </button>
+                  <button onClick={handleWhatsApp} className="flex items-start gap-4 group text-left w-full">
+                    <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                      <MessageCircle className="w-[18px] h-[18px] text-green-600" />
                     </div>
-                  </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wider text-gray-400 mb-0.5">WhatsApp</p>
+                      <p className="font-medium group-hover:underline">{store.whatsapp}</p>
+                    </div>
+                  </button>
                 )}
 
                 {store.email && (
-                  <div className="flex items-start gap-3">
-                    <Mail className="w-5 h-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="font-medium">Email</p>
-                      <a
-                        href={`mailto:${store.email}`}
-                        className="text-primary hover:underline"
-                      >
-                        {store.email}
-                      </a>
+                  <a href={`mailto:${store.email}`} className="flex items-start gap-4 group">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: `${primary}12` }}
+                    >
+                      <Mail className="w-[18px] h-[18px]" style={{ color: primary }} />
                     </div>
-                  </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wider text-gray-400 mb-0.5">Email</p>
+                      <p className="font-medium group-hover:underline">{store.email}</p>
+                    </div>
+                  </a>
                 )}
 
                 {store.address && (
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-muted-foreground mt-0.5" />
+                  <div className="flex items-start gap-4">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: `${primary}12` }}
+                    >
+                      <MapPin className="w-[18px] h-[18px]" style={{ color: primary }} />
+                    </div>
                     <div>
-                      <p className="font-medium">Address</p>
-                      <p className="text-muted-foreground">{store.address}</p>
+                      <p className="text-xs font-medium uppercase tracking-wider text-gray-400 mb-0.5">Address</p>
+                      <p className="font-medium">{store.address}</p>
+                      {store.city && (
+                        <p className="text-sm text-gray-500">
+                          {store.city}
+                          {store.country ? `, ${store.country}` : ''}
+                        </p>
+                      )}
                       {store.google_maps_url && (
                         <a
                           href={store.google_maps_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                          className="inline-flex items-center gap-1 text-sm mt-1.5 hover:underline"
+                          style={{ color: primary }}
                         >
                           View on Maps <ExternalLink className="w-3 h-3" />
                         </a>
@@ -231,109 +265,152 @@ const StoreContact: React.FC<Props> = ({ store }) => {
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            {/* Business Hours Card */}
+            {/* Business Hours */}
             {store.show_business_hours !== false && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
+              <div>
+                <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <span className="w-8 h-0.5 rounded-full" style={{ backgroundColor: primary }} />
                   Business Hours
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {businessHours.map((hour) => (
+                </h2>
+                <div className="rounded-2xl border border-gray-100 overflow-hidden">
+                  {businessHours.map((hour, idx) => (
                     <div
                       key={hour.day}
-                      className="flex justify-between py-1 border-b last:border-0"
+                      className={`flex justify-between items-center px-4 py-3 ${
+                        idx % 2 === 0 ? 'bg-gray-50/60' : 'bg-white'
+                      }`}
                     >
-                      <span className="font-medium">{hour.day}</span>
-                      <span className={hour.closed ? 'text-red-500' : 'text-muted-foreground'}>
-                        {hour.closed
-                          ? 'Closed'
-                          : `${formatTime(hour.open)} - ${formatTime(hour.close)}`}
-                      </span>
+                      <span className="text-sm font-medium">{hour.day}</span>
+                      {hour.closed ? (
+                        <span className="text-xs font-medium text-red-500 bg-red-50 px-2.5 py-1 rounded-full">
+                          Closed
+                        </span>
+                      ) : (
+                        <span className="text-sm text-gray-600">
+                          {formatTime(hour.open)} – {formatTime(hour.close)}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            )}
+
+            {/* Google Map Embed */}
+            {store.google_maps_url && (
+              <div className="rounded-2xl overflow-hidden border border-gray-100">
+                <iframe
+                  src={store.google_maps_url}
+                  className="h-52 w-full border-0"
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Store Location"
+                />
+              </div>
             )}
           </div>
 
-          {/* Contact Form */}
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Send a Message</CardTitle>
-                <CardDescription>
-                  Fill out the form below and we'll get back to you as soon as possible.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {sent ? (
-                  <div className="text-center py-8">
-                    <CheckCircle className="w-16 h-16 text-indigo-500 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">Message Sent!</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Thank you for reaching out. We'll contact you soon.
-                    </p>
-                    <Button variant="outline" onClick={() => setSent(false)}>
-                      Send Another Message
-                    </Button>
+          {/* ── Right: Message Form ── */}
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
+              {sent ? (
+                <div className="text-center py-12">
+                  <div
+                    className="w-16 h-16 rounded-full mx-auto mb-5 flex items-center justify-center"
+                    style={{ backgroundColor: `${primary}15` }}
+                  >
+                    <CheckCircle className="w-8 h-8" style={{ color: primary }} />
                   </div>
-                ) : (
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Name *</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="Your name"
-                        required
-                      />
+                  <h3 className="text-2xl font-bold mb-2">Message Sent!</h3>
+                  <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+                    Thank you for reaching out. We'll get back to you as soon as possible.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => setSent(false)}
+                    className="rounded-full px-6"
+                  >
+                    Send Another Message
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold mb-1">Send a Message</h2>
+                    <p className="text-gray-500 text-sm">
+                      Fill out the form and we'll get back to you shortly.
+                    </p>
+                  </div>
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="name" className="text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Name *
+                        </Label>
+                        <Input
+                          id="name"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="Your name"
+                          required
+                          className="rounded-xl h-11 border-gray-200 focus:border-gray-300"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="phone" className="text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Phone *
+                        </Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          placeholder="Your phone number"
+                          required
+                          className="rounded-xl h-11 border-gray-200 focus:border-gray-300"
+                        />
+                      </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number *</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder="Your phone number"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email (Optional)</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="email" className="text-xs font-medium uppercase tracking-wider text-gray-500">
+                        Email <span className="normal-case tracking-normal text-gray-400">(optional)</span>
+                      </Label>
                       <Input
                         id="email"
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         placeholder="Your email address"
+                        className="rounded-xl h-11 border-gray-200 focus:border-gray-300"
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="message">Message *</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="message" className="text-xs font-medium uppercase tracking-wider text-gray-500">
+                        Message *
+                      </Label>
                       <Textarea
                         id="message"
                         value={formData.message}
                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                        placeholder="How can we help you?"
-                        rows={4}
+                        placeholder="Tell us what you need help with..."
+                        rows={5}
                         required
+                        className="rounded-xl border-gray-200 focus:border-gray-300 resize-none"
                       />
                     </div>
 
-                    <Button type="submit" className="w-full gap-2" disabled={sending}>
+                    <Button
+                      type="submit"
+                      className="w-full h-12 rounded-xl gap-2 text-sm font-semibold text-white transition-all hover:opacity-90"
+                      style={{ backgroundColor: primary }}
+                      disabled={sending}
+                    >
                       {sending ? (
                         <>
                           <span className="animate-spin">⏳</span>
@@ -341,29 +418,15 @@ const StoreContact: React.FC<Props> = ({ store }) => {
                         </>
                       ) : (
                         <>
-                          <Send className="w-4 h-4" />
                           Send Message
+                          <ArrowRight className="w-4 h-4" />
                         </>
                       )}
                     </Button>
                   </form>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Google Map Embed - uses google_maps_url for iframe */}
-            {store.google_maps_url && (
-              <Card className="mt-6 overflow-hidden">
-                <iframe
-                  src={store.google_maps_url}
-                  className="h-64 w-full border-0"
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Store Location"
-                />
-              </Card>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
