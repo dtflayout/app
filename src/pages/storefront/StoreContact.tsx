@@ -70,7 +70,7 @@ const StoreContact: React.FC<Props> = ({ store }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.phone || !formData.message) {
+    if (!formData.name || !formData.phone || !formData.email || !formData.message) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -378,7 +378,7 @@ const StoreContact: React.FC<Props> = ({ store }) => {
 
                     <div className="space-y-1.5">
                       <Label htmlFor="email" className="text-xs font-medium uppercase tracking-wider text-gray-500">
-                        Email <span className="normal-case tracking-normal text-gray-400">(optional)</span>
+                        Email *
                       </Label>
                       <Input
                         id="email"
@@ -386,6 +386,7 @@ const StoreContact: React.FC<Props> = ({ store }) => {
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         placeholder="Your email address"
+                        required
                         className="rounded-xl h-11 border-gray-200 focus:border-gray-300"
                       />
                     </div>
