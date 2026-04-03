@@ -52,6 +52,9 @@ import {
   MapPin,
   Image,
   Type,
+  ExternalLink,
+  Copy,
+  Lock,
 } from 'lucide-react';
 import { buildStoreUrl } from '@/hooks/useSubdomain';
 
@@ -59,6 +62,29 @@ interface OutletContextType {
   store: QuickStore | null;
   setStore: (store: QuickStore) => void;
 }
+
+const COUNTRIES = [
+  'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina', 'Armenia', 'Australia', 'Austria',
+  'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan',
+  'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Cabo Verde', 'Cambodia',
+  'Cameroon', 'Canada', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 'Comoros', 'Congo', 'Costa Rica',
+  'Croatia', 'Cuba', 'Cyprus', 'Czech Republic', 'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic', 'Ecuador', 'Egypt',
+  'El Salvador', 'Equatorial Guinea', 'Eritrea', 'Estonia', 'Eswatini', 'Ethiopia', 'Fiji', 'Finland', 'France', 'Gabon',
+  'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana',
+  'Haiti', 'Honduras', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel',
+  'Italy', 'Jamaica', 'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kiribati', 'Kuwait', 'Kyrgyzstan', 'Laos',
+  'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar', 'Malawi',
+  'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 'Mauritius', 'Mexico', 'Micronesia', 'Moldova',
+  'Monaco', 'Mongolia', 'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia', 'Nauru', 'Nepal', 'Netherlands',
+  'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 'North Korea', 'North Macedonia', 'Norway', 'Oman', 'Pakistan', 'Palau',
+  'Palestine', 'Panama', 'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania',
+  'Russia', 'Rwanda', 'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 'Sao Tome and Principe', 'Saudi Arabia', 'Senegal',
+  'Serbia', 'Seychelles', 'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 'Somalia', 'South Africa', 'South Korea',
+  'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 'Suriname', 'Sweden', 'Switzerland', 'Syria', 'Taiwan', 'Tajikistan',
+  'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey', 'Turkmenistan', 'Tuvalu',
+  'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu', 'Vatican City', 'Venezuela',
+  'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe',
+];
 
 const StoreSetup: React.FC = () => {
   const { user } = useAuth();
@@ -89,6 +115,7 @@ const StoreSetup: React.FC = () => {
     country: '',
     google_maps_url: '',
     business_hours: DEFAULT_BUSINESS_HOURS,
+    show_business_hours: true,
   });
 
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
@@ -114,6 +141,7 @@ const StoreSetup: React.FC = () => {
         country: store.country || '',
         google_maps_url: store.google_maps_url || '',
         business_hours: store.business_hours?.length ? store.business_hours : DEFAULT_BUSINESS_HOURS,
+        show_business_hours: store.show_business_hours ?? true,
         logo_url: store.logo_url || undefined,
         banner_image_url: store.banner_image_url || undefined,
       });
@@ -235,8 +263,9 @@ const StoreSetup: React.FC = () => {
 
     try {
       if (store) {
-        // Update existing
-        const result = await updateQuickStore(store.id, formData);
+        // Update existing — strip slug, currency, and unit to prevent changes after creation
+        const { slug: _slug, currency: _currency, measurement_unit: _unit, ...updateData } = formData;
+        const result = await updateQuickStore(store.id, updateData);
         if (result.success && result.data) {
           setStore(result.data);
           toast.success('Store updated!');
@@ -341,7 +370,7 @@ const StoreSetup: React.FC = () => {
                   <Label htmlFor="store_name">Store Name *</Label>
                   <Input
                     id="store_name"
-                    placeholder="Mumbai Prints"
+                    placeholder="My Print Shop"
                     value={formData.store_name}
                     onChange={(e) => handleInputChange('store_name', e.target.value)}
                   />
@@ -359,36 +388,94 @@ const StoreSetup: React.FC = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="slug">Store URL *</Label>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 relative">
-                    <Input
-                      id="slug"
-                      placeholder="mumbai-prints"
-                      value={formData.slug}
-                      onChange={(e) => handleSlugChange(e.target.value)}
-                      className="pr-10"
-                    />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      {slugStatus === 'checking' && (
-                        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                      )}
-                      {slugStatus === 'available' && (
-                        <Check className="h-4 w-4 text-indigo-500" />
-                      )}
-                      {slugStatus === 'taken' && (
-                        <X className="h-4 w-4 text-red-500" />
-                      )}
+                {store?.slug ? (
+                  /* ── LOCKED STATE: slug already saved ── */
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 relative">
+                        <Input
+                          id="slug"
+                          value={formData.slug}
+                          disabled
+                          className="pr-10 bg-gray-50 text-gray-500 cursor-not-allowed"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <Lock className="h-4 w-4 text-gray-400" />
+                        </div>
+                      </div>
+                      <span className="text-sm text-gray-500 whitespace-nowrap">.dtflayout.com</span>
                     </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-400 flex items-center gap-1">
+                        <Lock className="h-3 w-3" />
+                        Store URL cannot be changed after creation
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-gray-500 hover:text-gray-700"
+                          onClick={() => {
+                            navigator.clipboard.writeText(buildStoreUrl(store.slug));
+                            toast.success('Store URL copied!');
+                          }}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-gray-500 hover:text-gray-700"
+                          onClick={() => window.open(buildStoreUrl(store.slug), '_blank')}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-indigo-600">
+                      Your store is at: {buildStoreUrl(store.slug)}
+                    </p>
                   </div>
-                  <span className="text-sm text-gray-500 whitespace-nowrap">.dtflayout.com</span>
-                </div>
-                {slugStatus === 'taken' && (
-                  <p className="text-sm text-red-500">This URL is not available</p>
-                )}
-                {slugStatus === 'available' && formData.slug && (
-                  <p className="text-sm text-indigo-600">
-                    Your store will be at: {buildStoreUrl(formData.slug)}
-                  </p>
+                ) : (
+                  /* ── EDITABLE STATE: first-time setup ── */
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 relative">
+                        <Input
+                          id="slug"
+                          placeholder="my-print-shop"
+                          value={formData.slug}
+                          onChange={(e) => handleSlugChange(e.target.value)}
+                          className="pr-10"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          {slugStatus === 'checking' && (
+                            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                          )}
+                          {slugStatus === 'available' && (
+                            <Check className="h-4 w-4 text-indigo-500" />
+                          )}
+                          {slugStatus === 'taken' && (
+                            <X className="h-4 w-4 text-red-500" />
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-sm text-gray-500 whitespace-nowrap">.dtflayout.com</span>
+                    </div>
+                    {slugStatus === 'taken' && (
+                      <p className="text-sm text-red-500">This URL is not available</p>
+                    )}
+                    {slugStatus === 'available' && formData.slug && (
+                      <p className="text-sm text-indigo-600">
+                        Your store will be at: {buildStoreUrl(formData.slug)}
+                      </p>
+                    )}
+                    <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                      ⚠️ Choose carefully — your store URL <strong>cannot be changed</strong> after creation. Double-check the spelling before saving.
+                    </p>
+                  </div>
                 )}
               </div>
             </CardContent>
@@ -410,8 +497,9 @@ const StoreSetup: React.FC = () => {
                   <Select
                     value={formData.currency}
                     onValueChange={(v) => handleInputChange('currency', v as Currency)}
+                    disabled={!!store}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={store ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -428,8 +516,9 @@ const StoreSetup: React.FC = () => {
                   <Select
                     value={formData.measurement_unit}
                     onValueChange={(v) => handleInputChange('measurement_unit', v as MeasurementUnit)}
+                    disabled={!!store}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={store ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -442,6 +531,16 @@ const StoreSetup: React.FC = () => {
                   </Select>
                 </div>
               </div>
+              {store ? (
+                <p className="text-xs text-gray-400 flex items-center gap-1">
+                  <Lock className="h-3 w-3" />
+                  Currency and unit cannot be changed after creation to keep pricing consistent
+                </p>
+              ) : (
+                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                  ⚠️ Choose carefully — currency and measurement unit <strong>cannot be changed</strong> after creation.
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -455,36 +554,36 @@ const StoreSetup: React.FC = () => {
               <CardDescription>Choose a font pairing for your store</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {FONT_PAIRINGS.map((fp) => {
                   const selected = (formData.font_pairing || 'modern') === fp.id;
                   return (
                     <button
                       key={fp.id}
                       onClick={() => handleInputChange('font_pairing', fp.id)}
-                      className={`relative flex flex-col p-3 rounded-xl border-2 text-left transition-all ${
+                      className={`relative flex flex-col p-2.5 rounded-xl border-2 text-left transition-all ${
                         selected ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300 bg-white'
                       }`}
                     >
                       {selected && (
-                        <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center">
+                        <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center">
                           <Check className="h-2.5 w-2.5 text-white" />
                         </div>
                       )}
                       <span
-                        className="text-base font-bold leading-tight"
+                        className="text-sm font-bold leading-tight"
                         style={{ fontFamily: `'${fp.heading}', sans-serif` }}
                       >
                         {fp.label}
                       </span>
                       <span
-                        className="text-xs text-gray-500 mt-1"
+                        className="text-[10px] text-gray-500 mt-0.5 truncate w-full"
                         style={{ fontFamily: `'${fp.body}', sans-serif` }}
                       >
                         {fp.heading === fp.body ? fp.heading : `${fp.heading} + ${fp.body}`}
                       </span>
                       <span
-                        className="text-[11px] text-gray-400 mt-2 leading-snug"
+                        className="text-[10px] text-gray-400 mt-1.5 leading-snug line-clamp-2"
                         style={{ fontFamily: `'${fp.body}', sans-serif` }}
                       >
                         The quick brown fox jumps over the lazy dog
@@ -548,7 +647,7 @@ const StoreSetup: React.FC = () => {
                   <Label htmlFor="phone">Phone *</Label>
                   <Input
                     id="phone"
-                    placeholder="+91 98765 43210"
+                    placeholder="+1 234 567 8900"
                     value={formData.phone || ''}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                   />
@@ -557,7 +656,7 @@ const StoreSetup: React.FC = () => {
                   <Label htmlFor="whatsapp">WhatsApp</Label>
                   <Input
                     id="whatsapp"
-                    placeholder="+91 98765 43210"
+                    placeholder="+1 234 567 8900"
                     value={formData.whatsapp || ''}
                     onChange={(e) => handleInputChange('whatsapp', e.target.value)}
                   />
@@ -568,7 +667,7 @@ const StoreSetup: React.FC = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="hello@mumbaiprints.com"
+                  placeholder="hello@yourstore.com"
                   value={formData.email || ''}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                 />
@@ -577,7 +676,7 @@ const StoreSetup: React.FC = () => {
                 <Label htmlFor="address">Address</Label>
                 <Textarea
                   id="address"
-                  placeholder="Shop 12, Print Market, Mumbai"
+                  placeholder="123 Print Street, Suite 4"
                   value={formData.address || ''}
                   onChange={(e) => handleInputChange('address', e.target.value)}
                   rows={2}
@@ -588,19 +687,26 @@ const StoreSetup: React.FC = () => {
                   <Label htmlFor="city">City *</Label>
                   <Input
                     id="city"
-                    placeholder="Mumbai"
+                    placeholder="New York"
                     value={formData.city || ''}
                     onChange={(e) => handleInputChange('city', e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="country">Country *</Label>
-                  <Input
-                    id="country"
-                    placeholder="India"
+                  <Select
                     value={formData.country || ''}
-                    onChange={(e) => handleInputChange('country', e.target.value)}
-                  />
+                    onValueChange={(v) => handleInputChange('country', v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select country" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {COUNTRIES.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="space-y-2">
@@ -615,7 +721,17 @@ const StoreSetup: React.FC = () => {
 
               {/* Business Hours */}
               <div className="space-y-3 pt-2 border-t border-gray-100">
-                <Label>Business Hours <span className="text-gray-400 font-normal">(optional)</span></Label>
+                <div className="flex items-center justify-between">
+                  <Label>Business Hours</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">{formData.show_business_hours ? 'Shown on store' : 'Hidden from store'}</span>
+                    <Switch
+                      checked={formData.show_business_hours ?? true}
+                      onCheckedChange={(checked) => handleInputChange('show_business_hours', checked)}
+                    />
+                  </div>
+                </div>
+                {formData.show_business_hours && (
                 <div className="space-y-1.5">
                   {(formData.business_hours || DEFAULT_BUSINESS_HOURS).map((hour, idx) => (
                     <div key={hour.day} className="flex items-center gap-2">
@@ -658,6 +774,7 @@ const StoreSetup: React.FC = () => {
                     </div>
                   ))}
                 </div>
+                )}
               </div>
             </CardContent>
           </Card>

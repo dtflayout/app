@@ -10,7 +10,7 @@ export type HeroStyle = 'fullbleed' | 'split' | 'minimal' | 'cinematic' | 'card'
 export type HeroBgType = 'gradient' | 'solid' | 'image' | 'slider';
 export type HeroTextAlign = 'left' | 'center' | 'right';
 
-export type FontPairing = 'modern' | 'classic' | 'bold' | 'elegant' | 'clean' | 'friendly';
+export type FontPairing = 'modern' | 'classic' | 'bold' | 'elegant' | 'clean' | 'friendly' | 'editorial' | 'techy' | 'luxe' | 'playful' | 'minimal' | 'industrial';
 
 export interface FontPairingConfig {
   id: FontPairing;
@@ -62,6 +62,48 @@ export const FONT_PAIRINGS: FontPairingConfig[] = [
     heading: 'Nunito',
     body: 'Nunito',
     googleImport: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap',
+  },
+  {
+    id: 'editorial',
+    label: 'Editorial',
+    heading: 'Libre Baskerville',
+    body: 'Karla',
+    googleImport: 'https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Karla:wght@400;500;600;700&display=swap',
+  },
+  {
+    id: 'techy',
+    label: 'Techy',
+    heading: 'Space Grotesk',
+    body: 'IBM Plex Sans',
+    googleImport: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap',
+  },
+  {
+    id: 'luxe',
+    label: 'Luxe',
+    heading: 'DM Serif Display',
+    body: 'Jost',
+    googleImport: 'https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Jost:wght@400;500;600;700&display=swap',
+  },
+  {
+    id: 'playful',
+    label: 'Playful',
+    heading: 'Outfit',
+    body: 'Outfit',
+    googleImport: 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap',
+  },
+  {
+    id: 'minimal',
+    label: 'Minimal',
+    heading: 'Sora',
+    body: 'Work Sans',
+    googleImport: 'https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Work+Sans:wght@400;500;600&display=swap',
+  },
+  {
+    id: 'industrial',
+    label: 'Industrial',
+    heading: 'Archivo',
+    body: 'Rubik',
+    googleImport: 'https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Rubik:wght@400;500;600&display=swap',
   },
 ];
 
@@ -249,6 +291,7 @@ export interface QuickStore {
   country: string | null;
   google_maps_url: string | null;
   business_hours: BusinessHours[];
+  show_business_hours: boolean;
   
   // Header
   header_style: HeaderStyle;
@@ -334,6 +377,7 @@ export interface QuickStoreInput {
   country?: string | null;
   google_maps_url?: string | null;
   business_hours?: BusinessHours[];
+  show_business_hours?: boolean;
   faq_enabled?: boolean;
   faq_style?: FaqStyle;
   faq_title?: string | null;

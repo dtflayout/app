@@ -235,6 +235,7 @@ const StoreContact: React.FC<Props> = ({ store }) => {
             </Card>
 
             {/* Business Hours Card */}
+            {store.show_business_hours !== false && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -260,6 +261,7 @@ const StoreContact: React.FC<Props> = ({ store }) => {
                 </div>
               </CardContent>
             </Card>
+            )}
           </div>
 
           {/* Contact Form */}
