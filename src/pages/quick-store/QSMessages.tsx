@@ -155,7 +155,10 @@ const QSMessages: React.FC = () => {
                             <div className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />
                           )}
                         </div>
-                        <p className="text-xs text-[#7c7c7c] mt-0.5">{msg.sender_phone}</p>
+                        <p className="text-xs text-[#7c7c7c] mt-0.5">
+                          {msg.sender_phone}
+                          {msg.sender_email && <> · {msg.sender_email}</>}
+                        </p>
                         <p className="text-sm text-[#7c7c7c] mt-1 truncate">{msg.message}</p>
                       </div>
                     </div>
