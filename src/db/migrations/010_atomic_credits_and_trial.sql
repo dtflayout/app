@@ -9,7 +9,7 @@
 -- ═══════════════════════════════════════════════════════════════════════
 
 CREATE OR REPLACE FUNCTION add_credits_atomic(
-  p_user_id TEXT,
+  p_user_id UUID,
   p_amount NUMERIC
 )
 RETURNS NUMERIC
@@ -51,7 +51,7 @@ $$;
 -- ═══════════════════════════════════════════════════════════════════════
 
 CREATE OR REPLACE FUNCTION claim_free_trial_atomic(
-  p_user_id TEXT,
+  p_user_id UUID,
   p_credits NUMERIC DEFAULT 20000
 )
 RETURNS NUMERIC
@@ -102,7 +102,7 @@ $$;
 -- ═══════════════════════════════════════════════════════════════════════
 
 CREATE OR REPLACE FUNCTION deduct_credits_atomic(
-  p_user_id TEXT,
+  p_user_id UUID,
   p_amount NUMERIC
 )
 RETURNS NUMERIC
