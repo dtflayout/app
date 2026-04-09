@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient';
 import { logCreditTransaction } from './creditLedgerService';
 
-const FREE_TRIAL_CREDITS = 10000;
+const FREE_TRIAL_CREDITS = 20000;
 const LOW_CREDITS_THRESHOLD = 1000; // sq.inches
 const LOW_CREDITS_ALERT_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
@@ -48,16 +48,17 @@ export async function getOrCreateUserCredits(
       };
     }
 
-    // User doesn't exist, create with 10,000 free trial credits automatically
-    console.log('[Credits] New user, creating with 10,000 free trial credits');
+    // User doesn't exist (trigger may not have fired) — create with 0 balance
+    // Free trial must be claimed separately via /api/claim-free-trial
+    console.log('[Credits] No credits record found, creating with 0 balance');
 
     const { error: insertError } = await supabase
       .from('credits')
       .insert({
         user_id: userId,
         email: email,
-        balance: FREE_TRIAL_CREDITS,
-        free_trial_claimed: true,
+        balance: 0,
+        free_trial_claimed: false,
         created_at: new Date().toISOString(),
       });
 
@@ -66,18 +67,8 @@ export async function getOrCreateUserCredits(
       return { success: false, error: insertError.message };
     }
 
-    // Log the free trial credit transaction
-    await logCreditTransaction(
-      userId,
-      email,
-      'free_trial',
-      FREE_TRIAL_CREDITS,
-      FREE_TRIAL_CREDITS,
-      'Welcome bonus - Free trial credits'
-    );
-
-    console.log('[Credits] New user created with 10,000 free trial credits');
-    return { success: true, credits: FREE_TRIAL_CREDITS, freeTrialClaimed: true, isNewUser: true };
+    console.log('[Credits] New user created with 0 balance');
+    return { success: true, credits: 0, freeTrialClaimed: false, isNewUser: true };
   } catch (err: any) {
     console.error('[Credits] Exception:', err);
     return { success: false, error: err.message };
@@ -287,7 +278,8 @@ export function getLowCreditsThreshold(): number {
 }
 
 /**
- * Add credits to user's balance (used by payment system)
+ * Add credits to user's balance using atomic Postgres RPC
+ * Prevents race conditions from concurrent webhook/payment calls
  */
 export async function addCredits(
   userId: string,
@@ -295,77 +287,36 @@ export async function addCredits(
   email: string
 ): Promise<{ success: boolean; newBalance?: number; error?: string }> {
   try {
-    console.log('[Credits] Adding', amount, 'credits to user');
+    console.log('[Credits] Adding', amount, 'credits to user (atomic)');
 
-    // First get current balance (or create user if doesn't exist)
-    const { data, error: fetchError } = await supabase
-      .from('credits')
-      .select('balance')
-      .eq('user_id', userId)
-      .single();
+    const { data, error: rpcError } = await supabase
+      .rpc('add_credits_atomic', {
+        p_user_id: userId,
+        p_amount: amount,
+      });
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      console.error('[Credits] Fetch error:', fetchError);
-      return { success: false, error: fetchError.message };
+    if (rpcError) {
+      console.error('[Credits] RPC error:', rpcError.message);
+      if (rpcError.message.includes('User not found')) {
+        return { success: false, error: 'User credit record not found' };
+      }
+      return { success: false, error: rpcError.message };
     }
 
-    if (data) {
-      // User exists, update balance
-      const newBalance = (data.balance ?? 0) + amount;
+    const newBalance = data as number;
 
-      const { error: updateError } = await supabase
-        .from('credits')
-        .update({
-          balance: newBalance,
-        })
-        .eq('user_id', userId);
+    // Log the recharge transaction
+    await logCreditTransaction(
+      userId,
+      email,
+      'recharge',
+      amount,
+      newBalance,
+      'Plan recharge'
+    );
 
-      if (updateError) {
-        console.error('[Credits] Update error:', updateError);
-        return { success: false, error: updateError.message };
-      }
-
-      // Log the recharge transaction
-      await logCreditTransaction(
-        userId,
-        email,
-        'recharge',
-        amount,
-        newBalance,
-        'Plan recharge'
-      );
-
-      console.log('[Credits] Credits added. New balance:', newBalance);
-      return { success: true, newBalance };
-    } else {
-      // User doesn't exist, create with the added amount
-      const { error: insertError } = await supabase
-        .from('credits')
-        .insert({
-          user_id: userId,
-          email: email,
-          balance: amount,
-          created_at: new Date().toISOString(),
-        });
-
-      if (insertError) {
-        console.error('[Credits] Insert error:', insertError);
-        return { success: false, error: insertError.message };
-      }
-
-      // Log the recharge transaction for new user
-      await logCreditTransaction(
-        userId,
-        email,
-        'recharge',
-        amount,
-        amount,
-        'Plan recharge'
-      );
-
-      console.log('[Credits] New user created with', amount, 'credits');
-      return { success: true, newBalance: amount };
-    }
+    console.log('[Credits] Credits added. New balance:', newBalance);
+    return { success: true, newBalance };
   } catch (err: any) {
     console.error('[Credits] Exception:', err);
     return { success: false, error: err.message };

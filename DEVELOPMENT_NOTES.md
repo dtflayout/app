@@ -129,3 +129,80 @@ src/
 └── db/migrations/
     └── 006_builder_settings.sql # Database schema for settings
 ```
+
+---
+
+## ⚠️ Infrastructure — DO NOT CHANGE WITHOUT READING
+
+### How Subdomain Routing Works
+
+All `*.dtflayout.com` traffic flows through this chain:
+
+```
+Browser request → Cloudflare DNS (wildcard * CNAME, Proxied)
+  → dtf-subdomain-proxy Worker (route *.dtflayout.com/*)
+    → Checks reserved list → if reserved, passes through
+    → If not reserved, proxies to dtflayout.com (Vercel) as a storefront
+```
+
+**The `dtf-subdomain-proxy` Worker's reserved list controls everything.** If a subdomain is reserved, the Worker skips it. If not, it's treated as a Quick Store storefront slug.
+
+Current reserved list in the Worker: `['www', 'builder', 'app', 'api', 'admin', 'files']`
+
+### How R2 File Serving Works (files.dtflayout.com)
+
+Images (logos, banners, product images, design files) are stored in Cloudflare R2 bucket `dtf-storage` and served through a dedicated Worker:
+
+```
+files.dtflayout.com/store-assets/.../logo.png
+  → dtf-subdomain-proxy sees "files" is reserved → passes through
+  → r2-files Worker (custom domain: files.dtflayout.com) catches it
+  → Reads from R2 bucket via binding (R2_BUCKET → dtf-storage)
+  → Returns file with correct Content-Type
+```
+
+**Why a Worker instead of R2 Custom Domain?**
+The `*.dtflayout.com` wildcard CNAME (Proxied) was intercepting `files.dtflayout.com` requests before R2's custom domain could handle them. The `dtf-subdomain-proxy` Worker runs at Cloudflare's edge before DNS resolution, so it was catching everything. A dedicated Worker with a custom domain assignment takes priority, solving the conflict.
+
+### CRITICAL RULES — Breaking these will break image loading site-wide
+
+1. **NEVER remove `files` from the `dtf-subdomain-proxy` Worker's reserved list.** If removed, the proxy will treat `files.dtflayout.com` as a storefront slug and forward all image requests to Vercel, which returns HTML instead of images.
+
+2. **NEVER re-add `files.dtflayout.com` as an R2 bucket custom domain.** The `r2-files` Worker handles it. Adding it back creates a DNS conflict that breaks file serving.
+
+3. **When adding a new non-Vercel subdomain** (e.g., `cdn.dtflayout.com`, `api2.dtflayout.com`), you MUST add it to THREE places:
+   - `dtf-subdomain-proxy` Worker reserved list
+   - `src/hooks/useSubdomain.ts` → `RESERVED_SUBDOMAINS` array
+   - `src/hooks/useSubdomain.ts` → `isSlugReserved()` function's `RESERVED` array
+
+4. **Cloudflare Free plan limit:** 100,000 Worker requests/day across ALL workers. Every image load counts. Monitor usage in Cloudflare Dashboard → Workers → Metrics. If approaching limit, upgrade to Workers Paid ($5/month for 10M requests).
+
+### Vercel Domain Setup
+
+```
+builder.dtflayout.com  → CNAME to Vercel (DNS only, grey cloud)
+dtflayout.com          → A record to 76.76.21.21 (DNS only)
+www.dtflayout.com      → CNAME to cname.vercel-dns.com (DNS only)
+*.dtflayout.com        → CNAME to dtflayout.com (Proxied, orange cloud)
+```
+
+**Do NOT add `*.dtflayout.com` as a domain in Vercel project settings.** The Cloudflare proxy + `dtf-subdomain-proxy` Worker handles wildcard routing. Adding a wildcard domain in Vercel causes SSL conflicts.
+
+### Cloudflare Workers Summary
+
+| Worker | Route/Domain | Purpose |
+|--------|-------------|---------|
+| `dtf-subdomain-proxy` | Route: `*.dtflayout.com/*` | Proxies store subdomains to Vercel, skips reserved ones |
+| `r2-files` | Custom domain: `files.dtflayout.com` | Serves R2 bucket files with correct Content-Type |
+
+### Environment Variables (R2 related)
+
+| Variable | Location | Value |
+|----------|----------|-------|
+| `R2_PUBLIC_URL` | Vercel (server-side) | `https://files.dtflayout.com` |
+| `VITE_R2_PUBLIC_URL` | Vercel (client-side) | `https://files.dtflayout.com` |
+| `R2_BUCKET` | r2-files Worker binding | `dtf-storage` |
+| `R2_ACCOUNT_ID` | Vercel | Cloudflare account ID |
+| `R2_ACCESS_KEY_ID` | Vercel | R2 API token |
+| `R2_SECRET_ACCESS_KEY` | Vercel | R2 API secret |
+| `R2_BUCKET_NAME` | Vercel | `dtf-storage` |

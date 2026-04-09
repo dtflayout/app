@@ -4,7 +4,7 @@
  * Route: /s/:storeSlug/builder/:productSlug
  * 
  * Similar to PublicBuilder but uses Quick Store's area/length pricing model
- * and submits orders to the Quick Store system instead of Shopify cart
+ * and submits orders to the Quick Store system instead of the website's cart
  */
 
 import React, { useState, useEffect, useMemo } from 'react';

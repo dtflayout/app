@@ -190,6 +190,13 @@ export const CollageCreator = ({
   const [spacingInches, setSpacingInches] = useState(
     builderSettings?.default_margin_inches ?? 0.3
   );
+  // Sync spacing when builder settings load asynchronously
+  const hasUserChangedSpacing = useRef(false);
+  useEffect(() => {
+    if (builderSettings?.default_margin_inches != null && !hasUserChangedSpacing.current) {
+      setSpacingInches(builderSettings.default_margin_inches);
+    }
+  }, [builderSettings?.default_margin_inches]);
   const [isExporting, setIsExporting] = useState(false);
   const [totalSqInchesUsed, setTotalSqInchesUsed] = useState<number | null>(null);
   const [showInsufficientCreditsModal, setShowInsufficientCreditsModal] = useState(false);
@@ -2515,6 +2522,7 @@ export const CollageCreator = ({
         spacingInches={spacingInches}
         onSpacingChange={(spacing) => {
           setSpacingInches(spacing);
+          hasUserChangedSpacing.current = true;
           if (layout.length > 0) {
             setLayout([]);
             setMultiSheetResult(null);

@@ -1,9 +1,81 @@
 # TODO List for DTF Layout Tool
 
-**Last Updated:** March 20, 2026  
+**Last Updated:** April 3, 2026  
 **Auth System:** Supabase Auth (email/password)  
 **Payment Gateway:** Dodo Payments (India + Global)  
 **Credits System:** Supabase `credits` table
+
+---
+
+## 🚨 Pre-Launch Checklist (April 4, 2026)
+
+### Infrastructure Status (Verified ✅)
+- [x] `https://dtflayout.com` → 307 redirect to www → 200 OK (Vercel)
+- [x] `https://www.dtflayout.com` → 200 OK (Vercel)
+- [x] `https://thaneprints.dtflayout.com` → 200 OK (Cloudflare proxy → Vercel)
+- [x] `https://builder.dtflayout.com` → 200 OK (Vercel, DNS only CNAME)
+- [x] `https://files.dtflayout.com` → R2 Worker serving images (Content-Type: image/png)
+- [x] Logos loading across Quick Store dashboard, storefront, and builder
+- [x] No hardcoded localhost URLs in codebase
+- [x] CORS configured for `*.dtflayout.com` in all API routes
+- [x] `files` in reserved subdomains (useSubdomain.ts + dtf-subdomain-proxy worker)
+- [x] Sentry error monitoring integrated (client + server)
+
+### Cloudflare DNS & Workers (Verify these match)
+- [x] DNS `*` CNAME → `dtflayout.com` → **Proxied** (orange cloud)
+- [x] DNS `builder` CNAME → Vercel → **DNS only** (grey cloud)
+- [x] DNS `www` CNAME → `cname.vercel-dns.com` → **DNS only** (grey cloud)
+- [x] Worker `dtf-subdomain-proxy` — route `*.dtflayout.com/*`, reserved list includes `files`
+- [x] Worker `r2-files` — custom domain `files.dtflayout.com`, binding `R2_BUCKET` → `dtf-storage`
+- [ ] No stale R2 custom domain on bucket (removed, Worker handles it now)
+
+### Vercel Environment Variables (Check all exist)
+- [ ] `VITE_SUPABASE_URL` — Supabase project URL
+- [ ] `VITE_SUPABASE_ANON_KEY` — Supabase anon key
+- [ ] `SUPABASE_URL` — same URL (for server-side API routes)
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` — from Supabase Dashboard → Settings → API → service_role key
+- [ ] `SUPABASE_SERVICE_KEY` — same as service_role key (some API routes use this name)
+- [ ] `CRON_SECRET` — any random string (for cron job auth)
+- [ ] `DODO_PAYMENTS_API_KEY` — from Dodo Payments dashboard
+- [ ] `DODO_WEBHOOK_KEY` — from Dodo Payments dashboard → Webhooks
+- [ ] `DODO_LIVE_MODE` — set to `true` when ready for real payments (keep `false` for testing)
+- [ ] `R2_ACCOUNT_ID` — Cloudflare account ID
+- [ ] `R2_ACCESS_KEY_ID` — R2 API token access key
+- [ ] `R2_SECRET_ACCESS_KEY` — R2 API token secret key
+- [ ] `R2_BUCKET_NAME` — `dtf-storage`
+- [ ] `R2_PUBLIC_URL` — `https://files.dtflayout.com`
+- [ ] `VITE_R2_PUBLIC_URL` — `https://files.dtflayout.com`
+- [ ] `VITE_SENTRY_DSN` — Sentry project DSN
+- [ ] `SENTRY_DSN` — same DSN (for server-side)
+- [ ] `UPSTASH_REDIS_REST_URL` — from Upstash dashboard (rate limiting)
+- [ ] `UPSTASH_REDIS_REST_TOKEN` — from Upstash dashboard
+
+### Vercel Cleanup
+- [ ] Remove old Razorpay env vars: `VITE_RAZORPAY_KEY_ID`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`
+
+### Supabase Tasks
+- [ ] Run migration: `ALTER TABLE quick_stores ADD COLUMN show_business_hours boolean DEFAULT true;`
+- [ ] Confirm PITR backups are enabled (Supabase Pro → Settings → Backups)
+- [ ] Clean up stale Storage files: `DELETE FROM storage.objects WHERE bucket_id = 'design-files';` (6.5 GB)
+- [ ] Clean up stale Storage files: `DELETE FROM storage.objects WHERE bucket_id = 'printer-assets';`
+- [ ] Verify orders download from R2 (not Supabase) by testing a file download before deleting
+
+### Dodo Payments
+- [ ] Set webhook endpoint URL in Dodo dashboard: `https://dtflayout.com/api/dodo-webhook`
+- [ ] Test a payment flow end-to-end (use test mode first — `DODO_LIVE_MODE=false`)
+- [ ] Switch `DODO_LIVE_MODE` to `true` when ready for real payments
+
+### End-to-End Testing
+- [ ] Signup → free trial credits (10,000) claimed
+- [ ] Generate layout → credits deducted correctly
+- [ ] Supabase log created for usage
+- [ ] Navbar credits update in real-time
+- [ ] Low credit warning banner works
+- [ ] Payment flow: Billing → choose plan → Dodo checkout → credits added
+- [ ] Quick Store: customer places order → printer sees in Orders dashboard
+- [ ] Quick Store: contact form → message appears in Messages inbox
+- [ ] Website Integration: public builder → customer designs sheet → order submitted
+- [ ] Multi-sheet flow: 3+ sheets at 300 DPI → export → upload to R2
 
 ---
 
@@ -21,7 +93,7 @@
   - [ ] Generate 3+ sheet layout
   - [ ] Export all sheets (300 DPI)
   - [ ] Upload to Supabase storage
-  - [ ] Redirect to Shopify cart
+  - [ ] Redirect to store cart / order submitted
 - **Estimated Time:** 2-3 hours
 
 ---
@@ -32,7 +104,7 @@
 - **What:** Expired orders auto-purge (marks pending→expired, deletes >30 day old expired orders + files)
 - **File:** `api/cleanup-expired.ts` (already created)
 - **Schedule:** Daily at 3 AM UTC (configured in `vercel.json`)
-- **Requires:** Vercel Pro plan for cron
+- **Requires:** Vercel Pro plan for cron ✅ (Pro active)
 - **Env vars to add in Vercel dashboard:**
   - [ ] `CRON_SECRET` — any random string for auth
   - [ ] `SUPABASE_SERVICE_ROLE_KEY` — from Supabase dashboard → Settings → API
@@ -40,20 +112,20 @@
 
 ---
 
-## ⚠️ High Priority (Before Launch)
+## ⚠️ High Priority (Post-Launch)
 
-### End-to-End Testing
-- **What:** Test complete flow from signup to generation to credit deduction
-- **Checklist:**
-  - [ ] Signup with 10,000 free trial credits
-  - [ ] Generate layout
-  - [ ] Credits deducted correctly
-  - [ ] Supabase log created
-  - [ ] Navbar credits update
-  - [ ] Low credit warning works
+### Integrate Email Service for OTP (Quick Store)
+- **What:** Currently OTPs logged to console — need real email delivery
+- **Suggested:** Resend (simple API, good free tier)
+- **Location:** `src/services/qsCustomerService.ts` → `requestOTP()` function
+- **Estimated Time:** 1-2 hours
+
+### Implement Password Reset
+- **Location:** `src/pages/AuthPage.tsx`
+- **What:** Add "Forgot Password" functionality using Supabase Auth
 - **Estimated Time:** 1 hour
 
-### Integrate Dodo Payments
+### Integrate Dodo Payments (if not done)
 - **What:** Replace Razorpay with Dodo for both India and global payments
 - **Status:** Pending
 - **Files to Update:**
@@ -70,7 +142,7 @@
 ### ✅ Completed
 - [x] Store Setup (name, URL, slug, logo, currency)
 - [x] Products Management (list, add, edit, delete with variants)
-- [x] Product Form (Shopify variant fetch, size mapping, slug)
+- [x] Product Form (variant fetch, size mapping, slug — platform-generic labels)
 - [x] Orders Page (list, filter, search, mark paid, download, delete)
 - [x] Orders — Kanban view with drag-and-drop (Pending → Paid → Downloaded)
 - [x] Orders — Table view with bulk select, Mark as Paid, Download Files
@@ -87,20 +159,37 @@
 - [x] Orders — No page blink on tab switch (silent background refresh)
 - [x] Public Builder - Single sheet flow
 - [x] Public Builder - Multi-sheet support (layout, export, upload, cart redirect)
-- [x] Public Builder - Shopify line item properties (Design Code, Sheets, Sheet X of Y)
+- [x] Public Builder - Cart line item properties (Design Code, Sheets, Sheet X of Y)
 - [x] Database Schema (printers, products, variants, designs tables)
 - [x] Storage Buckets (design-files, printer-assets)
 - [x] Builder Settings (appearance, tools, uploads customization)
+- [x] Builder Settings — separate WI/QS settings via `context` column (migration 013)
+- [x] Builder Settings — colors wired to QS storefront (top bar, background, text, primary)
+- [x] Builder Settings — default margin/spacing synced on async load
+- [x] Platform-agnostic labeling (Tier 1+2) — "Shopify" → generic in all dashboard UI and marketing pages
+- [x] RLS policies for anonymous builder settings access (migration 012)
+- [x] Analytics metadata column fix (400 error on storefront)
 
 ### ⏳ Pending
 - [ ] **Roll Width Configuration** - Currently hardcoded to 22"
 - [ ] **Customer Email Capture** - Optional email capture before cart redirect
 - [ ] **Progress Feedback** - "Exporting sheet 1 of 3..." during export
+- [ ] **Multi-Platform Support (Tier 3)** - Add WooCommerce + custom platform support
+  - Add `platform` dropdown to StoreSetup (`'shopify' | 'woocommerce' | 'custom'`)
+  - Make `shopify_product_url` nullable in DB, rename to `product_url`
+  - ProductForm: conditional flow — Shopify auto-fetch vs. manual variant entry for other platforms
+  - `buildCartUrl`: WooCommerce variant (`?add-to-cart={id}`), custom (download-only or webhook)
+  - `fetchShopifyVariants` → `fetchVariants` with platform switch
+  - Platform-aware cart URL building in `publicBuilderService.ts`
+  - Estimated Time: 4-6 hours
+  - **Note:** Build as additive code paths (`if shopify → existing code | if woocommerce → new`). Existing Shopify flow stays untouched.
 
 ### 🔮 Future
 - [ ] CSV import for bulk variant upload
 - [ ] Shopify webhook for auto-confirm payment
 - [ ] Analytics dashboard (conversion tracking, revenue)
+- [ ] WooCommerce variant auto-fetch
+- [ ] Custom platform manual variant entry + webhook checkout
 
 ---
 

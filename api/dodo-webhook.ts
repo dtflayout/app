@@ -47,33 +47,37 @@ const addCreditsToUser = async (
   supabase: SupabaseClient, userId: string, email: string, creditsToAdd: number
 ): Promise<{ success: boolean; newBalance?: number; previousBalance?: number; error?: string }> => {
   try {
-    const { data, error: fetchError } = await supabase
-      .from('credits').select('balance').eq('user_id', userId).single();
-
-    let currentBalance = 0;
-
-    if (fetchError && fetchError.code === 'PGRST116') {
-      console.log('[Webhook] New user, creating credits record');
-      const { error: insertError } = await supabase.from('credits').insert({
-        user_id: userId, email, balance: 0, free_trial_claimed: false,
-        created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+    const { data: newBalance, error: rpcError } = await supabase
+      .rpc('add_credits_atomic', {
+        p_user_id: userId,
+        p_amount: creditsToAdd,
       });
-      if (insertError) return { success: false, error: insertError.message };
-    } else if (fetchError) {
-      return { success: false, error: fetchError.message };
-    } else {
-      currentBalance = data?.balance || 0;
+
+    if (rpcError) {
+      console.error('[Webhook] RPC error:', rpcError.message);
+      if (rpcError.message.includes('User not found')) {
+        // User has no credits row yet — create one, then retry
+        console.log('[Webhook] No credits record, creating one');
+        const { error: insertError } = await supabase.from('credits').insert({
+          user_id: userId, email, balance: 0, free_trial_claimed: false,
+          created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+        });
+        if (insertError) return { success: false, error: insertError.message };
+
+        // Retry the atomic add
+        const { data: retryBalance, error: retryError } = await supabase
+          .rpc('add_credits_atomic', { p_user_id: userId, p_amount: creditsToAdd });
+        if (retryError) return { success: false, error: retryError.message };
+
+        console.log('[Webhook] Credits added (after create):', { added: creditsToAdd, new: retryBalance });
+        return { success: true, newBalance: retryBalance as number, previousBalance: 0 };
+      }
+      return { success: false, error: rpcError.message };
     }
 
-    const newBalance = Math.round(currentBalance + creditsToAdd);
-    const { error: updateError } = await supabase.from('credits')
-      .update({ balance: newBalance, updated_at: new Date().toISOString() })
-      .eq('user_id', userId);
-
-    if (updateError) return { success: false, error: updateError.message };
-
-    console.log('[Webhook] Credits added:', { previous: currentBalance, added: creditsToAdd, new: newBalance });
-    return { success: true, newBalance, previousBalance: currentBalance };
+    const previousBalance = Math.round((newBalance as number) - creditsToAdd);
+    console.log('[Webhook] Credits added:', { previous: previousBalance, added: creditsToAdd, new: newBalance });
+    return { success: true, newBalance: newBalance as number, previousBalance };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

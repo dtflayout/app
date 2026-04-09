@@ -390,7 +390,7 @@ function SavingsCalculator() {
 export default function Pricing() {
   const [dd, setDd] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { refreshCredits, freeTrialClaimed } = useCredits();
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -411,7 +411,7 @@ export default function Pricing() {
       const userInfo: UserInfo = { name: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User", email: user?.email || "", userId: user?.id };
       if (plan.id === "free_trial") {
         if (freeTrialClaimed) { toast.error("You have already claimed your free trial"); setProcessingPlanId(null); return; }
-        const result = await claimFreeTrial(userInfo);
+        const result = await claimFreeTrial(userInfo, session?.access_token);
         if (result.success) { toast.success(`Free trial activated! Credits added to your account.`); await refreshCredits(); navigate("/app"); }
         else if (result.already_claimed) { toast.error("You have already claimed your free trial"); }
         else { toast.error(result.error || "Failed to activate free trial"); }

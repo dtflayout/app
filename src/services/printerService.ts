@@ -366,7 +366,7 @@ export async function saveProduct(
     }
 
     if (urlCheck && urlCheck.id !== productId) {
-      return { success: false, error: "This Shopify product is already added. Please edit the existing product instead." };
+      return { success: false, error: "This product is already added. Please edit the existing product instead." };
     }
 
     // Check if product slug is unique within this printer's products
@@ -532,7 +532,7 @@ export async function fetchShopifyVariants(
 
     // Validate URL contains /products/
     if (!productUrl.includes("/products/")) {
-      return { success: false, error: "Invalid Shopify product URL. Must contain /products/" };
+      return { success: false, error: "Invalid product URL. Must contain /products/" };
     }
 
     // Convert to JSON endpoint
@@ -568,7 +568,7 @@ export async function fetchShopifyVariants(
     const data = await response.json();
 
     if (!data.product) {
-      return { success: false, error: "Invalid product data received from Shopify." };
+      return { success: false, error: "Invalid product data received." };
     }
 
     const product = data.product;
@@ -603,6 +603,6 @@ export async function fetchShopifyVariants(
       };
     }
 
-    return { success: false, error: err.message || "Failed to fetch Shopify variants" };
+    return { success: false, error: err.message || "Failed to fetch product variants" };
   }
 }
