@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { useAuth } from "./AuthContext";
 import { supabase } from "@/lib/supabaseClient";
+import { deductCredits as deductCreditsAtomic } from "@/lib/creditsService";
 
-const FREE_TRIAL_CREDITS = 10000;
+const FREE_TRIAL_CREDITS = 20000;
 
 interface CreditsContextType {
   credits: number;
@@ -110,7 +111,7 @@ export const CreditsProvider = ({ children }: CreditsProviderProps) => {
     setIsLoading(false);
   }, [user]);
 
-  // Deduct credits from the user's balance
+  // Deduct credits from the user's balance using atomic Postgres RPC
   const deductCredits = useCallback(
     async (
       amount: number,
@@ -120,45 +121,23 @@ export const CreditsProvider = ({ children }: CreditsProviderProps) => {
         return { success: false, error: "User not logged in" };
       }
 
+      // Quick client-side check (authoritative check is in the RPC)
       if (credits < amount) {
         return { success: false, error: "Insufficient credits" };
       }
 
-      console.log("[Credits] Deducting", amount, "credits");
+      console.log("[Credits] Deducting", amount, "credits (atomic)");
 
       try {
-        const newBalance = credits - amount;
+        const result = await deductCreditsAtomic(user.id, amount, user.email || '');
 
-        // Update the balance
-        const { error: updateError } = await supabase
-          .from("credits")
-          .update({ balance: newBalance })
-          .eq("user_id", user.id);
-
-        if (updateError) {
-          console.error("[Credits] Update error:", updateError);
-          return { success: false, error: updateError.message };
+        if (!result.success) {
+          return { success: false, error: result.error };
         }
 
-        // Log the transaction
-        const { error: txError } = await supabase
-          .from("credit_transactions")
-          .insert({
-            user_id: user.id,
-            type: "deduction",
-            amount: -amount,
-            balance_after: newBalance,
-            description: description,
-          });
-
-        if (txError) {
-          console.error("[Credits] Transaction log error:", txError);
-          // Don't fail the whole operation for logging error
-        }
-
-        setCredits(newBalance);
-        console.log("[Credits] Deduction successful. New balance:", newBalance);
-        return { success: true, newBalance };
+        setCredits(result.newBalance!);
+        console.log("[Credits] Deduction successful. New balance:", result.newBalance);
+        return { success: true, newBalance: result.newBalance };
       } catch (err: any) {
         console.error("[Credits] Exception:", err);
         return { success: false, error: err.message };

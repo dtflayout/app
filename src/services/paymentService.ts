@@ -159,20 +159,24 @@ export const createCheckoutSession = async (
 
 /**
  * Claim free trial credits directly (no Dodo checkout needed).
+ * Sends the user's JWT for server-side validation (Issue #1 fix).
  */
 export const claimFreeTrial = async (
-  userInfo: UserInfo
+  userInfo: UserInfo,
+  accessToken?: string
 ): Promise<FreeTrialResult> => {
   try {
     console.log('[Payment] Claiming free trial...');
 
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
     const response = await fetch('/api/claim-free-trial', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: userInfo.userId || '',
-        user_email: userInfo.email || '',
-      }),
+      headers,
+      body: JSON.stringify({}),
     });
 
     const data = await response.json();

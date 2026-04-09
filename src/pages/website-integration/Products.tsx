@@ -168,7 +168,7 @@ const Products = () => {
               No Products Configured
             </h3>
             <p className="text-gray-600 mb-4">
-              Add your first Shopify product to let customers design on your website.
+              Add your first product to let customers design on your website.
             </p>
             <Button onClick={handleAddProduct}>
               <Plus className="mr-2 h-4 w-4" />

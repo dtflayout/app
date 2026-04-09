@@ -8,7 +8,7 @@ interface SubdomainInfo {
 }
 
 const RESERVED_SUBDOMAINS = [
-  'www', 'app', 'api', 'admin', 'blog', 'help', 
+  'www', 'app', 'api', 'admin', 'blog', 'help', 'files',
   'support', 'status', 'mail', 'billing', 'dashboard',
   'login', 'signup', 'auth', 'oauth', 'pricing',
   'about', 'contact', 'terms', 'privacy', 'faq',
@@ -97,7 +97,7 @@ export function buildStoreUrl(slug: string): string {
  */
 export function isSlugReserved(slug: string): boolean {
   const RESERVED = [
-    'www', 'app', 'api', 'admin', 'blog', 'help', 
+    'www', 'app', 'api', 'admin', 'blog', 'help', 'files',
     'support', 'status', 'mail', 'billing', 'dashboard',
     'login', 'signup', 'auth', 'oauth', 'pricing',
     'about', 'contact', 'terms', 'privacy', 'faq',

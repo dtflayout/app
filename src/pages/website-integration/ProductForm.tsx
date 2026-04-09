@@ -143,12 +143,12 @@ const ProductForm = () => {
 
   const handleFetchVariants = async () => {
     if (!shopifyProductUrl.trim()) {
-      toast.error("Please enter a Shopify product URL");
+      toast.error("Please enter a product URL");
       return;
     }
 
     if (!shopifyProductUrl.includes("/products/")) {
-      toast.error("Invalid Shopify product URL. Must contain /products/");
+      toast.error("Invalid product URL. Must contain /products/");
       return;
     }
 
@@ -203,7 +203,7 @@ const ProductForm = () => {
     }
 
     if (!shopifyProductUrl.trim()) {
-      toast.error("Please enter a Shopify product URL");
+      toast.error("Please enter a product URL");
       return;
     }
 
@@ -320,13 +320,13 @@ const ProductForm = () => {
               </CardTitle>
             </div>
             <CardDescription>
-              Connect your Shopify product and configure size variants for the builder
+              Connect your product and configure size variants for the builder
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Shopify Product URL */}
+            {/* Product URL */}
             <div className="space-y-2">
-              <Label htmlFor="shopify-url">Shopify Product URL</Label>
+              <Label htmlFor="shopify-url">Product URL</Label>
               <div className="flex gap-2">
                 <Input
                   id="shopify-url"
@@ -349,7 +349,7 @@ const ProductForm = () => {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Paste the full URL of your Shopify product page
+                Paste the full URL of your product page (Shopify, WooCommerce, or any platform)
               </p>
             </div>
 
@@ -470,7 +470,7 @@ const ProductForm = () => {
               {variants.length === 0 ? (
                 <div className="border rounded-lg p-8 text-center bg-muted/50">
                   <p className="text-sm text-muted-foreground">
-                    No variants fetched yet. Paste your Shopify product URL and click "Fetch Variants".
+                    No variants fetched yet. Paste your product URL and click "Fetch Variants".
                   </p>
                 </div>
               ) : (

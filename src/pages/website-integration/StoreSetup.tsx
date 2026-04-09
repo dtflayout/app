@@ -317,7 +317,7 @@ const StoreSetup = () => {
               onChange={(e) => setStoreUrl(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Your Shopify store URL where customers will be redirected for checkout
+              Your store URL where customers will be redirected for checkout
             </p>
           </div>
 
@@ -388,7 +388,7 @@ const StoreSetup = () => {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Share this URL with your customers or add it to your Shopify store
+              Share this URL with your customers or embed it on your website
             </p>
           </div>
 
