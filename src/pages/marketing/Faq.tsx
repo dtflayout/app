@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import MarketingNav from "@/components/marketing/MarketingNav";
 
 /* ══════════ DESIGN TOKENS ══════════ */
 const HF = "'Bricolage Grotesque', sans-serif";
@@ -146,7 +147,6 @@ const faqSections: FaqSection[] = [
 /* ══════════ COMPONENT ══════════ */
 export default function Faq() {
   const navigate = useNavigate();
-  const [dd, setDd] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [openFaq, setOpenFaq] = useState<string | null>(null);
@@ -176,27 +176,7 @@ export default function Faq() {
   return (
     <div style={{ fontFamily: BF, color: "#111827", overflowX: "hidden" }}>
 
-      {/* ═══ NAV ═══ */}
-      <div style={{ position: "fixed", top: 16, left: 0, right: 0, zIndex: 100, padding: "0 32px" }}>
-        <nav style={{ maxWidth: 960, margin: "0 auto", background: "linear-gradient(135deg, #1E1B4B, #252272, #1E1B4B)", borderRadius: 16, padding: "0 8px 0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid rgba(99, 102, 241, 0.2)", boxShadow: "0 8px 32px rgba(15,13,46,0.5), 0 2px 8px rgba(0,0,0,0.2)" }}>
-          <Link to="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg></div>
-            <span style={{ fontFamily: HF, fontWeight: 700, fontSize: 16, color: "#fff" }}>DTF Layout</span>
-          </Link>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <Link to="/" style={{ fontSize: 14, fontWeight: 500, color: "rgba(255,255,255,0.7)", padding: "8px 14px", textDecoration: "none" }}>Home</Link>
-            <div style={{ position: "relative" }} onMouseEnter={() => setDd(true)} onMouseLeave={() => setDd(false)}>
-              <span style={{ fontSize: 14, fontWeight: 500, color: "rgba(255,255,255,0.7)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "8px 14px", borderRadius: 10, background: dd ? "rgba(255,255,255,0.08)" : "transparent" }}>Product {ic.chev}</span>
-              {dd && <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", width: 260, paddingTop: 10 }}><div style={{ background: "#fff", borderRadius: 14, border: "1px solid #E5E7EB", boxShadow: "0 20px 56px rgba(0,0,0,0.15)", padding: 5 }}>{[{ l: "Gang Sheet Builder", d: "Auto-layout optimized gang sheets", to: "/product/gang-sheet-builder" }, { l: "Website Integration", d: "Embed builder on any website", to: "/product/website-integration" }, { l: "Quick Store", d: "Full storefront, zero coding", to: "/product/quick-store" }].map((it, i) => <Link key={i} to={it.to} style={{ padding: "10px 12px", borderRadius: 10, display: "block", textDecoration: "none" }} onMouseEnter={(e: any) => e.currentTarget.style.background = "#EEF2FF"} onMouseLeave={(e: any) => e.currentTarget.style.background = "transparent"}><div style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{it.l}</div><div style={{ fontSize: 10, color: "#6B7280" }}>{it.d}</div></Link>)}</div></div>}
-            </div>
-            {[{ l: "Pricing", to: "/pricing" }, { l: "FAQ", to: "/faq" }, { l: "Contact", to: "/contact" }].map(item => <Link key={item.l} to={item.to} style={{ fontSize: 14, fontWeight: 500, color: item.l === "FAQ" ? "#fff" : "rgba(255,255,255,0.7)", padding: "8px 14px", textDecoration: "none" }}>{item.l}</Link>)}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <Link to="/login" style={{ fontSize: 14, fontWeight: 500, color: "rgba(255,255,255,0.7)", padding: "8px 14px", textDecoration: "none" }}>Login</Link>
-            <button onClick={() => navigate("/signup")} style={{ fontFamily: BF, fontWeight: 600, fontSize: 14, cursor: "pointer", padding: "10px 24px", borderRadius: 12, background: "linear-gradient(135deg, #4F46E5, #7C3AED)", color: "#fff", border: "none", boxShadow: "0 4px 16px rgba(79,70,229,0.4)" }}>Register →</button>
-          </div>
-        </nav>
-      </div>
+      <MarketingNav />
 
       {/* ═══ HERO ═══ */}
       <section style={{ position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #050412 0%, #08061A 5%, #0A0820 10%, #0D0B26 14%, #0F0D2E 19%, #141138 24%, #1A1744 29%, #1E1B4B 34%, #272368 39%, #312E81 44%, #4F46E5 54%, #6366F1 61%, #818CF8 68%, #A5B4FC 75%, #C7D2FE 82%, #E0E7FF 88%, #F5F5F7 94%, #FAFAFB 100%)", padding: "0 40px 0" }}>

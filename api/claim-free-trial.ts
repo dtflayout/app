@@ -5,6 +5,28 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const FREE_TRIAL_CREDITS = 20000; // 20,000 sq.inches
 
+// ── Disposable email domain blocklist ─────────────────────────────────
+const DISPOSABLE_EMAIL_DOMAINS = new Set([
+  'mailinator.com', 'guerrillamail.com', 'guerrillamail.net', 'tempmail.com',
+  'throwaway.email', 'temp-mail.org', 'fakeinbox.com', 'sharklasers.com',
+  'guerrillamailblock.com', 'grr.la', 'dispostable.com', 'yopmail.com',
+  'trashmail.com', 'trashmail.net', 'trashmail.org', 'mailnesia.com',
+  'maildrop.cc', 'discard.email', 'tempail.com', 'tempr.email',
+  'temp-mail.io', 'mohmal.com', 'burnermail.io', 'mailcatch.com',
+  'mintemail.com', 'tempinbox.com', 'emailondeck.com', 'harakirimail.com',
+  'getnada.com', 'mailsac.com', 'inboxkitten.com', '10minutemail.com',
+  '10minutemail.net', 'minutemail.com', 'tempmailo.com', 'tempmailaddress.com',
+  'throwawaymail.com', 'mailtemp.net', 'emailfake.com', 'crazymailing.com',
+  'armyspy.com', 'dayrep.com', 'einrot.com', 'fleckens.hu', 'gustr.com',
+  'jourrapide.com', 'rhyta.com', 'superrito.com', 'teleworm.us',
+  'tmpmail.net', 'tmpmail.org', 'mailnator.com', 'getairmail.com',
+]);
+
+function isDisposableEmail(email: string): boolean {
+  const domain = email.split('@')[1]?.toLowerCase();
+  return domain ? DISPOSABLE_EMAIL_DOMAINS.has(domain) : false;
+}
+
 // ── Supabase clients ──────────────────────────────────────────────────
 
 const getServiceClient = (): SupabaseClient => {
@@ -71,6 +93,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const user_id = user.id;
     const user_email = user.email || '';
+
+    // Block disposable email domains from claiming free trial
+    if (isDisposableEmail(user_email)) {
+      console.log('[Free Trial] Blocked disposable email domain');
+      return res.status(400).json({
+        success: false,
+        error: 'Free trial is not available for temporary email addresses. Please use a permanent email.',
+      });
+    }
 
     console.log('[Free Trial] Authenticated request for user');
 

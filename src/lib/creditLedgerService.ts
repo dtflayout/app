@@ -33,7 +33,7 @@ export async function logCreditTransaction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await supabase
-      .from('credit_ledger')
+      .from('credit_transactions')
       .insert({
         user_id: userId,
         email: email,
@@ -41,7 +41,6 @@ export async function logCreditTransaction(
         amount: amount,
         balance_after: balanceAfter,
         description: description || null,
-        reference_id: referenceId || null,
       });
 
     if (error) {
@@ -64,7 +63,7 @@ export async function getCreditLedger(
   limit: number = 50
 ): Promise<CreditLedgerEntry[]> {
   const { data, error } = await supabase
-    .from('credit_ledger')
+    .from('credit_transactions')
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
@@ -87,7 +86,7 @@ export async function getCreditSummary(userId: string): Promise<{
   byType: Record<CreditType, number>;
 }> {
   const { data, error } = await supabase
-    .from('credit_ledger')
+    .from('credit_transactions')
     .select('type, amount')
     .eq('user_id', userId);
 
