@@ -16,6 +16,7 @@ interface AuthContextType {
   isLoading: boolean;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ success: boolean; error?: string }>;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   signUp: async () => ({ success: false, error: "Context not initialized" }),
   signIn: async () => ({ success: false, error: "Context not initialized" }),
+  signInWithGoogle: async () => ({ success: false, error: "Context not initialized" }),
   signOut: async () => {},
   refreshProfile: async () => {},
 });
@@ -145,6 +147,30 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Sign in with Google OAuth
+  const signInWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      console.log("[Auth] Initiating Google OAuth");
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/builder-150`,
+        },
+      });
+
+      if (error) {
+        console.error("[Auth] Google OAuth error:", error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      console.error("[Auth] Google OAuth exception:", err);
+      return { success: false, error: err.message };
+    }
+  };
+
   // Sign out
   const signOut = async () => {
     try {
@@ -215,6 +241,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     isLoading,
     signUp,
     signIn,
+    signInWithGoogle,
     signOut,
     refreshProfile,
   };
