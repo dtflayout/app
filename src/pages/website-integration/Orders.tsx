@@ -46,7 +46,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/contexts/CreditsContext";
 import { getPrinter, Printer } from "@/services/printerService";
 import { logSheetGeneration } from "@/lib/usageLogger";
-import { logCreditTransaction } from "@/lib/creditLedgerService";
 import {
   getOrders,
   getOrderStats,
@@ -259,17 +258,6 @@ const Orders = () => {
           design_code: order.design_code,
         });
 
-        // Log to credit_ledger for Credit History page
-        await logCreditTransaction(
-          user.id,
-          user.email || "",
-          "usage",
-          -orderArea,
-          runningCredits,
-          `Website Integration - ${order.design_code}`,
-          order.design_code
-        );
-
         // Mark as paid
         const result = await updateOrderStatus(order.id, printer.id, "paid");
         if (result.success) successCount++;
@@ -306,7 +294,7 @@ const Orders = () => {
 
     for (const order of downloadable) {
       for (let i = 1; i <= order.sheet_count; i++) {
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/design-files/${printer.store_id}/${order.design_code}/sheet_${i}.png`;
+        const url = `${import.meta.env.VITE_R2_PUBLIC_URL}/design-files/${printer.store_id}/${order.design_code}/sheet_${i}.png`;
         const sheet = order.sheets?.[i - 1];
         const dims = sheet ? `_${Math.round(sheet.width_inches)}x${Math.round(sheet.height_inches)}in` : '';
         await downloadFile(url, `${order.design_code}_sheet${i}${dims}.png`);
@@ -445,17 +433,6 @@ const Orders = () => {
           source: "website_integration",
           design_code: order.design_code,
         });
-
-        // Log to credit_ledger for Credit History page
-        await logCreditTransaction(
-          user.id,
-          user.email || "",
-          "usage",
-          -totalArea,
-          deductResult.newBalance ?? (creditsBefore - totalArea),
-          `Website Integration - ${order.design_code}`,
-          order.design_code
-        );
       }
 
       const result = await updateOrderStatus(order.id, printer.id, newStatus);
@@ -521,7 +498,7 @@ const Orders = () => {
     toast.info(`Downloading ${order.sheet_count} sheet${order.sheet_count > 1 ? "s" : ""}...`);
 
     for (let i = 1; i <= order.sheet_count; i++) {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/design-files/${printer.store_id}/${order.design_code}/sheet_${i}.png`;
+      const url = `${import.meta.env.VITE_R2_PUBLIC_URL}/design-files/${printer.store_id}/${order.design_code}/sheet_${i}.png`;
       const sheet = order.sheets?.[i - 1];
       const dims = sheet ? `_${Math.round(sheet.width_inches)}x${Math.round(sheet.height_inches)}in` : '';
       await downloadFile(url, `${order.design_code}_sheet${i}${dims}.png`);
