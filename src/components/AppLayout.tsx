@@ -1,10 +1,17 @@
 import { AppSidebar } from "./AppSidebar";
+import { OnboardingModal } from "./OnboardingModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
+  const { profile } = useAuth();
+
+  // Show onboarding modal if profile loaded and onboarding not completed
+  const showOnboarding = profile && !profile.onboarding_completed;
+
   return (
     <div className="min-h-screen bg-[#F7F7F5] relative">
       {/* Soft Lavender Wash gradient overlay — fades from top into page bg */}
@@ -22,6 +29,9 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           {children}
         </main>
       </div>
+
+      {/* Onboarding modal — blocks app until business details are provided */}
+      {showOnboarding && <OnboardingModal />}
     </div>
   );
 };

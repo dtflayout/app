@@ -348,6 +348,8 @@ export interface QuickStore {
   font_pairing: FontPairing;
   is_active: boolean;
   is_published: boolean;
+  setup_completed: boolean;
+  setup_step: number;
   
   // Product Page Settings
   delivery_steps: { label: string; time: string }[];
@@ -424,6 +426,8 @@ export interface QuickStoreInput {
   font_pairing?: FontPairing;
   is_active?: boolean;
   is_published?: boolean;
+  setup_completed?: boolean;
+  setup_step?: number;
   delivery_steps?: { label: string; time: string }[];
   show_trust_badges?: boolean;
   show_product_faq?: boolean;

@@ -1,7 +1,11 @@
+import { useState, useEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
+import { useAuth } from "@/contexts/AuthContext";
+import { getPrinter } from "@/services/printerService";
 import { cn } from "@/lib/utils";
 import { Store, Package, ShoppingCart, Settings2 } from "lucide-react";
+import { FullPageSkeleton } from "@/components/Skeletons";
 
 const tabs = [
   {
@@ -27,6 +31,41 @@ const tabs = [
 ];
 
 const WebsiteIntegrationLayout = () => {
+  const { user } = useAuth();
+  const [setupCompleted, setSetupCompleted] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const check = async () => {
+      if (!user?.id) { setLoading(false); return; }
+      const result = await getPrinter(user.id);
+      if (result.success && result.data) {
+        setSetupCompleted(!!result.data.setup_completed);
+      } else {
+        setSetupCompleted(false);
+      }
+      setLoading(false);
+    };
+    check();
+  }, [user?.id]);
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <FullPageSkeleton />
+      </AppLayout>
+    );
+  }
+
+  // During wizard: no header, no tabs, no padding
+  if (setupCompleted === false) {
+    return (
+      <AppLayout>
+        <Outlet />
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="p-8">

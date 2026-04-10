@@ -19,6 +19,7 @@ import {
   Sparkles,
   Globe,
   Store,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -69,6 +70,11 @@ const menuItems: MenuItem[] = [
     icon: <Store className="w-5 h-5 flex-shrink-0" />,
     path: "/app/quick-store",
     badge: "New",
+  },
+  {
+    label: "Settings",
+    icon: <Settings className="w-5 h-5 flex-shrink-0" />,
+    path: "/settings",
   },
   {
     label: "Help & Support",

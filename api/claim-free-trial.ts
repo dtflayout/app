@@ -31,9 +31,9 @@ function isDisposableEmail(email: string): boolean {
 
 const getServiceClient = (): SupabaseClient => {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl) throw new Error('Missing SUPABASE_URL');
-  if (!supabaseServiceKey) throw new Error('Missing SUPABASE_SERVICE_KEY');
+  if (!supabaseServiceKey) throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY');
   return createClient(supabaseUrl, supabaseServiceKey);
 };
 

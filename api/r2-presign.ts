@@ -16,6 +16,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { applyRateLimit, publicLimiter } from './lib/rateLimit.js';
 import { initSentry, Sentry } from './lib/sentry.js';
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -23,6 +24,20 @@ import { getR2Client, getR2BucketName, getR2PublicUrl } from "./lib/r2.js";
 
 // Allowed key prefixes — prevents arbitrary writes
 const ALLOWED_PREFIXES = ["design-files/", "store-assets/", "printer-assets/"];
+
+// Allowed content types — prevents upload of HTML/JS/executable content
+const ALLOWED_CONTENT_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/svg+xml",
+  "image/gif",
+  "image/x-icon",
+  "image/vnd.microsoft.icon",
+];
+
+// Max file size: 100 MB (enforced via Content-Length condition on presigned URL)
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
 // CORS origins
 const ALLOWED_ORIGINS = [
@@ -64,6 +79,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  // Rate limit check
+  if (await applyRateLimit(req, res, publicLimiter)) return;
+
   try {
     const { key, contentType } = req.body;
 
@@ -73,6 +91,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!contentType || typeof contentType !== "string") {
       return res.status(400).json({ error: "Missing or invalid 'contentType'" });
+    }
+
+    // Validate content type — only allow images
+    if (!ALLOWED_CONTENT_TYPES.includes(contentType.toLowerCase())) {
+      return res.status(400).json({
+        error: `Invalid content type '${contentType}'. Only image files are allowed.`,
+      });
     }
 
     // Validate key prefix

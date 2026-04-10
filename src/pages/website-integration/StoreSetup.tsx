@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +17,7 @@ import { toast } from "sonner";
 import { getPrinter, savePrinter, Printer } from "@/services/printerService";
 import { uploadToR2 } from "@/lib/r2Client";
 import { FormSkeleton } from "@/components/Skeletons";
+import { WISetupWizard } from "@/components/setup-wizard/WISetupWizard";
 
 // Currency options
 const CURRENCY_OPTIONS = [
@@ -40,11 +42,13 @@ let _storeSetupLoaded = false;
 
 const StoreSetup = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(!_storeSetupLoaded);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [printer, setPrinter] = useState<Printer | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
 
   // Form State
   const [storeName, setStoreName] = useState("");
@@ -70,12 +74,22 @@ const StoreSetup = () => {
         const result = await getPrinter(user.id);
         if (result.success && result.data) {
           const printerData = result.data;
+          // Show wizard if setup not completed
+          if (!printerData.setup_completed) {
+            setShowWizard(true);
+            setIsLoading(false);
+            _storeSetupLoaded = true;
+            return;
+          }
           setPrinter(printerData);
           setStoreName(printerData.store_name || "");
           setStoreUrl(printerData.store_url || "");
           setSlug(printerData.slug || "");
           setCurrency(printerData.currency || "USD");
           setLogoUrl(printerData.logo_url || null);
+        } else {
+          // No printer exists — show wizard for first-time setup
+          setShowWizard(true);
         }
       } catch (error) {
         console.error("Error loading data:", error);
@@ -211,203 +225,250 @@ const StoreSetup = () => {
     return <FormSkeleton fields={5} />;
   }
 
+  // Show setup wizard for first-time users or incomplete setup
+  if (showWizard) {
+    return (
+      <WISetupWizard
+        onComplete={() => {
+          window.location.reload();
+        }}
+        onClose={() => navigate("/app")}
+      />
+    );
+  }
+
   return (
-    <div className="max-w-2xl">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Store className="h-5 w-5 text-indigo-600" />
-            <CardTitle className="text-lg">Store Setup</CardTitle>
-          </div>
-          <CardDescription>
-            Configure your store information and generate your builder URL
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Store ID Display (only shown after printer is created) */}
-          {printer?.store_id && (
-            <div className="rounded-lg border bg-gray-50 p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <Hash className="h-4 w-4 text-indigo-600" />
-                <Label className="text-sm font-medium">Store ID</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 rounded bg-white border px-3 py-2 text-sm font-mono text-gray-700">
-                  {printer.store_id}
-                </code>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(printer.store_id);
-                    toast.success("Store ID copied!");
-                  }}
-                  title="Copy Store ID"
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                This unique identifier is used to organize your files. You may need this for support requests.
-              </p>
-            </div>
-          )}
+    <div className="space-y-6 pb-20">
+      {/* 2-column grid layout */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
 
-          {/* Logo Upload */}
-          <div className="space-y-2">
-            <Label>Store Logo</Label>
-            <div className="flex items-center gap-4">
-              {(logoPreview || logoUrl) ? (
-                <div className="relative group">
-                  <img
-                    src={logoPreview || logoUrl || ""}
-                    alt="Store logo"
-                    className="h-16 w-auto max-w-[200px] object-contain border rounded bg-white p-1"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleRemoveLogo}
-                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-sm transition-colors"
-                    title="Remove logo"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
+        {/* ── LEFT COLUMN ── */}
+        <div className="space-y-6">
+
+          {/* Basic Info */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Store className="h-5 w-5 text-indigo-600" />
+                <CardTitle className="text-lg">Basic Information</CardTitle>
+              </div>
+              <CardDescription>Your store name and URL</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Store ID Display (only shown after printer is created) */}
+              {printer?.store_id && (
+                <div className="rounded-lg border bg-gray-50 p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Hash className="h-4 w-4 text-indigo-600" />
+                    <Label className="text-sm font-medium">Store ID</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 rounded bg-white border px-3 py-2 text-sm font-mono text-gray-700">
+                      {printer.store_id}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(printer.store_id);
+                        toast.success("Store ID copied!");
+                      }}
+                      title="Copy Store ID"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    This unique identifier is used to organize your files. You may need this for support requests.
+                  </p>
                 </div>
-              ) : (
-                <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 hover:border-indigo-300 transition-colors">
-                  <Upload className="h-5 w-5 text-gray-400" />
-                  <span className="text-sm text-gray-600">Upload Logo</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoSelect}
-                    className="hidden"
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="store-name">Store Name</Label>
+                <Input
+                  id="store-name"
+                  placeholder="e.g., Ninja Transfers"
+                  value={storeName}
+                  onChange={(e) => setStoreName(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  This will be displayed to your customers on the builder page
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="store-url">Store URL</Label>
+                <Input
+                  id="store-url"
+                  type="url"
+                  placeholder="e.g., https://ninjatransfers.com"
+                  value={storeUrl}
+                  onChange={(e) => setStoreUrl(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Your store URL where customers will be redirected for checkout
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="slug">URL Slug</Label>
+                  <Input
+                    id="slug"
+                    placeholder="e.g., ninjatransfers"
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
                   />
-                </label>
-              )}
-              {isUploadingLogo && (
-                <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              This logo will appear on your public builder page. Max 5MB. Recommended: PNG with transparent background.
-            </p>
-          </div>
+                  <p className="text-xs text-muted-foreground">
+                    Only lowercase letters, numbers, and hyphens allowed
+                  </p>
+                </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="store-name">Store Name</Label>
-            <Input
-              id="store-name"
-              placeholder="e.g., Ninja Transfers"
-              value={storeName}
-              onChange={(e) => setStoreName(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              This will be displayed to your customers on the builder page
-            </p>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="currency">Currency</Label>
+                  <Select value={currency} onValueChange={setCurrency}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Currency for displaying prices
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="store-url">Store URL</Label>
-            <Input
-              id="store-url"
-              type="url"
-              placeholder="e.g., https://ninjatransfers.com"
-              value={storeUrl}
-              onChange={(e) => setStoreUrl(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Your store URL where customers will be redirected for checkout
-            </p>
-          </div>
+        {/* ── RIGHT COLUMN ── */}
+        <div className="space-y-6">
 
-          <div className="space-y-2">
-            <Label htmlFor="slug">URL Slug</Label>
-            <Input
-              id="slug"
-              placeholder="e.g., ninjatransfers"
-              value={slug}
-              onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-            />
-            <p className="text-xs text-muted-foreground">
-              Only lowercase letters, numbers, and hyphens allowed
-            </p>
-          </div>
+          {/* Logo & Branding */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Upload className="h-5 w-5 text-indigo-600" />
+                <CardTitle className="text-lg">Logo & Branding</CardTitle>
+              </div>
+              <CardDescription>Your store logo for the public builder</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Store Logo</Label>
+                <div className="flex items-center gap-4">
+                  {(logoPreview || logoUrl) ? (
+                    <div className="relative group">
+                      <img
+                        src={logoPreview || logoUrl || ""}
+                        alt="Store logo"
+                        className="h-16 w-auto max-w-[200px] object-contain border rounded bg-white p-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveLogo}
+                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-sm transition-colors"
+                        title="Remove logo"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 hover:border-indigo-300 transition-colors">
+                      <Upload className="h-5 w-5 text-gray-400" />
+                      <span className="text-sm text-gray-600">Upload Logo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoSelect}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                  {isUploadingLogo && (
+                    <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  This logo will appear on your public builder page. Max 5MB. Recommended: PNG with transparent background.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Currency Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="currency">Currency</Label>
-            <Select value={currency} onValueChange={setCurrency}>
-              <SelectTrigger className="w-full sm:w-[280px]">
-                <SelectValue placeholder="Select currency" />
-              </SelectTrigger>
-              <SelectContent>
-                {CURRENCY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Currency for displaying prices on the public builder
-            </p>
-          </div>
+          {/* Builder URL */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <ExternalLink className="h-5 w-5 text-indigo-600" />
+                <CardTitle className="text-lg">Builder URL</CardTitle>
+              </div>
+              <CardDescription>Share this URL with your customers</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-lg border bg-gray-50 p-4 space-y-2">
+                <Label className="text-sm font-medium">Your Builder URL</Label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 rounded bg-white border px-3 py-2 text-sm font-mono text-indigo-600">
+                    https://{builderUrl}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCopyUrl}
+                    disabled={!slug}
+                    title="Copy URL"
+                  >
+                    {copied ? (
+                      <Check className="h-4 w-4 text-indigo-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                  {slug && printer && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      asChild
+                      title="Open URL"
+                    >
+                      <a href={`https://${builderUrl}`} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Share this URL with your customers or embed it on your website
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>{/* end 2-column grid */}
 
-          {/* Builder URL Display */}
-          <div className="rounded-lg border bg-gray-50 p-4 space-y-2">
-            <Label className="text-sm font-medium">Your Builder URL</Label>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 rounded bg-white border px-3 py-2 text-sm font-mono text-indigo-600">
-                https://{builderUrl}
-              </code>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleCopyUrl}
-                disabled={!slug}
-                title="Copy URL"
-              >
-                {copied ? (
-                  <Check className="h-4 w-4 text-indigo-600" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
-              {slug && printer && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  asChild
-                  title="Open URL"
-                >
-                  <a href={`https://${builderUrl}`} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Share this URL with your customers or embed it on your website
-            </p>
-          </div>
-
-          <div className="pt-2">
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : printer ? (
-                "Update Store Setup"
-              ) : (
-                "Save Store Setup"
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Save Button — full width below grid */}
+      <div>
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : printer ? (
+            "Update Store Setup"
+          ) : (
+            "Save Store Setup"
+          )}
+        </Button>
+      </div>
     </div>
   );
 };

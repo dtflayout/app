@@ -417,7 +417,7 @@ export default function Pricing() {
         else { toast.error(result.error || "Failed to activate free trial"); }
         return;
       }
-      const result = await createCheckoutSession(plan.id, region, userInfo);
+      const result = await createCheckoutSession(plan.id, region, userInfo, session?.access_token);
       if (result.success && result.checkout_url) { window.location.href = result.checkout_url; return; }
       else { toast.error(result.error || "Failed to initiate payment. Please try again."); }
     } catch (error: any) { console.error("[Payment] Error:", error); toast.error(error?.message || "Payment failed. Please try again."); }
