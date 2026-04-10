@@ -87,7 +87,7 @@ interface ProgressState {
 }
 
 // Debug mode
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
 const debugLog = (...args: any[]) => {
   if (DEBUG_MODE) {

@@ -15,7 +15,6 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/contexts/CreditsContext";
 import { logSheetGeneration } from "@/lib/usageLogger";
-import { logCreditTransaction } from "@/lib/creditLedgerService";
 import { getQSOrders, updateQSOrderStatus, deleteQSOrder, formatTimeRemaining, formatDate, getTimezoneAbbreviation } from "@/services/qsOrderService";
 import { QuickStore, QSOrder, formatPrice } from "@/types/quickStore";
 import { getR2PublicUrl } from "@/lib/r2Client";
@@ -101,7 +100,6 @@ const QSOrders = () => {
     const newBalance = deductResult.newBalance ?? (runningCredits - totalArea);
 
     await logSheetGeneration({ user_id: user.id, user_email: user.email || "", sq_inches_used: totalArea, sheet_width: order.sheets[0]?.width_inches || 0, sheet_height: order.sheets.reduce((sum, s) => sum + s.height_inches, 0), image_count: order.sheet_count, credits_before: creditsBefore, credits_after: newBalance, source: "quick_store", design_code: order.order_code });
-    await logCreditTransaction(user.id, user.email || "", "usage", -totalArea, newBalance, `Quick Store - ${order.order_code}`, order.order_code);
     return { success: true, newBalance };
   };
 
