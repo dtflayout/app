@@ -2,6 +2,16 @@ import { applyRateLimit, paymentLimiter } from './lib/rateLimit.js';
 import { initSentry, Sentry } from './lib/sentry.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import DodoPayments from 'dodopayments';
+import { createClient } from '@supabase/supabase-js';
+
+// ── Supabase anon client for JWT verification ─────────────────────────
+const getAnonClient = () => {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl) throw new Error('Missing SUPABASE_URL');
+  if (!supabaseAnonKey) throw new Error('Missing SUPABASE_ANON_KEY');
+  return createClient(supabaseUrl, supabaseAnonKey);
+};
 
 // ── Product mapping: plan_id → Dodo product_id ────────────────────────────
 // India products are served to IN users, global products to everyone else.
@@ -52,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Vary', 'Origin');
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     if (!allowedOrigin) return res.status(403).json({ error: 'Origin not allowed' });
@@ -64,20 +74,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { plan_id, region, user_email, user_name, user_id } = req.body as CreateCheckoutRequest;
+    // ── Validate JWT instead of trusting client-supplied user_id ──
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, error: 'Missing authorization token' });
+    }
 
-    console.log('[Create Checkout] Request received:', {
+    const token = authHeader.replace('Bearer ', '');
+    const anonClient = getAnonClient();
+    const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error('[Create Checkout] Auth error:', authError?.message);
+      return res.status(401).json({ success: false, error: 'Invalid or expired token' });
+    }
+
+    const { plan_id, region, user_name } = req.body as CreateCheckoutRequest;
+
+    // Use JWT-verified values — never trust client-supplied user_id/email
+    const user_id = user.id;
+    const user_email = user.email || '';
+
+    console.log('[Create Checkout] Authenticated request:', {
       plan_id,
       region,
       has_email: !!user_email,
-      has_user_id: !!user_id,
     });
 
     // Validate required fields
-    if (!plan_id || !region || !user_email || !user_id) {
+    if (!plan_id || !region) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields (plan_id, region, user_email, user_id)',
+        error: 'Missing required fields (plan_id, region)',
       });
     }
 

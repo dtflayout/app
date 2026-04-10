@@ -4,7 +4,7 @@
  */
 
 import { supabase } from "@/lib/supabaseClient";
-import { uploadToR2, deleteFromR2 } from "@/lib/r2Client";
+import { uploadToR2, deleteFromR2, deleteR2Folder } from "@/lib/r2Client";
 import {
   QuickStore,
   QuickStoreInput,
@@ -244,6 +244,14 @@ export async function deleteQuickStore(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     console.log("[QuickStoreService] Deleting store:", storeId);
+
+    // Clean up R2 store assets (logos, banners, product images)
+    try {
+      await deleteR2Folder("store-assets", storeId);
+      console.log("[QuickStoreService] R2 store-assets cleaned up for:", storeId);
+    } catch (err) {
+      console.error("[QuickStoreService] R2 cleanup error (non-blocking):", err);
+    }
 
     const { error } = await supabase
       .from("quick_stores")

@@ -9,12 +9,14 @@ import { useLocation } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
 import AuthPage from "./pages/AuthPage";
+import ResetPassword from "./pages/ResetPassword";
 import AppPage from "./pages/AppPage";
 import AppPage300 from "./pages/AppPage300";
 import { SheetLogs } from "./pages/SheetLogs";
 import Dashboard from "./pages/Dashboard";
 import Billing from "./pages/Billing";
 import Support from "./pages/Support";
+import Settings from "./pages/Settings";
 import ImageEnhancerPage from "./pages/ImageEnhancerPage";
 import WebsiteIntegrationLayout from "./pages/website-integration/WebsiteIntegrationLayout";
 import StoreSetup from "./pages/website-integration/StoreSetup";
@@ -127,6 +129,7 @@ const AppContent = () => {
         
         {/* Auth Pages */}
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth/reset-password" element={<ResetPassword />} />
         <Route path="/login" element={<AuthPage />} />
         <Route path="/signup" element={<AuthPage />} />
         
@@ -182,6 +185,14 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <Support />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
             </ProtectedRoute>
           }
         />

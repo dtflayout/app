@@ -125,9 +125,16 @@ const QuickStoreLayout: React.FC = () => {
   if (!store && !loading) {
     return (
       <AppLayout>
-        <div className="p-8">
-          <Outlet context={{ store: null, setStore, pendingCount: 0, setPendingCount }} />
-        </div>
+        <Outlet context={{ store: null, setStore, pendingCount: 0, setPendingCount }} />
+      </AppLayout>
+    );
+  }
+
+  // If store exists but setup not completed, show wizard without chrome
+  if (store && !store.setup_completed) {
+    return (
+      <AppLayout>
+        <Outlet context={{ store, setStore, pendingCount: 0, setPendingCount }} />
       </AppLayout>
     );
   }

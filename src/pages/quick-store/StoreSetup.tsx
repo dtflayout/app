@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   createQuickStore,
@@ -9,6 +9,7 @@ import {
   setStorePublished,
   createTestimonial,
 } from '@/services/quickStoreService';
+import { QSSetupWizard } from '@/components/setup-wizard/QSSetupWizard';
 import {
   QuickStore,
   QuickStoreInput,
@@ -88,7 +89,22 @@ const COUNTRIES = [
 
 const StoreSetup: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { store, setStore } = useOutletContext<OutletContextType>();
+
+  // Show setup wizard for first-time users or incomplete setup
+  const needsWizard = !store || !store.setup_completed;
+  if (needsWizard) {
+    return (
+      <QSSetupWizard
+        existingStore={store}
+        onComplete={() => {
+          window.location.reload();
+        }}
+        onClose={() => navigate('/app')}
+      />
+    );
+  }
 
   const DEFAULT_BUSINESS_HOURS: BusinessHours[] = [
     { day: 'Monday', open: '09:00', close: '18:00', closed: false },

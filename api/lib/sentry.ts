@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/node';
 
 // Initialize Sentry for server-side (Vercel serverless functions)
-const isInitialized = false;
+let isInitialized = false;
 
 export function initSentry() {
   if (isInitialized) return;
@@ -17,6 +17,8 @@ export function initSentry() {
     environment: process.env.VERCEL_ENV || 'development',
     tracesSampleRate: 0.1,
   });
+
+  isInitialized = true;
 }
 
 /**

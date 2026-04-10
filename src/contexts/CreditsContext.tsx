@@ -146,59 +146,8 @@ export const CreditsProvider = ({ children }: CreditsProviderProps) => {
     [user, credits]
   );
 
-  // Claim free trial credits
-  const claimFreeTrial = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
-    if (!user) {
-      return { success: false, error: "User not logged in" };
-    }
-
-    if (freeTrialClaimed) {
-      return { success: false, error: "Free trial already claimed" };
-    }
-
-    console.log("[Credits] Claiming free trial credits");
-
-    try {
-      const newBalance = credits + FREE_TRIAL_CREDITS;
-
-      // Update balance and mark free trial as claimed
-      const { error: updateError } = await supabase
-        .from("credits")
-        .update({
-          balance: newBalance,
-          free_trial_claimed: true,
-        })
-        .eq("user_id", user.id);
-
-      if (updateError) {
-        console.error("[Credits] Update error:", updateError);
-        return { success: false, error: updateError.message };
-      }
-
-      // Log the transaction
-      const { error: txError } = await supabase
-        .from("credit_transactions")
-        .insert({
-          user_id: user.id,
-          type: "free_trial",
-          amount: FREE_TRIAL_CREDITS,
-          balance_after: newBalance,
-          description: "Welcome bonus - Free trial credits",
-        });
-
-      if (txError) {
-        console.error("[Credits] Transaction log error:", txError);
-      }
-
-      setCredits(newBalance);
-      setFreeTrialClaimed(true);
-      console.log("[Credits] Free trial claimed. New balance:", newBalance);
-      return { success: true };
-    } catch (err: any) {
-      console.error("[Credits] Exception:", err);
-      return { success: false, error: err.message };
-    }
-  }, [user, credits, freeTrialClaimed]);
+  // NOTE: Free trial claiming is handled server-side via /api/claim-free-trial
+  // (uses atomic RPC). Do NOT add a client-side claimFreeTrial here.
 
   // Load credits when user changes
   useEffect(() => {

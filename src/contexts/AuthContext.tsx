@@ -6,7 +6,13 @@ interface Profile {
   id: string;
   email: string;
   full_name: string | null;
+  business_name: string | null;
+  country: string | null;
+  currency: string;
+  phone: string | null;
+  onboarding_completed: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 interface AuthContextType {

@@ -118,20 +118,24 @@ export interface FreeTrialResult {
 export const createCheckoutSession = async (
   planId: string,
   region: 'india' | 'global',
-  userInfo: UserInfo
+  userInfo: UserInfo,
+  accessToken?: string
 ): Promise<CheckoutResult> => {
   try {
     console.log('[Payment] Creating checkout session:', { planId, region });
 
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
     const response = await fetch('/api/create-checkout', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         plan_id: planId,
         region: region,
-        user_email: userInfo.email || '',
         user_name: userInfo.name || '',
-        user_id: userInfo.userId || '',
       }),
     });
 

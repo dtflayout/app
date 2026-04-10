@@ -37,6 +37,8 @@ export interface Printer {
   logo_url: string | null;
   currency: string;
   is_active: boolean;
+  setup_completed: boolean;
+  setup_step: number;
   created_at: string;
   updated_at: string;
 }

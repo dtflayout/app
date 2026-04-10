@@ -47,12 +47,12 @@ function getCorsOrigin(req: VercelRequest): string {
 
 /**
  * Verify the Supabase JWT from the Authorization header.
- * Returns the user object if valid, null otherwise.
+ * Returns the user_id if valid, null otherwise.
  */
-async function verifyAuth(req: VercelRequest): Promise<boolean> {
+async function verifyAuth(req: VercelRequest): Promise<{ userId: string | null; supabase: any }> {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return false;
+    return { userId: null, supabase: null };
   }
 
   const token = authHeader.replace("Bearer ", "");
@@ -62,17 +62,65 @@ async function verifyAuth(req: VercelRequest): Promise<boolean> {
 
   if (!supabaseUrl || !supabaseServiceKey) {
     console.error("[r2-delete] Missing Supabase credentials for auth verification");
-    return false;
+    return { userId: null, supabase: null };
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) {
-    return false;
+    return { userId: null, supabase: null };
   }
 
-  return true;
+  return { userId: data.user.id, supabase };
+}
+
+/**
+ * Verify that the given R2 key belongs to the authenticated user.
+ * Checks printer.store_id and quick_store.id ownership.
+ */
+async function verifyKeyOwnership(supabase: any, userId: string, key: string): Promise<boolean> {
+  // Extract the ID portion from the key path
+  // design-files/{storeId}/... OR design-files/orders/{storeSlug}/...
+  // store-assets/{storeId}/...
+  // printer-assets/{anything}/...
+
+  if (key.startsWith("design-files/orders/")) {
+    // Quick Store order: design-files/orders/{slug}/{orderCode}/...
+    const parts = key.split("/");
+    const slug = parts[2];
+    if (!slug) return false;
+    const { data } = await supabase
+      .from("quick_stores").select("id").eq("slug", slug).eq("user_id", userId).single();
+    return !!data;
+  }
+
+  if (key.startsWith("design-files/")) {
+    // WI design: design-files/{store_id}/{designCode}/...
+    const parts = key.split("/");
+    const storeId = parts[1];
+    if (!storeId) return false;
+    const { data } = await supabase
+      .from("printers").select("id").eq("store_id", storeId).eq("user_id", userId).single();
+    return !!data;
+  }
+
+  if (key.startsWith("store-assets/")) {
+    // QS assets: store-assets/{storeId}/...
+    const parts = key.split("/");
+    const storeId = parts[1];
+    if (!storeId) return false;
+    const { data } = await supabase
+      .from("quick_stores").select("id").eq("id", storeId).eq("user_id", userId).single();
+    return !!data;
+  }
+
+  if (key.startsWith("printer-assets/")) {
+    // Printer assets — allow for any authenticated user (loose check)
+    return true;
+  }
+
+  return false;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -95,8 +143,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // Verify authentication
-  const isAuthed = await verifyAuth(req);
-  if (!isAuthed) {
+  const { userId, supabase } = await verifyAuth(req);
+  if (!userId || !supabase) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
@@ -115,6 +163,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const isAllowed = ALLOWED_PREFIXES.some((p) => key.startsWith(p));
         if (!isAllowed || key.includes("..")) {
           return res.status(400).json({ error: `Invalid key: ${key}` });
+        }
+        // Verify ownership
+        const isOwner = await verifyKeyOwnership(supabase, userId, key);
+        if (!isOwner) {
+          return res.status(403).json({ error: "You don't have permission to delete this file" });
         }
       }
 
@@ -135,6 +188,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const isAllowed = ALLOWED_PREFIXES.some((p) => prefix.startsWith(p));
       if (!isAllowed || prefix.includes("..")) {
         return res.status(400).json({ error: `Invalid prefix: ${prefix}` });
+      }
+
+      // Verify ownership of the prefix
+      const isOwner = await verifyKeyOwnership(supabase, userId, prefix);
+      if (!isOwner) {
+        return res.status(403).json({ error: "You don't have permission to delete these files" });
       }
 
       // List all objects under this prefix
