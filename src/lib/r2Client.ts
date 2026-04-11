@@ -22,20 +22,8 @@ const R2_PUBLIC_URL = (
   import.meta.env.VITE_R2_PUBLIC_URL || ""
 ).replace(/\/$/, "");
 
-// Presign API base — always use main domain for API routes
-// Subdomains (thaneprints.dtflayout.com) must call dtflayout.com/api/* directly
-const getApiBase = (): string => {
-  if (import.meta.env.VITE_API_BASE_URL) return import.meta.env.VITE_API_BASE_URL;
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    // If on a subdomain (e.g. thaneprints.dtflayout.com), route API calls to main domain
-    if (hostname.endsWith('.dtflayout.com') && hostname !== 'dtflayout.com' && hostname !== 'www.dtflayout.com') {
-      return 'https://dtflayout.com';
-    }
-  }
-  return '';
-};
-const API_BASE = getApiBase();
+// Presign API base — relative for same-origin (subdomain proxy forwards to Vercel)
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
 // ═══════════════════════════════════════════════════════════════════
 // UPLOAD

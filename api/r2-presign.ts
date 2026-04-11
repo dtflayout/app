@@ -134,7 +134,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       Bucket: bucket,
       Key: key,
       ContentType: contentType,
-      ...(contentLength ? { ContentLength: Number(contentLength) } : {}),
     });
 
     // Generate presigned URL valid for 1 hour
