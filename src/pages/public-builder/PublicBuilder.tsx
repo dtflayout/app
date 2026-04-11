@@ -719,7 +719,6 @@ const PublicBuilder: React.FC = () => {
       console.log('[PublicBuilder] Live chat configured but script injection is disabled (security hardening)');
     }
   }, [builderSettings.enable_live_chat, builderSettings.live_chat_script]);
-  }, [builderSettings.enable_live_chat, builderSettings.live_chat_script]);
 
   /**
    * Handle layout generation callback from CollageCreator

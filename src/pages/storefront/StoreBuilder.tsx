@@ -141,7 +141,6 @@ const StoreBuilder: React.FC<Props> = ({ store }) => {
       console.log('[StoreBuilder] Live chat configured but script injection is disabled (security hardening)');
     }
   }, [builderSettings.enable_live_chat, builderSettings.live_chat_script]);
-  }, [builderSettings.enable_live_chat, builderSettings.live_chat_script]);
 
   // Load Google Font
   useEffect(() => {
