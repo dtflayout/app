@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
@@ -141,6 +142,10 @@ const Orders = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Mark as Paid confirmation modal state
+  const [paidConfirmOrders, setPaidConfirmOrders] = useState<OrderDesign[]>([]);
+  const [isPaidConfirmOpen, setIsPaidConfirmOpen] = useState(false);
+
   // Multi-select states
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -205,17 +210,18 @@ const Orders = () => {
     }
   };
 
-  // Bulk mark as paid (keep selection so Download lights up immediately)
-  const handleBulkMarkPaid = async () => {
-    if (!printer || !user || selectedPendingCount === 0) return;
+  // ─── Mark as Paid: show confirmation first ─────────────────────────────────
+  const requestMarkPaid = (ordersToMark: OrderDesign[]) => {
+    setPaidConfirmOrders(ordersToMark);
+    setIsPaidConfirmOpen(true);
+  };
+
+  const handleConfirmMarkPaid = async () => {
+    if (!printer || !user || paidConfirmOrders.length === 0) return;
+    setIsPaidConfirmOpen(false);
     setIsProcessing(true);
-    let successCount = 0;
-    let failCount = 0;
 
-    const pendingOrders = selectedOrders.filter((o) => o.status === "pending");
-
-    // Calculate total area needed for all selected pending orders
-    const totalAreaNeeded = pendingOrders.reduce(
+    const totalAreaNeeded = paidConfirmOrders.reduce(
       (sum, o) => sum + o.sheets.reduce((s, sh) => s + (sh.width_inches * sh.height_inches), 0), 0
     );
 
@@ -226,14 +232,15 @@ const Orders = () => {
     }
 
     let runningCredits = credits;
+    let successCount = 0;
+    let failCount = 0;
 
-    for (const order of pendingOrders) {
+    for (const order of paidConfirmOrders) {
       try {
         const orderArea = order.sheets.reduce(
           (sum, s) => sum + (s.width_inches * s.height_inches), 0
         );
 
-        // Deduct credits
         const creditsBefore = runningCredits;
         const deductResult = await deductCredits(orderArea, `Website Integration - ${order.design_code}`);
 
@@ -244,7 +251,6 @@ const Orders = () => {
 
         runningCredits = deductResult.newBalance ?? (runningCredits - orderArea);
 
-        // Log to usage_logs
         await logSheetGeneration({
           user_id: user.id,
           user_email: user.email || "",
@@ -258,7 +264,6 @@ const Orders = () => {
           design_code: order.design_code,
         });
 
-        // Mark as paid
         const result = await updateOrderStatus(order.id, printer.id, "paid");
         if (result.success) successCount++;
         else failCount++;
@@ -267,17 +272,33 @@ const Orders = () => {
       }
     }
 
-    // Don't clear selection — let user immediately hit Download
     await fetchOrders(printer.id);
     const statsResult = await getOrderStats(printer.id);
     if (statsResult.success && statsResult.data) setStats(statsResult.data);
+    setPaidConfirmOrders([]);
     setIsProcessing(false);
 
-    if (failCount === 0) {
-      toast.success(`${successCount} order${successCount > 1 ? "s" : ""} marked as paid — credits deducted`);
+    if (paidConfirmOrders.length === 1) {
+      if (failCount === 0) toast.success(`${paidConfirmOrders[0].design_code} marked as paid — credits deducted`);
+      else toast.error("Failed to mark as paid");
     } else {
-      toast.warning(`${successCount} succeeded, ${failCount} failed`);
+      failCount === 0
+        ? toast.success(`${successCount} order${successCount > 1 ? "s" : ""} marked as paid — credits deducted`)
+        : toast.warning(`${successCount} succeeded, ${failCount} failed`);
     }
+  };
+
+  const paidConfirmTotalArea = paidConfirmOrders.reduce(
+    (sum, o) => sum + o.sheets.reduce((s, sh) => s + (sh.width_inches * sh.height_inches), 0), 0
+  );
+  const paidConfirmHasCredits = credits >= paidConfirmTotalArea;
+  const paidConfirmBalanceAfter = credits - paidConfirmTotalArea;
+
+  // Bulk mark as paid (keep selection so Download lights up immediately)
+  const handleBulkMarkPaid = async () => {
+    if (!printer || !user || selectedPendingCount === 0) return;
+    const pendingOrders = selectedOrders.filter((o) => o.status === "pending");
+    requestMarkPaid(pendingOrders);
   };
 
   // Bulk download
@@ -693,9 +714,9 @@ const Orders = () => {
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
 
-    // Only allow: pending → paid (handleStatusUpdate handles credit deduction)
+    // Only allow: pending → paid (shows confirmation dialog)
     if (order.status === "pending" && targetColumn === "paid") {
-      await handleStatusUpdate(order, "paid");
+      requestMarkPaid([order]);
     }
   };
 
@@ -981,7 +1002,7 @@ const Orders = () => {
                             <DropdownMenuItem onClick={() => handleViewOrder(order)}>
                               <Eye className="h-4 w-4 mr-2" />View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusUpdate(order, "paid")} disabled={isProcessing}>
+                            <DropdownMenuItem onClick={() => requestMarkPaid([order])} disabled={isProcessing}>
                               <CheckCircle className="h-4 w-4 mr-2" />Mark as Paid
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
@@ -1300,7 +1321,7 @@ const Orders = () => {
 
                             {canMarkPaid && (
                               <DropdownMenuItem 
-                                onClick={() => handleStatusUpdate(order, "paid")}
+                                onClick={() => requestMarkPaid([order])}
                                 disabled={isProcessing}
                               >
                                 <CheckCircle className="h-4 w-4 mr-2" />
@@ -1474,6 +1495,58 @@ const Orders = () => {
             )}
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══ MARK AS PAID CONFIRMATION DIALOG ═══ */}
+      <Dialog open={isPaidConfirmOpen} onOpenChange={setIsPaidConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Mark as Paid</DialogTitle>
+            <DialogDescription>
+              {paidConfirmOrders.length === 1
+                ? `Review the credit deduction for ${paidConfirmOrders[0]?.design_code}.`
+                : `Review the credit deduction for ${paidConfirmOrders.length} orders.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {paidConfirmOrders.length === 1 && paidConfirmOrders[0] && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-500 mb-1">Sheet dimensions:</p>
+                <p className="text-2xl font-heading font-bold">{paidConfirmOrders[0].sheets[0]?.width_inches}" × {Number(paidConfirmOrders[0].sheets[0]?.height_inches || 0).toFixed(2)}"</p>
+                {paidConfirmOrders[0].sheet_count > 1 && <p className="text-sm text-gray-500 mt-1">({paidConfirmOrders[0].sheet_count} sheets total)</p>}
+              </div>
+            )}
+            {paidConfirmOrders.length > 1 && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-500 mb-2">Orders to mark as paid:</p>
+                {paidConfirmOrders.map((o) => (
+                  <div key={o.id} className="flex justify-between text-sm py-1">
+                    <span className="font-mono">{o.design_code}</span>
+                    <span>{Math.round(o.sheets.reduce((sum, s) => sum + (s.width_inches * s.height_inches), 0))} sq.in</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div>
+              <p className="text-sm mb-3">This will deduct <span className="font-bold">{Math.round(paidConfirmTotalArea).toLocaleString()} sq.inches</span> from your credits.</p>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between"><span className="text-gray-600">Your current balance:</span><span className="font-semibold">{credits.toLocaleString(undefined, { maximumFractionDigits: 2 })} sq.in</span></div>
+                <Separator />
+                <div className="flex justify-between"><span className="text-gray-600">After deduction:</span><span className={`font-semibold ${paidConfirmBalanceAfter < 0 ? "text-red-600" : "text-indigo-600"}`}>{paidConfirmBalanceAfter.toLocaleString(undefined, { maximumFractionDigits: 2 })} sq.in</span></div>
+              </div>
+            </div>
+            {paidConfirmBalanceAfter < 500 && paidConfirmBalanceAfter >= 0 && (
+              <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-3 rounded-lg"><AlertTriangle className="h-4 w-4 flex-shrink-0" /><p className="text-sm">Your balance will be low after this deduction.</p></div>
+            )}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsPaidConfirmOpen(false)}>Cancel</Button>
+            <Button onClick={handleConfirmMarkPaid} disabled={!paidConfirmHasCredits || isProcessing} className="bg-green-600 hover:bg-green-700">
+              {isProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+              Confirm & Mark as Paid
             </Button>
           </DialogFooter>
         </DialogContent>
