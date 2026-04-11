@@ -83,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (await applyRateLimit(req, res, publicLimiter)) return;
 
   try {
-    const { key, contentType } = req.body;
+    const { key, contentType, contentLength } = req.body;
 
     if (!key || typeof key !== "string") {
       return res.status(400).json({ error: "Missing or invalid 'key'" });
@@ -91,6 +91,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!contentType || typeof contentType !== "string") {
       return res.status(400).json({ error: "Missing or invalid 'contentType'" });
+    }
+
+    // Validate file size if provided
+    if (contentLength !== undefined) {
+      const size = Number(contentLength);
+      if (isNaN(size) || size <= 0) {
+        return res.status(400).json({ error: "Invalid contentLength" });
+      }
+      if (size > MAX_FILE_SIZE) {
+        return res.status(400).json({
+          error: `File too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`,
+        });
+      }
     }
 
     // Validate content type — only allow images
@@ -121,6 +134,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       Bucket: bucket,
       Key: key,
       ContentType: contentType,
+      ...(contentLength ? { ContentLength: Number(contentLength) } : {}),
     });
 
     // Generate presigned URL valid for 1 hour

@@ -82,10 +82,18 @@ export async function createQSOrder(
 
     if (codeError) {
       console.error("[QSOrderService] Code generation error:", codeError);
-      // Fallback to timestamp-based code
+      // Fallback to crypto-random code
     }
 
-    const orderCode = codeResult || `ORD-${Date.now().toString(36).toUpperCase()}`;
+    const fallbackCode = (() => {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      const prefix = storeSlug.slice(0, 3).toUpperCase() + '-';
+      const random = Array.from(crypto.getRandomValues(new Uint8Array(8)))
+        .map(b => chars[b % chars.length]).join('');
+      return prefix + random;
+    })();
+
+    const orderCode = codeResult || fallbackCode;
 
     const { data, error } = await supabase
       .from("quick_store_orders")

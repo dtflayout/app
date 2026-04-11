@@ -131,43 +131,16 @@ const StoreBuilder: React.FC<Props> = ({ store }) => {
     loadProduct();
   }, [store.id, productSlug]);
 
-  // Inject live chat script if enabled
+  // Live chat widget — disabled until domain whitelist is implemented
+  // Printers can still save their chat widget code in settings,
+  // but it won't execute until we add safe injection with allowed domains.
+  // TODO: Re-enable with domain whitelist (Tawk.to, Crisp, Intercom, etc.)
+  // See CLAUDE_CONTEXT.md section 5.4 for details.
   useEffect(() => {
-    if (!builderSettings.enable_live_chat || !builderSettings.live_chat_script?.trim()) return;
-
-    const containerId = 'dtf-live-chat-container';
-    if (document.getElementById(containerId)) return;
-
-    const container = document.createElement('div');
-    container.id = containerId;
-    document.body.appendChild(container);
-
-    const temp = document.createElement('div');
-    temp.innerHTML = builderSettings.live_chat_script;
-
-    const scripts = temp.querySelectorAll('script');
-    scripts.forEach((origScript) => {
-      const newScript = document.createElement('script');
-      Array.from(origScript.attributes).forEach((attr) => {
-        newScript.setAttribute(attr.name, attr.value);
-      });
-      if (origScript.textContent) {
-        newScript.textContent = origScript.textContent;
-      }
-      container.appendChild(newScript);
-    });
-
-    const nonScripts = temp.querySelectorAll(':not(script)');
-    nonScripts.forEach((el) => {
-      container.appendChild(el.cloneNode(true));
-    });
-
-    console.log('[StoreBuilder] Live chat script injected');
-
-    return () => {
-      const el = document.getElementById(containerId);
-      if (el) el.remove();
-    };
+    if (builderSettings.enable_live_chat && builderSettings.live_chat_script?.trim()) {
+      console.log('[StoreBuilder] Live chat configured but script injection is disabled (security hardening)');
+    }
+  }, [builderSettings.enable_live_chat, builderSettings.live_chat_script]);
   }, [builderSettings.enable_live_chat, builderSettings.live_chat_script]);
 
   // Load Google Font

@@ -158,10 +158,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       console.log("[Auth] Initiating Google OAuth");
 
+      // Store the page the user was trying to reach so we can redirect after OAuth
+      const intendedPath = window.location.pathname;
+      if (intendedPath && intendedPath !== '/auth') {
+        sessionStorage.setItem('oauth_redirect', intendedPath);
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/builder-150`,
+          redirectTo: `${window.location.origin}/app/dashboard`,
         },
       });
 
