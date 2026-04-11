@@ -32,8 +32,8 @@ export interface CustomerSession {
   expiresAt: number; // Unix timestamp
 }
 
-// Session duration: 20 days in milliseconds
-const SESSION_DURATION_MS = 20 * 24 * 60 * 60 * 1000;
+// Session duration: 30 days in milliseconds
+const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 
 // LocalStorage key prefix
 const getSessionKey = (storeSlug: string) => `qs_customer_session_${storeSlug}`;
@@ -101,106 +101,67 @@ export function updateCustomerSession(storeSlug: string, updates: Partial<Pick<C
 
 // ============================================
 // ============================================
-// Email + Password Authentication
+// Email + OTP Authentication
 // ============================================
 
 /**
- * Register a new customer with email + password
+ * Send OTP to customer email via API route
  */
-export async function customerRegister(
+export async function sendCustomerOtp(
   storeId: string,
-  email: string,
-  password: string,
-  name: string,
-  phone?: string
-): Promise<{ success: boolean; error?: string; customer?: QSCustomer }> {
+  email: string
+): Promise<{ success: boolean; error?: string }> {
   try {
-    const normalizedEmail = email.toLowerCase().trim();
-    
-    // Call the DB function to register
-    const { data: customerId, error: regError } = await supabase
-      .rpc('customer_register', {
-        p_store_id: storeId,
-        p_email: normalizedEmail,
-        p_password: password,
-        p_name: name.trim(),
-        p_phone: phone?.trim() || null,
-      });
-    
-    if (regError) {
-      // Check for duplicate email
-      if (regError.message?.includes('already exists')) {
-        return { success: false, error: 'An account with this email already exists. Please log in.' };
-      }
-      console.error('[CustomerAuth] Register error:', regError);
-      return { success: false, error: regError.message || 'Registration failed' };
+    const res = await fetch('/api/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storeId, email: email.toLowerCase().trim() }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || 'Failed to send verification code' };
     }
-    
-    if (!customerId) {
-      return { success: false, error: 'Registration failed' };
-    }
-    
-    // Fetch the created customer
-    const { data: customer, error: fetchError } = await supabase
-      .from('quick_store_customers')
-      .select('*')
-      .eq('id', customerId)
-      .single();
-    
-    if (fetchError || !customer) {
-      return { success: false, error: 'Account created but failed to fetch profile' };
-    }
-    
-    return { success: true, customer };
+
+    return { success: true };
   } catch (error: any) {
-    console.error('[CustomerAuth] Register error:', error);
-    return { success: false, error: error.message };
+    console.error('[CustomerAuth] sendOtp error:', error);
+    return { success: false, error: 'Network error. Please try again.' };
   }
 }
 
 /**
- * Login with email + password
+ * Verify OTP and get/create customer via API route
  */
-export async function customerLogin(
+export async function verifyCustomerOtp(
   storeId: string,
   email: string,
-  password: string
+  otp: string,
+  name?: string
 ): Promise<{ success: boolean; error?: string; customer?: QSCustomer }> {
   try {
-    const normalizedEmail = email.toLowerCase().trim();
-    
-    // Call the DB function to verify credentials
-    const { data: customerId, error: loginError } = await supabase
-      .rpc('customer_login', {
-        p_store_id: storeId,
-        p_email: normalizedEmail,
-        p_password: password,
-      });
-    
-    if (loginError) {
-      console.error('[CustomerAuth] Login error:', loginError);
-      return { success: false, error: loginError.message || 'Login failed' };
+    const res = await fetch('/api/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storeId,
+        email: email.toLowerCase().trim(),
+        otp: otp.trim(),
+        name: name?.trim() || undefined,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || 'Verification failed' };
     }
-    
-    if (!customerId) {
-      return { success: false, error: 'Invalid email or password' };
-    }
-    
-    // Fetch customer data
-    const { data: customer, error: fetchError } = await supabase
-      .from('quick_store_customers')
-      .select('*')
-      .eq('id', customerId)
-      .single();
-    
-    if (fetchError || !customer) {
-      return { success: false, error: 'Login succeeded but failed to fetch profile' };
-    }
-    
-    return { success: true, customer };
+
+    return { success: true, customer: data.customer };
   } catch (error: any) {
-    console.error('[CustomerAuth] Login error:', error);
-    return { success: false, error: error.message };
+    console.error('[CustomerAuth] verifyOtp error:', error);
+    return { success: false, error: 'Network error. Please try again.' };
   }
 }
 
