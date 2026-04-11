@@ -34,6 +34,7 @@ import {
   saveDesign,
   buildCartUrl,
 } from "@/services/publicBuilderService";
+import { notifyPrinterOfOrder } from "@/services/notificationService";
 
 // Components
 import { PublicBuilderTopBar } from "@/components/public-builder";
@@ -1113,6 +1114,9 @@ const PublicBuilder: React.FC = () => {
 
       setIsAddingToCart(false);
       toast.success("Design ready! Click to open your cart.");
+
+      // Notify printer via email (fire-and-forget)
+      notifyPrinterOfOrder('website_integration', designResult.data.id);
 
     } catch (error: any) {
       console.error("[PublicBuilder] Add to cart error:", error);

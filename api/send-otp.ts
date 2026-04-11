@@ -10,6 +10,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import { initSentry, Sentry } from './lib/sentry.js';
+import { otpEmail } from './lib/email-templates.js';
 
 // ── Supabase service client ───────────────────────────────────────────
 function getServiceClient() {
@@ -123,28 +124,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       from: `${store.store_name} <noreply@dtflayout.com>`,
       to: [normalizedEmail],
       subject: `${otpCode} is your verification code`,
-      html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
-          <h2 style="font-size: 20px; font-weight: 600; color: #111; margin: 0 0 8px;">
-            Your verification code
-          </h2>
-          <p style="font-size: 14px; color: #666; margin: 0 0 32px;">
-            Enter this code to sign in to ${store.store_name}
-          </p>
-          <div style="background: #f5f5f5; border-radius: 12px; padding: 24px; text-align: center; margin: 0 0 32px;">
-            <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #111;">
-              ${otpCode}
-            </span>
-          </div>
-          <p style="font-size: 13px; color: #999; margin: 0;">
-            This code expires in 10 minutes. If you didn't request this, you can safely ignore this email.
-          </p>
-          <hr style="border: none; border-top: 1px solid #eee; margin: 32px 0 16px;" />
-          <p style="font-size: 12px; color: #bbb; margin: 0;">
-            Powered by <a href="https://dtflayout.com" style="color: #bbb;">DTF Layout</a>
-          </p>
-        </div>
-      `,
+      html: otpEmail(otpCode, store.store_name),
     });
 
     if (emailError) {
