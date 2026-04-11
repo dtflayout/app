@@ -187,7 +187,7 @@ const AuthPage = () => {
     if (isLogin) {
       const result = await signIn(email, password);
       if (result.success) {
-        navigate("/app/dashboard");
+        navigate("/dashboard");
       } else {
         setError(result.error || "Login failed");
       }
