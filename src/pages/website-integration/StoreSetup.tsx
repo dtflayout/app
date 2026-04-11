@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
+import { isSlugReserved } from "@/hooks/useSubdomain";
 import { Loader2, Store, Copy, Check, ExternalLink, Upload, X, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { getPrinter, savePrinter, Printer } from "@/services/printerService";
@@ -168,6 +169,11 @@ const StoreSetup = () => {
 
     if (!storeName.trim() || !storeUrl.trim() || !slug.trim()) {
       toast.error("Please fill in all fields");
+      return;
+    }
+
+    if (isSlugReserved(slug.trim())) {
+      toast.error(`"${slug.trim()}" is a reserved name. Please choose a different slug.`);
       return;
     }
 
