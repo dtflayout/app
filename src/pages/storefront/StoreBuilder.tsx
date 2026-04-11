@@ -32,6 +32,7 @@ import {
   updateOrderSheetPaths,
   linkOrderToCustomer,
 } from '@/services/qsOrderService';
+import { notifyPrinterOfOrder } from '@/services/notificationService';
 
 // Contexts
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
@@ -399,6 +400,9 @@ const StoreBuilder: React.FC<Props> = ({ store }) => {
 
       toast.dismiss('submit-order');
       toast.success('Order submitted successfully!');
+
+      // Notify printer via email (fire-and-forget)
+      notifyPrinterOfOrder('quick_store', orderId);
 
       // Redirect to order status page
       setTimeout(() => {

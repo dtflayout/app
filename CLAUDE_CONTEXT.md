@@ -30,7 +30,7 @@
 | File storage | Cloudflare R2 via presigned URLs (removed Supabase Storage) | No body size limits, cheaper | Mar 2026 |
 | Credit model | Prepaid credits (sq. inches), no subscriptions | Simpler for DTF printers who have variable usage | Nov 2025 |
 | Layout DPI | 150 DPI standard (300 DPI optional page exists) | 300 DPI crashes browsers at 13+ images | Nov 2025 |
-| Customer auth (QS) | Email + password via Supabase RPC (not Supabase Auth) | Per-store customers, separate from printer accounts | Mar 2026 |
+| Customer auth (QS) | Email + OTP via Resend (not Supabase Auth) | Per-store customers, passwordless, lower friction | Apr 2026 |
 | Design system | Bricolage Grotesque headings + Inter body, indigo/violet palette | Pexo-style, consistent across marketing + app | Mar 2026 |
 | Marketing pages | Inline styles (no Tailwind/shadcn) | Different rendering context | Mar 2026 |
 | Subdomain routing | Cloudflare Worker `dtf-subdomain-proxy` proxies to Vercel | Avoids nameserver delegation to Vercel | Apr 2026 |
@@ -70,7 +70,7 @@
 - ✅ **QS order rate limits** — 50 orders/day per store, 10 orders/day per phone number. Client-side check in `qsOrderService.ts`.
 
 ### 4.4 Infrastructure Security
-- ✅ **Security headers in vercel.json** — X-Content-Type-Options, X-Frame-Options, HSTS, Referrer-Policy, Permissions-Policy, CSP. Added Mar 2026.
+- ✅ **Security headers in vercel.json** — X-Content-Type-Options, X-Frame-Options, HSTS, Referrer-Policy, Permissions-Policy, CSP. Added Mar 2026. CSP `connect-src` widened to `https:` on Apr 11, 2026 — required because printers enter arbitrary Shopify/WooCommerce URLs for variant fetching.
 - ✅ **Strict cron auth** — `cleanup-expired.ts` requires `Bearer ${CRON_SECRET}` header, fails if env var not set. Fixed Mar 2026.
 - ✅ **Webhook signature verification** — `dodo-webhook.ts` uses `standardwebhooks` library to verify Dodo signatures. Added Mar 2026.
 - ✅ **Idempotent webhook processing** — Checks `credit_transactions` for existing `payment_id` before adding credits. Added Mar 2026.
@@ -113,9 +113,9 @@
 
 ### 5.5 🟠 HIGH: Customer auth is localStorage-only (no server-side session)
 **Files:** `src/services/qsCustomerService.ts`, `src/contexts/CustomerAuthContext.tsx`
-**Issue:** After RPC login, customer UUID stored in localStorage. No session token validation on subsequent requests. Forged localStorage = account takeover.
-**Fix:** Return signed session token from `customer_login` RPC, validate on data access. OR ensure RLS prevents cross-customer access.
-**Status:** NOT STARTED — depends on RLS work (#5.2)
+**Issue:** After OTP verification, customer UUID stored in localStorage (30-day expiry). No session token validation on subsequent requests. Forged localStorage = account takeover.
+**Fix:** Return signed session token from verify-otp API, validate on data access. OR ensure RLS prevents cross-customer access.
+**Status:** NOT STARTED — OTP login implemented (Apr 11, 2026) but session model unchanged. Auth switched from password to OTP via `api/send-otp.ts` + `api/verify-otp.ts` using Resend for email delivery.
 
 ### ~~5.6~~ ✅ DONE: `r2-presign` MAX_FILE_SIZE enforcement
 **Fixed Apr 11, 2026.** Client sends `contentLength` with presign request. Server validates against 100MB limit and passes `ContentLength` to PutObjectCommand.
@@ -150,17 +150,18 @@
 
 | # | Task | Status |
 |---|------|--------|
-| 6.1 | Rename `App.original.tsx` → `App.tsx` (removes coming soon page) | ⬜ NOT DONE |
-| 6.2 | Add `CRON_SECRET` env var in Vercel | ⬜ NOT DONE |
-| 6.3 | Add `SUPABASE_SERVICE_ROLE_KEY` env var in Vercel | ⬜ NOT DONE |
-| 6.4 | Verify cron job `api/cleanup-expired.ts` runs daily (Vercel Pro required) | ⬜ NOT DONE |
-| 6.5 | Set `DODO_LIVE_MODE=true` when ready for real payments | ⬜ NOT DONE |
+| 6.1 | Rename `App.original.tsx` → `App.tsx` (removes coming soon page) | ✅ DONE (Apr 11, 2026) |
+| 6.2 | Add `CRON_SECRET` env var in Vercel | ✅ DONE (verified Apr 11, 2026) |
+| 6.3 | Add `SUPABASE_SERVICE_ROLE_KEY` env var in Vercel | ✅ DONE (verified Apr 11, 2026) |
+| 6.4 | Verify cron job `api/cleanup-expired.ts` runs daily (Vercel Pro required) | ✅ DONE — manual run returned 200, "Purged 0 records older than 90 days" (Apr 11, 2026) |
+| 6.5 | Set `DODO_LIVE_MODE=true` when ready for real payments | ⬜ NOT DONE — flip when ready |
 | 6.6 | Test full multi-sheet public builder flow (3+ sheets at 300 DPI) after Supabase Pro | ⬜ NOT DONE |
 | 6.7 | Enable Supabase Pro + PITR backups | ⬜ NOT DONE |
-| 6.8 | Verify Upstash Redis env vars set (rate limiting active) | ⬜ NOT DONE |
-| 6.9 | Verify `DODO_WEBHOOK_KEY` set | ⬜ NOT DONE |
-| 6.10 | Verify `DODO_PAYMENTS_API_KEY` set | ⬜ NOT DONE |
+| 6.8 | Verify Upstash Redis env vars set (rate limiting active) | ✅ DONE (verified Apr 11, 2026) |
+| 6.9 | Verify `DODO_WEBHOOK_KEY` set | ✅ DONE (verified Apr 11, 2026) |
+| 6.10 | Verify `DODO_PAYMENTS_API_KEY` set | ✅ DONE (verified Apr 11, 2026) |
 | 6.11 | Make GitHub repo private | ⬜ NOT DONE |
+| 6.12 | Verify `RESEND_API_KEY` env var set in Vercel | ✅ DONE (Apr 11, 2026) |
 
 ---
 
@@ -173,7 +174,7 @@
 - ✅ Marketing pages (Pricing with savings calculator, FAQ, Contact)
 - ✅ Cold email infrastructure (Instantly.ai, dtflayout.co sending domain, Outscraper prospecting tool)
 - ✅ Order expiry system (10 days from paid/downloaded, 30-day grace before deletion)
-- ✅ Customer registration + login (email/password via RPC)
+- ✅ Customer auth via email OTP (Resend for email delivery, Supabase RPC for OTP generate/verify, localStorage session with 30-day expiry)
 - ✅ Session recovery modal for interrupted builder sessions
 - ✅ Skeleton loading states across all pages
 
@@ -181,12 +182,27 @@
 
 ## 8. FEATURE WORK — TODO / PLANNED
 
+### Manual Testing Status (as of Apr 11, 2026)
+- ✅ A (WI Printer Setup) — tested Apr 11
+- ✅ B (Products & Variants) — tested Apr 11
+- ✅ C (Public Builder WI) — tested Apr 11
+- ✅ D (WI Printer Orders) — tested Apr 11
+- ✅ E (QS Setup) — tested Apr 11
+- ✅ F4-F10 (Customer Auth) — tested Apr 11 (OTP-based)
+- ⬜ F11-F12 (Rate limits) — skipped, logic verified in code
+- ✅ G (QS Printer Orders) — tested Apr 11
+- ⬜ H (Billing & Payments) — needs Dodo live mode
+- ⬜ I (Edge Cases) — not tested
+- ✅ J (Deployment Verification) — env vars verified, cron confirmed
+
 - ⬜ Demo pages (`/demo/builder` and `/demo/store`) with personalized base64-encoded URL params
 - ⬜ Image editing tools (background remover, auto-trim, enhancer, stroke/outline, eraser)
 - ⬜ Real-ESRGAN AI upscaling via Replicate API
 - ⬜ Shopify App Store listing
 - ⬜ YouTube comparison videos (vs Drip Apps / Kixxl)
 - ⬜ Unique constraint on `credit_transactions(user_id, payment_id)` — waiting for Dodo integration since payment_ids were NULL during Razorpay era
+- ✅ Fix `quick_store_analytics` 400 (Bad Request) — CHECK constraint on `event_type` was too narrow; missed 6 event types added later (contact_view, contact_submit, whatsapp_click, phone_click, email_click, order_status_view). Widened constraint via ALTER TABLE. Fixed Apr 11, 2026.
+- ✅ Add credit deduction confirmation dialog to WI orders — matches QS behavior. All 3 "Mark as Paid" entry points (dropdown, kanban drag, detail panel) plus bulk action now show confirmation with credit balance preview. Fixed Apr 11, 2026.
 
 ---
 
@@ -204,3 +220,6 @@
 | 2026-04-03 | Builder settings RLS, storefront builder fix, pre-launch infra checklist | Sections 4.6, 6 |
 | 2026-04-10 | Trial flow audit: JWT fix on claim-free-trial, credits mismatch fix, manual test checklist | Sections 4.1, 4.6 |
 | 2026-04-11 | Full security audit. Created CLAUDE_CONTEXT.md. Fixed all 13 security issues (5.1–5.13). Also found and fixed reserved slug validation bug (A6) — www/api/files/admin were accepted as store slugs. Added `isSlugReserved` checks to all 4 setup pages. Remaining post-launch: 5.5 (customer auth hardening), 5.9 (CSP tightening). | All sections |
+| 2026-04-11 | Fixed quick_store_analytics 400 bug (CHECK constraint missing 6 event types). Added WI credit deduction confirmation dialog matching QS behavior. | Sections 8, Orders.tsx |
+| 2026-04-11 | Replaced Quick Store customer auth from email+password to email+OTP. Set up Resend (domain verified, API key in Vercel). Created `api/send-otp.ts` and `api/verify-otp.ts`. Rewrote `CustomerLoginModal.tsx` (2-step: email → 6-digit code with auto-submit, paste, resend cooldown). Replaced `customerLogin`/`customerRegister` with `sendCustomerOtp`/`verifyCustomerOtp` in service. Session bumped from 20→30 days. | Sections 2, 5.5, 6, 7, 9 |
+| 2026-04-11 | Manual testing session. Fixed analytics 400 (CHECK constraint widened for 6 new event types). Added WI paid confirmation dialog. Fixed CSP `connect-src` blocking Shopify variant fetches (widened to `https:`). Tested B1-B7 (Products & Variants ✅), E1-E8 (QS Setup ✅), F4-F10 (Customer Auth ✅). Verified all Vercel env vars set. Confirmed cron job runs (200, 0 purged). Updated deployment checklist: 6.1-6.4, 6.8-6.10, 6.12 all ✅. Remaining for launch: 6.5 (Dodo live), 6.7 (Supabase Pro), 6.11 (repo private). | Sections 4.4, 6, 8, vercel.json, Orders.tsx |
