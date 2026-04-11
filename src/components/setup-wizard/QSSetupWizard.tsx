@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { SetupWizard, WizardStep } from '@/components/SetupWizard';
 import { useAuth } from '@/contexts/AuthContext';
+import { isSlugReserved } from '@/hooks/useSubdomain';
 import {
   createQuickStore,
   updateQuickStore,
@@ -140,6 +141,7 @@ export const QSSetupWizard: React.FC<QSSetupWizardProps> = ({ existingStore, onC
   // Slug availability check
   useEffect(() => {
     if (!slugValue || slugValue.length < 3) { setSlugStatus('idle'); return; }
+    if (isSlugReserved(slugValue.trim())) { setSlugStatus('taken'); return; }
     if (store && slugValue === store.slug) { setSlugStatus('available'); return; }
     setSlugStatus('checking');
     const timer = setTimeout(async () => {
@@ -153,6 +155,7 @@ export const QSSetupWizard: React.FC<QSSetupWizardProps> = ({ existingStore, onC
   const validateStep1 = useCallback(() => {
     if (!storeName.trim()) { toast.error('Store name is required'); return 'error'; }
     if (!slugValue || slugValue.length < 3) { toast.error('Store URL must be at least 3 characters'); return 'error'; }
+    if (isSlugReserved(slugValue.trim())) { toast.error(`"${slugValue.trim()}" is a reserved name. Please choose a different URL.`); return 'error'; }
     if (slugStatus === 'checking') { toast.error('Checking URL availability, please wait...'); return 'error'; }
     if (slugStatus === 'taken') { toast.error('This URL is not available'); return 'error'; }
     return null;

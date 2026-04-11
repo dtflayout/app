@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { isSlugReserved } from '@/hooks/useSubdomain';
 import {
   createQuickStore,
   updateQuickStore,
@@ -172,6 +173,12 @@ const StoreSetup: React.FC = () => {
       return;
     }
 
+    // Block reserved slugs immediately
+    if (isSlugReserved(formData.slug.trim())) {
+      setSlugStatus('taken');
+      return;
+    }
+
     // Skip check if slug hasn't changed from existing store
     if (store && formData.slug === store.slug) {
       setSlugStatus('available');
@@ -252,6 +259,10 @@ const StoreSetup: React.FC = () => {
     }
     if (!formData.slug || formData.slug.length < 3) {
       toast.error('Store URL must be at least 3 characters');
+      return;
+    }
+    if (isSlugReserved(formData.slug.trim())) {
+      toast.error(`"${formData.slug.trim()}" is a reserved name. Please choose a different URL.`);
       return;
     }
     if (slugStatus === 'taken') {

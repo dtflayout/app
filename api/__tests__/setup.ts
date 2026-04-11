@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 
 // ── Env vars (always before any imports that read them) ───────────────────
 process.env.SUPABASE_URL = 'https://test.supabase.co';
-process.env.SUPABASE_SERVICE_KEY = 'test-service-key';
+process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-key';
 process.env.DODO_PAYMENTS_API_KEY = 'test-dodo-key';
 process.env.DODO_WEBHOOK_KEY = 'whsec_test_secret';
 process.env.DODO_TEST_PRODUCT_ID = 'pdt_0NbB4gGZZa0PUdOs8zDEA';

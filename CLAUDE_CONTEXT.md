@@ -88,9 +88,12 @@
 - ✅ **RLS on printers** — `Anyone can view active printers` (SELECT where is_active = true). Added Apr 2026.
 - ✅ **RLS on printer_builder_settings** — `Anyone can view builder settings` (SELECT). Added Apr 2026.
 - ✅ **RLS on ALL tables** — Every table has RLS enabled via migrations 001-013. Tables covered: credits, credit_transactions, profiles, printers, printer_products, printer_variants, printer_builder_settings, designs, quick_stores, quick_store_products, quick_store_orders, quick_store_customers, quick_store_analytics, quick_store_messages, quick_store_testimonials, quick_store_otps. Verified Apr 11, 2026.
-- ⚠️ **Some SELECT policies are overly permissive** — `quick_store_orders` and `quick_store_customers` have `USING(true)` public SELECT. `credit_transactions` missing SELECT/INSERT for users. `printer_products`/`printer_variants` missing public read for public builder. SEE TODO #5.2.
+- ⚠️ **Some SELECT policies were overly permissive** — Fixed via `014_tighten_rls_policies.sql` on Apr 11, 2026. Tightened `quick_store_customers`, added `credit_transactions` SELECT/INSERT, added public read for `printer_products`/`printer_variants`.
 - ✅ **Analytics 90-day retention purge** — Added to `cleanup-expired.ts` cron. Added Mar 2026.
 - ✅ **quick_store_analytics_daily aggregation table** — Created. Mar 2026.
+
+### 4.7 Input Validation
+- ✅ **Reserved slug validation** — All 4 slug entry points (WISetupWizard, WI StoreSetup, QSSetupWizard, QS StoreSetup) now check `isSlugReserved()` before saving. QS setup also shows instant "taken" indicator for reserved slugs. Fixed Apr 11, 2026.
 
 ---
 
@@ -99,14 +102,8 @@
 ### ~~5.1~~ ✅ DONE: CORS `endsWith` bypass on R2 endpoints
 **Fixed Apr 11, 2026.** Replaced `endsWith` with regex in `r2-presign.ts` and `r2-delete.ts`.
 
-### 5.2 🟠 HIGH: Some RLS SELECT policies are overly permissive
-**Issue:** All tables have RLS enabled (good), but some policies are too broad:
-- `quick_store_orders`: `"Anyone can view orders by code" USING(true)` — lets anyone list ALL orders
-- `quick_store_customers`: `"Public can read own customer record" USING(true)` — lets anyone read ALL customers
-- `credit_transactions`: Missing SELECT and INSERT policies — users can't see billing history or log transactions
-- `printer_products` / `printer_variants`: Missing public read policies — public builder may fail
-**Fix:** Run migration `014_tighten_rls_policies.sql` in Supabase SQL Editor.
-**Status:** SQL WRITTEN — needs to be run in Supabase
+### ~~5.2~~ ✅ DONE: RLS SELECT policies tightened
+**Fixed Apr 11, 2026.** Ran `014_tighten_rls_policies.sql`. Tightened `quick_store_customers` SELECT to active stores only, added `credit_transactions` SELECT/INSERT for users, added public read for `printer_products`/`printer_variants`. Cleaned up duplicate policies.
 
 ### ~~5.3~~ ✅ DONE: `printer-assets/` ownership bypass in r2-delete
 **Fixed Apr 11, 2026.** Now verifies user owns the printer via `store_id` or `user_id` match.
@@ -206,4 +203,4 @@
 | 2026-04-02 | DNS/Cloudflare configuration, subdomain routing, R2 file serving fix | Section 3 |
 | 2026-04-03 | Builder settings RLS, storefront builder fix, pre-launch infra checklist | Sections 4.6, 6 |
 | 2026-04-10 | Trial flow audit: JWT fix on claim-free-trial, credits mismatch fix, manual test checklist | Sections 4.1, 4.6 |
-| 2026-04-11 | Full security audit. Created CLAUDE_CONTEXT.md. Fixed 11 of 13 issues: 5.1 (CORS regex), 5.2 (RLS tightening SQL), 5.3 (printer-assets ownership), 5.4 (XSS disabled), 5.6 (MAX_FILE_SIZE), 5.7 (ilike escaping), 5.8 (random order codes), 5.10 (cleanup cron gap), 5.11 (Vary:Origin), 5.12 (OAuth redirect), 5.13 (.env verified clean). Remaining post-launch: 5.5 (customer auth), 5.9 (CSP). | Sections 4.6, 5 |
+| 2026-04-11 | Full security audit. Created CLAUDE_CONTEXT.md. Fixed all 13 security issues (5.1–5.13). Also found and fixed reserved slug validation bug (A6) — www/api/files/admin were accepted as store slugs. Added `isSlugReserved` checks to all 4 setup pages. Remaining post-launch: 5.5 (customer auth hardening), 5.9 (CSP tightening). | All sections |

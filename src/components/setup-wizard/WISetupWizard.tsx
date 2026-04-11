@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getPrinter, savePrinter, Printer } from '@/services/printerService';
 import { uploadToR2 } from '@/lib/r2Client';
 import { supabase } from '@/lib/supabaseClient';
+import { isSlugReserved } from '@/hooks/useSubdomain';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -84,6 +85,7 @@ export const WISetupWizard: React.FC<WISetupWizardProps> = ({ onComplete, onClos
   const validateStep1 = useCallback(() => {
     if (!storeName.trim()) { toast.error('Store name is required'); return 'error'; }
     if (!slug.trim() || slug.length < 3) { toast.error('URL slug must be at least 3 characters'); return 'error'; }
+    if (isSlugReserved(slug.trim())) { toast.error(`"${slug.trim()}" is a reserved name. Please choose a different slug.`); return 'error'; }
     if (!storeUrl.trim()) { toast.error('Store URL is required'); return 'error'; }
     if (!storeUrl.startsWith('http://') && !storeUrl.startsWith('https://')) {
       toast.error('Store URL must start with http:// or https://');
