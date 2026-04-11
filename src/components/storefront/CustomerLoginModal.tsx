@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Mail, ArrowLeft, User } from 'lucide-react';
+import { Loader2, Mail, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendCustomerOtp, verifyCustomerOtp, QSCustomer } from '@/services/qsCustomerService';
 
@@ -43,7 +43,6 @@ const CustomerLoginModal: React.FC<CustomerLoginModalProps> = ({
 }) => {
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
   const [otpDigits, setOtpDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [isLoading, setIsLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
@@ -56,7 +55,6 @@ const CustomerLoginModal: React.FC<CustomerLoginModalProps> = ({
       const timer = setTimeout(() => {
         setStep('email');
         setEmail('');
-        setName('');
         setOtpDigits(Array(OTP_LENGTH).fill(''));
         setCooldown(0);
       }, 300);
@@ -126,7 +124,7 @@ const CustomerLoginModal: React.FC<CustomerLoginModalProps> = ({
     if (otp.length !== OTP_LENGTH) return;
 
     setIsLoading(true);
-    const result = await verifyCustomerOtp(storeId, email.trim(), otp, name.trim() || undefined);
+    const result = await verifyCustomerOtp(storeId, email.trim(), otp);
     setIsLoading(false);
 
     if (result.success && result.customer) {
@@ -138,7 +136,7 @@ const CustomerLoginModal: React.FC<CustomerLoginModalProps> = ({
       setOtpDigits(Array(OTP_LENGTH).fill(''));
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     }
-  }, [storeId, email, name, onLogin, onClose]);
+  }, [storeId, email, onLogin, onClose]);
 
   // ── OTP Input Handlers ──────────────────────────────────────────────
   const handleOtpChange = (index: number, value: string) => {
@@ -215,20 +213,6 @@ const CustomerLoginModal: React.FC<CustomerLoginModalProps> = ({
                 onChange={(e) => setEmail(e.target.value)}
                 autoFocus
                 required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="login-name" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Name <span className="text-xs text-gray-400 font-normal">(optional)</span>
-              </Label>
-              <Input
-                id="login-name"
-                type="text"
-                placeholder="Your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
               />
             </div>
 
