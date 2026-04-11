@@ -711,48 +711,14 @@ const PublicBuilder: React.FC = () => {
     loadData();
   }, [printerSlug, productSlug]);
 
-  // Inject live chat script if enabled
+  // Live chat widget — disabled until domain whitelist is implemented
+  // TODO: Re-enable with domain whitelist (Tawk.to, Crisp, Intercom, etc.)
+  // See CLAUDE_CONTEXT.md section 5.4 for details.
   useEffect(() => {
-    if (!builderSettings.enable_live_chat || !builderSettings.live_chat_script?.trim()) return;
-
-    const containerId = 'dtf-live-chat-container';
-    // Avoid duplicate injection
-    if (document.getElementById(containerId)) return;
-
-    const container = document.createElement('div');
-    container.id = containerId;
-    document.body.appendChild(container);
-
-    // Parse and execute script tags from the chat widget code
-    const temp = document.createElement('div');
-    temp.innerHTML = builderSettings.live_chat_script;
-
-    const scripts = temp.querySelectorAll('script');
-    scripts.forEach((origScript) => {
-      const newScript = document.createElement('script');
-      // Copy attributes (src, async, defer, etc.)
-      Array.from(origScript.attributes).forEach((attr) => {
-        newScript.setAttribute(attr.name, attr.value);
-      });
-      // Copy inline script content
-      if (origScript.textContent) {
-        newScript.textContent = origScript.textContent;
-      }
-      container.appendChild(newScript);
-    });
-
-    // Also append non-script elements (some widgets use noscript or div tags)
-    const nonScripts = temp.querySelectorAll(':not(script)');
-    nonScripts.forEach((el) => {
-      container.appendChild(el.cloneNode(true));
-    });
-
-    console.log('[PublicBuilder] Live chat script injected');
-
-    return () => {
-      const el = document.getElementById(containerId);
-      if (el) el.remove();
-    };
+    if (builderSettings.enable_live_chat && builderSettings.live_chat_script?.trim()) {
+      console.log('[PublicBuilder] Live chat configured but script injection is disabled (security hardening)');
+    }
+  }, [builderSettings.enable_live_chat, builderSettings.live_chat_script]);
   }, [builderSettings.enable_live_chat, builderSettings.live_chat_script]);
 
   /**

@@ -55,7 +55,7 @@ export async function uploadToR2(
     const presignRes = await fetch(`${API_BASE}/api/r2-presign`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key, contentType }),
+      body: JSON.stringify({ key, contentType, contentLength: blob.size }),
     });
 
     if (!presignRes.ok) {

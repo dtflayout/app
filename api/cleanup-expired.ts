@@ -133,6 +133,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`[Cleanup] WI: Permanently deleted ${wiDeletedCount} old expired orders`);
 
+    // Step 3: Also clean up paid/downloaded WI orders past expiry + 30 days
+    // These have been processed — files no longer needed
+    const { data: oldProcessed, error: processedError } = await supabase
+      .from('designs')
+      .select('id, design_code, printer_id, printers!inner(store_id)')
+      .in('status', ['paid', 'downloaded'])
+      .lt('expires_at', thirtyDaysAgo)
+      .limit(100);
+
+    if (processedError) {
+      console.error('[Cleanup] Error fetching old processed WI:', processedError);
+    }
+
+    let wiProcessedDeletedCount = 0;
+
+    for (const order of (oldProcessed || [])) {
+      const storeId = (order as any).printers?.store_id;
+      if (!storeId) continue;
+
+      const r2Prefix = `design-files/${storeId}/${order.design_code}/`;
+      try {
+        await deleteR2Folder(r2Prefix);
+      } catch (err) {
+        console.error(`[Cleanup] Error deleting R2 files for processed WI order ${order.id}:`, err);
+      }
+
+      const { error: delError } = await supabase
+        .from('designs')
+        .delete()
+        .eq('id', order.id);
+
+      if (!delError) wiProcessedDeletedCount++;
+    }
+
+    console.log(`[Cleanup] WI: Permanently deleted ${wiProcessedDeletedCount} old processed orders`);
+
     // ═══════════════════════════════════════════════════════════════════════
     // QUICK STORE (quick_store_orders table)
     // ═══════════════════════════════════════════════════════════════════════
@@ -199,7 +235,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: true,
       website_integration: {
         marked: wiMarkedCount,
-        deleted: wiDeletedCount,
+        deleted_expired: wiDeletedCount,
+        deleted_processed: wiProcessedDeletedCount,
       },
       quick_store: {
         deleted: qsDeletedCount,
