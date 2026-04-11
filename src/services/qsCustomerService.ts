@@ -304,7 +304,8 @@ export async function getStoreCustomers(
     
     // Search
     if (options?.search) {
-      query = query.or(`name.ilike.%${options.search}%,email.ilike.%${options.search}%,phone.ilike.%${options.search}%`);
+      const escaped = options.search.replace(/[%_\\]/g, '\\$&');
+      query = query.or(`name.ilike.%${escaped}%,email.ilike.%${escaped}%,phone.ilike.%${escaped}%`);
     }
     
     // Sort

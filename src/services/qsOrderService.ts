@@ -135,7 +135,8 @@ export async function getQSOrders(
     }
 
     if (filters?.search) {
-      const searchTerm = `%${filters.search}%`;
+      const escaped = filters.search.replace(/[%_\\]/g, '\\$&');
+      const searchTerm = `%${escaped}%`;
       query = query.or(
         `customer_name.ilike.${searchTerm},customer_phone.ilike.${searchTerm},order_code.ilike.${searchTerm}`
       );

@@ -38,7 +38,7 @@ function getCorsOrigin(req: VercelRequest): string {
   const origin = req.headers.origin || "";
   if (
     ALLOWED_ORIGINS.includes(origin) ||
-    origin.endsWith(".dtflayout.com")
+    /^https:\/\/[\w-]+\.dtflayout\.com$/.test(origin)
   ) {
     return origin;
   }
@@ -116,8 +116,15 @@ async function verifyKeyOwnership(supabase: any, userId: string, key: string): P
   }
 
   if (key.startsWith("printer-assets/")) {
-    // Printer assets — allow for any authenticated user (loose check)
-    return true;
+    // Printer assets: printer-assets/{store_id or user_id}/logo-xxx.png
+    const parts = key.split("/");
+    const assetOwnerId = parts[1];
+    if (!assetOwnerId) return false;
+    // Check if user owns a printer with this store_id OR if assetOwnerId is the user's own ID
+    if (assetOwnerId === userId) return true;
+    const { data } = await supabase
+      .from("printers").select("id").eq("store_id", assetOwnerId).eq("user_id", userId).single();
+    return !!data;
   }
 
   return false;
@@ -137,6 +144,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   res.setHeader("Access-Control-Allow-Origin", corsOrigin);
+  res.setHeader("Vary", "Origin");
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });

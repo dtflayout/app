@@ -49,10 +49,9 @@ const ALLOWED_ORIGINS = [
 
 function getCorsOrigin(req: VercelRequest): string {
   const origin = req.headers.origin || "";
-  // Also allow *.dtflayout.com subdomains (for Quick Store storefronts)
   if (
     ALLOWED_ORIGINS.includes(origin) ||
-    origin.endsWith(".dtflayout.com")
+    /^https:\/\/[\w-]+\.dtflayout\.com$/.test(origin)
   ) {
     return origin;
   }
@@ -74,6 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Set CORS headers
   res.setHeader("Access-Control-Allow-Origin", corsOrigin);
+  res.setHeader("Vary", "Origin");
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
