@@ -9,7 +9,7 @@
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=(self)" },
         { "key": "X-DNS-Prefetch-Control", "value": "on" },
         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://files.dtflayout.com https://*.r2.dev data: blob:; connect-src 'self' https://dtflayout.com https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://*.cloudflare.com https://*.r2.cloudflarestorage.com https://api.dodopayments.com https://files.dtflayout.com; frame-src 'self' https://checkout.dodopayments.com; base-uri 'self'; form-action 'self'" }
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://files.dtflayout.com https://*.r2.dev data: blob:; connect-src 'self' https: wss://*.supabase.co; frame-src 'self' https://checkout.dodopayments.com; base-uri 'self'; form-action 'self'" }
       ]
     }
   ],
