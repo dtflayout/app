@@ -286,6 +286,50 @@ export default function WebsiteIntegration() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>{[{ n: "No Code", l: "Setup required" }, { n: "50+ Fonts", l: "Google Fonts library" }, { n: "Multi-Sheet", l: "Cart integration" }, { n: "24/7", l: "Self-service ordering" }].map((s, i) => <div key={i} style={{ textAlign: "center", padding: "20px 0", borderRadius: 16, background: "rgba(255,255,255,0.88)", border: "1px solid rgba(255,255,255,0.5)", backdropFilter: "blur(16px)", boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}><div style={{ fontSize: 24, fontWeight: 800, fontFamily: HF, color: P }}>{s.n}</div><div style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>{s.l}</div></div>)}</div>
       </div></section>
 
+      {/* TRY LIVE DEMO */}
+      <section style={{ padding: "100px 40px", position: "relative" }}>
+        <Dots o={0.06} />
+        <div style={{ maxWidth: 900, margin: "0 auto", position: "relative", zIndex: 1 }}>
+          <div style={{ borderRadius: 28, overflow: "hidden", background: "linear-gradient(140deg, #0f0d2e 0%, #1e1b4b 30%, #312e81 60%, #4338ca 100%)", boxShadow: "0 16px 56px rgba(30,27,75,0.35)", position: "relative" }}>
+            <div style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, rgba(129,140,248,0.15) 0%, transparent 70%)" }} />
+            <div style={{ position: "absolute", bottom: -30, left: -30, width: 100, height: 100, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)" }} />
+            <div style={{ padding: "48px 48px", display: "flex", alignItems: "center", gap: 40, position: "relative", zIndex: 1 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 14px", borderRadius: 99, background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.2)", marginBottom: 16 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#34d399", letterSpacing: "0.05em" }}>INTERACTIVE DEMO</span>
+                </div>
+                <h2 style={{ fontFamily: HF, fontSize: 32, fontWeight: 800, color: "#fff", lineHeight: 1.15, letterSpacing: "-0.02em", margin: "0 0 12px" }}>See It In Action — With Your Brand</h2>
+                <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", lineHeight: 1.7, margin: "0 0 24px" }}>Try the live builder demo. Change colors, upload your logo, pick fonts — see exactly how it will look on your website.</p>
+                <Btn sz="m" onClick={() => navigate("/demo/builder")} style={{ background: "#fff", color: P, boxShadow: "0 6px 24px rgba(0,0,0,0.15)" }}>Try Live Demo →</Btn>
+              </div>
+              <div style={{ flex: "0 0 auto", width: 260, height: 200, borderRadius: 16, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                <div style={{ padding: "6px 10px", background: "#1e293b", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <div style={{ width: 16, height: 16, borderRadius: 4, background: "rgba(79,70,229,0.3)" }} />
+                    <span style={{ fontSize: 8, fontWeight: 700, color: "#fff" }}>Your Brand</span>
+                  </div>
+                  <span style={{ fontSize: 6, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: "#4F46E5", color: "#fff" }}>Add to Cart</span>
+                </div>
+                <div style={{ flex: 1, background: "#f1f5f9", padding: "8px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {["#4F46E5", "#0EA5E9", "#A855F7", "#F59E0B"].map((c, i) => <div key={i} style={{ width: 18, height: 18, borderRadius: "50%", background: c }} />)}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 3, width: "80%" }}>
+                    {[1, 2, 3].map(i => <div key={i} style={{ height: 24, borderRadius: 3, background: "#fff", border: "1px solid #E5E7EB" }} />)}
+                  </div>
+                  <div style={{ fontSize: 7, color: "#9CA3AF", fontWeight: 500 }}>Change any color, font, or style</div>
+                </div>
+                <div style={{ padding: "4px 10px", background: "#1e293b", display: "flex", justifyContent: "flex-end", gap: 3 }}>
+                  <span style={{ fontSize: 5, padding: "2px 6px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.5)" }}>Preview</span>
+                  <span style={{ fontSize: 5, padding: "2px 6px", borderRadius: 3, background: "#4F46E5", color: "#fff" }}>Generate</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section style={{ padding: "120px 40px", position: "relative", overflow: "hidden" }}><Dots o={0.1} /><Sq top={60} right={160} size={34} rotate={15} /><Sq bottom={60} left={140} size={28} rotate={-20} /><div style={{ maxWidth: 620, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}><h2 style={{ fontFamily: HF, fontSize: 44, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "0 0 18px" }}>Ready to Put Your Builder on Your Website?</h2><p style={{ fontSize: 16, color: "#6B7280", lineHeight: 1.7, margin: "0 0 40px" }}>Start with 20,000 sq.inch free. No credit card required. No monthly fees, ever.</p><div style={{ display: "flex", justifyContent: "center", gap: 14 }}><Btn sz="l" onClick={() => navigate("/signup")}>Start Embedding Free →</Btn><Btn v="o" sz="l" onClick={() => navigate("/pricing")}>View Pricing →</Btn></div></div></section>
 
