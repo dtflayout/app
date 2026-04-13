@@ -177,6 +177,7 @@
 - ✅ Customer auth via email OTP (Resend for email delivery, Supabase RPC for OTP generate/verify, localStorage session with 30-day expiry)
 - ✅ Session recovery modal for interrupted builder sessions
 - ✅ Skeleton loading states across all pages
+- ✅ Demo pages with GA4 tracking (interactive builder demo at `/demo/builder` with live customization, standalone savings calculator at `/savings-calculator`, "Try Demo" banner on WI marketing page)
 
 ---
 
@@ -195,7 +196,7 @@
 - ⬜ I (Edge Cases) — not tested
 - ✅ J (Deployment Verification) — env vars verified, cron confirmed
 
-- ⬜ Demo pages (`/demo/builder` and `/demo/store`) with personalized base64-encoded URL params
+- ✅ Demo pages — Interactive builder demo at `/demo/builder` (live customization: 7 color pickers, font picker, button style, logo upload, store name) + savings calculator at `/savings-calculator`. GA4 tracking. "Try Demo" section added to WI marketing page. Created Apr 13, 2026.
 - ⬜ Image editing tools (background remover, auto-trim, enhancer, stroke/outline, eraser)
 - ⬜ Real-ESRGAN AI upscaling via Replicate API
 - ⬜ Shopify App Store listing
@@ -223,3 +224,21 @@
 | 2026-04-11 | Fixed quick_store_analytics 400 bug (CHECK constraint missing 6 event types). Added WI credit deduction confirmation dialog matching QS behavior. | Sections 8, Orders.tsx |
 | 2026-04-11 | Replaced Quick Store customer auth from email+password to email+OTP. Set up Resend (domain verified, API key in Vercel). Created `api/send-otp.ts` and `api/verify-otp.ts`. Rewrote `CustomerLoginModal.tsx` (2-step: email → 6-digit code with auto-submit, paste, resend cooldown). Replaced `customerLogin`/`customerRegister` with `sendCustomerOtp`/`verifyCustomerOtp` in service. Session bumped from 20→30 days. | Sections 2, 5.5, 6, 7, 9 |
 | 2026-04-11 | Manual testing session. Fixed analytics 400 (CHECK constraint widened for 6 new event types). Added WI paid confirmation dialog. Fixed CSP `connect-src` blocking Shopify variant fetches (widened to `https:`). Tested B1-B7 (Products & Variants ✅), E1-E8 (QS Setup ✅), F4-F10 (Customer Auth ✅). Verified all Vercel env vars set. Confirmed cron job runs (200, 0 purged). Updated deployment checklist: 6.1-6.4, 6.8-6.10, 6.12 all ✅. Remaining for launch: 6.5 (Dodo live), 6.7 (Supabase Pro), 6.11 (repo private). | Sections 4.4, 6, 8, vercel.json, Orders.tsx |
+| 2026-04-13 | Demo pages & GA4 tracking. Created: (1) `src/lib/ga.ts` — lightweight GA4 event helpers (trackCTA, trackCalculator, trackDemoBuilder, trackSectionView). (2) `/demo/builder` — interactive builder demo page (`DemoBuilder.tsx`): faithful 300 DPI builder preview with live customization controls (7 color pickers with hex display, font dropdown + custom Google Font input, button style picker, temporary logo upload via blob URL, store name input, reset to defaults). Preview matches actual PublicBuilder layout (top bar → body with upload zone/toolbox/image cards → action bar). All interactions tracked via GA4 custom events. (3) `/savings-calculator` — standalone savings calculator (extracted from Pricing page) with GA4 tracking on every interaction (width, price, competitor, sheets slider, plan changes, CTA clicks with full context). (4) Added "Try Live Demo" banner section to existing `WebsiteIntegration.tsx` marketing page, linking to `/demo/builder`. (5) Added GA4 gtag.js script to `index.html` (placeholder `G-XXXXXXXXXX`). Routes added to App.tsx. | New files: src/lib/ga.ts, src/pages/marketing/DemoBuilder.tsx, src/pages/marketing/SavingsCalculatorPage.tsx. Modified: App.tsx, index.html, WebsiteIntegration.tsx, CLAUDE_CONTEXT.md |
+
+---
+
+## 10. DEMO & TRACKING ARCHITECTURE
+
+### Demo Pages (created Apr 13, 2026)
+- **`/demo/builder`** — Interactive builder demo page for cold email outreach. Printers can customize the builder appearance live: 7 color zones (Background, Top Bar, Action Bar, Primary, Text, Toolbox Icons, Image Card) with native color pickers + hex display, font picker (20 curated Google Fonts + custom name input), button style (Pill/Rounded/Square), logo upload (temp blob URL, session-only), store name. Preview is a faithful replica of the actual 300 DPI PublicBuilder (top bar with logo/store name/sheet dimensions/Add to Cart → body with upload zone/toolbox/image cards → action bar). Reset to defaults button. GA4 tracks every customization change.
+- **`/savings-calculator`** — Standalone savings calculator page. Full calculator from Pricing page with dedicated hero. Every interaction tracked via GA4 (slider moves debounced at 500ms, dropdown changes, plan switches). CTA clicks include full context (competitor, sheets, plan, monthly/yearly savings).
+- **WI marketing page** — Added "Try Live Demo" banner section (dark gradient card with mini builder preview) linking to `/demo/builder`. Inserted before the CTA section.
+
+### Tracking: GA4 (Google Analytics 4)
+- **Setup:** gtag.js script added to `index.html` with placeholder `G-XXXXXXXXXX`. Replace with actual Measurement ID from analytics.google.com.
+- **Auto-tracked by GA4:** page_view, scroll depth, session duration, UTM params, geo, device, referrer, bounce rate.
+- **Custom events via `src/lib/ga.ts`:** `trackCTA(label, dest)`, `trackCalculator(action, values)`, `trackDemoBuilder(action, values)`, `trackSectionView(section)`. All fire `gtag('event', ...)`.
+- **Cold email link format:** `dtflayout.com/demo/builder?utm_source=instantly&utm_medium=email&utm_campaign={campaign_name}&utm_content={email_variant}`
+- **GA4 Enhanced Measurement:** Enable in GA4 settings for automatic scroll depth, outbound clicks, site search, video engagement, file downloads.
+- **TODO:** Create GA4 property and replace `G-XXXXXXXXXX` in `index.html`.
