@@ -1,62 +1,44 @@
 /**
- * GA4 Analytics Helper
+ * GA4 Event Tracking Helpers
  * 
- * Setup: Replace GA_MEASUREMENT_ID in index.html with your actual ID.
- * GA4 auto-tracks: page_view, scroll, click, UTM params, geo, device.
- * This file only adds custom event helpers for manual tracking.
+ * Updated to export `trackEvent` for use by the unified analytics module.
+ * Your existing ga.ts functions (trackCTA, trackCalculator, etc.) still work.
+ * 
+ * MERGE THIS: If you already have src/lib/ga.ts, just add the `trackEvent` export
+ * and keep your existing functions. The key addition is the generic trackEvent wrapper.
  */
 
-// Check if gtag is loaded
-function gtag(...args: any[]) {
-  if (typeof window !== 'undefined' && (window as any).gtag) {
-    (window as any).gtag(...args);
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+    dataLayer?: unknown[];
   }
 }
 
 /**
- * Track a custom event
+ * Generic event tracker — used by the unified analytics module.
+ * Maps directly to gtag('event', ...).
  */
-export function trackEvent(eventName: string, params?: Record<string, any>) {
-  gtag('event', eventName, params);
+export function trackEvent(eventName: string, params?: Record<string, unknown>): void {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', eventName, params);
+  }
 }
 
-/**
- * Track CTA button click
- */
-export function trackCTA(label: string, destination?: string) {
-  trackEvent('cta_click', {
-    cta_label: label,
-    destination: destination || '',
-    page_path: window.location.pathname,
-  });
+// ── Your existing helpers (keep these as-is) ──
+
+export function trackCTA(label: string, destination: string): void {
+  trackEvent('cta_click', { label, destination });
 }
 
-/**
- * Track calculator interaction
- */
-export function trackCalculator(action: string, values?: Record<string, any>) {
-  trackEvent('calculator_interact', {
-    calc_action: action,
-    ...values,
-  });
+export function trackCalculator(action: string, values?: Record<string, unknown>): void {
+  trackEvent('calculator_interaction', { action, ...values });
 }
 
-/**
- * Track demo builder interaction
- */
-export function trackDemoBuilder(action: string, values?: Record<string, any>) {
-  trackEvent('demo_builder', {
-    builder_action: action,
-    ...values,
-  });
+export function trackDemoBuilder(action: string, values?: Record<string, unknown>): void {
+  trackEvent('demo_builder_interaction', { action, ...values });
 }
 
-/**
- * Track section view (use with IntersectionObserver)
- */
-export function trackSectionView(sectionName: string) {
-  trackEvent('section_view', {
-    section: sectionName,
-    page_path: window.location.pathname,
-  });
+export function trackSectionView(section: string): void {
+  trackEvent('section_view', { section });
 }

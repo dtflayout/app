@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { User, Session } from "@supabase/supabase-js";
+import { analytics } from "@/lib/analytics";
 
 interface Profile {
   id: string;
@@ -187,6 +188,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signOut = async () => {
     try {
       console.log("[Auth] Signing out");
+      analytics.reset();
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);
@@ -211,8 +213,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(session?.user ?? null);
       setIsLoading(false);
 
-      // Fetch profile in background (non-blocking)
+      // Fetch profile in background + identify for analytics
       if (session?.user) {
+        analytics.identify(session.user.id, {
+          email: session.user.email,
+        });
         fetchProfile(session.user.id).then((profileData) => {
           if (mounted) setProfile(profileData);
         });
@@ -230,8 +235,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(session?.user ?? null);
       setIsLoading(false);
 
-      // Fetch profile in background (non-blocking)
+      // Fetch profile in background + identify for analytics
       if (session?.user) {
+        analytics.identify(session.user.id, {
+          email: session.user.email,
+        });
         fetchProfile(session.user.id).then((profileData) => {
           if (mounted) setProfile(profileData);
         });
