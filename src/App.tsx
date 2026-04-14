@@ -39,6 +39,8 @@ import PrivacyPolicy from "./pages/marketing/PrivacyPolicy";
 import TermsConditions from "./pages/marketing/TermsConditions";
 import RefundPolicy from "./pages/marketing/RefundPolicy";
 import Faq from "./pages/marketing/Faq";
+import DemoBuilder from "./pages/marketing/DemoBuilder";
+import SavingsCalculatorPage from "./pages/marketing/SavingsCalculatorPage";
 
 // Quick Store Dashboard Pages (Printer side)
 import {
@@ -126,6 +128,10 @@ const AppContent = () => {
         <Route path="/terms-conditions" element={<TermsConditions />} />
         <Route path="/refund-policy" element={<RefundPolicy />} />
         <Route path="/faq" element={<Faq />} />
+        
+        {/* Demo & Tracked Landing Pages */}
+        <Route path="/demo/builder" element={<DemoBuilder />} />
+        <Route path="/savings-calculator" element={<SavingsCalculatorPage />} />
         
         {/* Auth Pages */}
         <Route path="/auth" element={<AuthPage />} />

@@ -20,7 +20,7 @@ const getAnonClient = () => {
 const PRODUCT_MAP: Record<string, { india: string; global: string; credits: number }> = {
   starter: {
     india:  'pdt_0NbAZg2ZiDFl8o4J1Ovfa',  // DTF Starter-India ₹1,999
-    global: 'pdt_0NbAW1mIzcAq3bTjhkZj1',  // DTF Starter $49
+    global: 'pdt_0NcfoAZDl4R5VccSUczH6',  // TEMP: DTF Live Test $1 (real: pdt_0NcfnbgcoWVV5ABkqfd4W)
     credits: 150000,
   },
   growth: {
