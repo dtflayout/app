@@ -7,15 +7,17 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const PRODUCT_CREDITS: Record<string, { credits: number; plan_id: string; plan_name: string }> = {
   // Global (USD)
-  'pdt_0NbAW1mIzcAq3bTjhkZj1': { credits: 150000,  plan_id: 'starter',  plan_name: 'DTF Starter' },
+  'pdt_0NcfnbgcoWVV5ABkqfd4W': { credits: 150000,  plan_id: 'starter',  plan_name: 'DTF Starter' },
+  'pdt_0NbAW1mIzcAq3bTjhkZj1': { credits: 150000,  plan_id: 'starter',  plan_name: 'DTF Starter' },  // old ID, keep for safety
   'pdt_0NbAWS876LqMRwSFSpDBJ': { credits: 500000,  plan_id: 'growth',   plan_name: 'DTF Growth' },
   'pdt_0NbAXNyhPnjF6NOFWU3AV': { credits: 2000000, plan_id: 'max',      plan_name: 'DTF Max' },
   // India (INR)
   'pdt_0NbAZg2ZiDFl8o4J1Ovfa': { credits: 150000,  plan_id: 'starter',  plan_name: 'DTF Starter-India' },
   'pdt_0NbAZtngV3jovZnpXe4WU': { credits: 500000,  plan_id: 'growth',   plan_name: 'DTF Growth-India' },
   'pdt_0NbAa1eGihyujWptwRpf1': { credits: 2000000, plan_id: 'max',      plan_name: 'DTF Max-India' },
-  // Test mode
+  // Test / Live test
   'pdt_0NbB4gGZZa0PUdOs8zDEA': { credits: 150000,  plan_id: 'starter',  plan_name: 'DTF Starter (Test)' },
+  'pdt_0NcfoAZDl4R5VccSUczH6': { credits: 150000,  plan_id: 'starter',  plan_name: 'DTF Live Test' },
 };
 
 // ── Supabase client ───────────────────────────────────────────────────────
@@ -158,7 +160,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (eventType === 'payment.succeeded' || paymentData.status === 'succeeded') {
       const paymentId = paymentData.payment_id;
       const customerEmail = paymentData.customer?.email;
-      const totalAmount = paymentData.total_amount || 0;
+      const totalAmount = (paymentData.total_amount || 0) / 100; // Dodo sends in smallest unit (paise/cents)
       const currency = paymentData.currency || 'USD';
       const invoiceUrl = paymentData.invoice_url || null;
       const metadata = paymentData.metadata || {};

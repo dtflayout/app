@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import MarketingNav from "@/components/marketing/MarketingNav";
+import { useRegion } from "@/hooks/useRegion";
 
 /* ══════════ DESIGN TOKENS ══════════ */
 const HF = "'Bricolage Grotesque', sans-serif";
@@ -43,7 +44,7 @@ const catMeta: Record<string, { icon: React.ReactNode; tint: string; accent: str
 interface FaqItem { q: string; a: string | React.ReactNode; }
 interface FaqSection { id: string; title: string; subtitle: string; items: FaqItem[]; }
 
-const faqSections: FaqSection[] = [
+const getFaqSections = (region: 'india' | 'global'): FaqSection[] => [
   {
     id: "general", title: "General", subtitle: "About DTF Layout",
     items: [
@@ -95,7 +96,7 @@ const faqSections: FaqSection[] = [
     id: "pricing", title: "Pricing & Credits", subtitle: "Plans & billing",
     items: [
       { q: "How does pricing work?", a: "DTF Layout uses a simple credit-based model — no subscriptions, no monthly fees, no per-order commissions. You buy credits once (measured in square inches), and they're deducted each time you generate a gang sheet. When credits run low, just recharge with any plan. Your existing credits carry over — new credits are added to your balance." },
-      { q: "What plans are available?", a: (<div><ul style={{ margin: 0, paddingLeft: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}><li><strong>DTF Trial</strong> — Free · 20,000 sq.in · No credit card required</li><li><strong>DTF Starter</strong> — ₹1,999 / $49 · 1,50,000 sq.in</li><li><strong>DTF Growth</strong> — ₹5,999 / $149 · 5,00,000 sq.in</li><li><strong>DTF Max</strong> — ₹11,999 / $299 · 20,00,000 sq.in · Lowest per-inch rate</li></ul><p style={{ marginTop: 12 }}>All plans include full access to every tool — the Gang Sheet Builder, all editing tools, Website Integration, Quick Store, white-label builder, and analytics.</p></div>) },
+      { q: "What plans are available?", a: (<div><ul style={{ margin: 0, paddingLeft: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}><li><strong>DTF Trial</strong> — Free · 20,000 sq.in · No credit card required</li><li><strong>DTF Starter</strong> — {region === 'india' ? '₹1,999' : '$49'} · {region === 'india' ? '1,50,000' : '150K'} sq.in</li><li><strong>DTF Growth</strong> — {region === 'india' ? '₹5,999' : '$149'} · {region === 'india' ? '5,00,000' : '500K'} sq.in</li><li><strong>DTF Max</strong> — {region === 'india' ? '₹11,999' : '$299'} · {region === 'india' ? '20,00,000' : '2M'} sq.in · Lowest per-inch rate</li></ul><p style={{ marginTop: 12 }}>All plans include full access to every tool — the Gang Sheet Builder, all editing tools, Website Integration, Quick Store, white-label builder, and analytics.</p></div>) },
       { q: "Do credits expire?", a: "No. Your credits never expire. Use them at your own pace — there's no time limit, no monthly reset, and no pressure to use them before a deadline." },
       { q: "Are there any monthly fees, subscriptions, or per-order charges?", a: "None. Zero. DTF Layout uses a pure pay-once-use-anytime model. There are no monthly subscriptions, no per-order commissions, no revenue sharing, and no hidden fees. You buy credits, you use them. That's it." },
       { q: "How is credit usage calculated?", a: "Credits are deducted based on the total area of your output gang sheet (width × height in square inches). For example, a 23\" × 40\" sheet uses 920 square inches of credits. The editing tools (background remover, enhancer, trimmer, etc.) are completely free — credits are only used when you generate a layout." },
@@ -147,10 +148,13 @@ const faqSections: FaqSection[] = [
 /* ══════════ COMPONENT ══════════ */
 export default function Faq() {
   const navigate = useNavigate();
+  const { region } = useRegion();
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const faqSections = useMemo(() => getFaqSections(region), [region]);
 
   // Load fonts + animations
   useEffect(() => { const l1 = document.createElement("link"); l1.href = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap"; l1.rel = "stylesheet"; document.head.appendChild(l1); return () => { document.head.removeChild(l1); }; }, []);

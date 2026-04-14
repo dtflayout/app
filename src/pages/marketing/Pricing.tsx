@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import { useCredits } from "@/contexts/CreditsContext";
+import { useRegion } from "@/hooks/useRegion";
 import {
   createCheckoutSession,
   claimFreeTrial,
@@ -289,8 +290,9 @@ function SavingsCalculator() {
         <div style={{ padding: "14px 20px", borderRadius: 18, background: "linear-gradient(135deg, #ECFDF5, #D1FAE5)", border: "1.5px solid #A7F3D0", boxShadow: "0 4px 16px rgba(16,185,129,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
             <StepBadge n={3} />
-            <span style={{ fontFamily: HF, fontSize: 18, fontWeight: 700, color: "#064E3B" }}>DTF Layout Plan</span>
+            <span style={{ fontFamily: HF, fontSize: 18, fontWeight: 700, color: "#064E3B" }}>DTF Layout Credit Recharge</span>
           </div>
+          <p style={{ fontSize: 12, color: "#059669", fontWeight: 500, margin: "-4px 0 8px", lineHeight: 1.4 }}>No subscriptions. Buy credits once, use them at your own pace — top up anytime you need more.</p>
           <div style={{ display: "flex", gap: 6 }}>
             {CALC_PLANS.map((p, i) => {
               const a = plan === i;
@@ -392,11 +394,9 @@ export default function Pricing() {
   const navigate = useNavigate();
   const { user, session } = useAuth();
   const { refreshCredits, freeTrialClaimed } = useCredits();
+  const { region } = useRegion();
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [region, setRegion] = useState<"india" | "global">(() => {
-    try { const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; if (tz === "Asia/Kolkata" || tz === "Asia/Calcutta") return "india"; } catch {} return "global";
-  });
 
   useEffect(() => {
     if (!document.querySelector("style[data-dtf-pricing]")) { const tag = document.createElement("style"); tag.setAttribute("data-dtf-pricing", "1"); tag.textContent = ANIM_CSS; document.head.appendChild(tag); }
@@ -454,11 +454,6 @@ export default function Pricing() {
       <section style={{ padding: "10px 40px 0", position: "relative" }}>
         <Sq top={40} right={100} size={30} rotate={20} /><Sq bottom={60} left={80} size={24} rotate={-15} />
         <div style={{ maxWidth: 1240, margin: "0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 40 }}>
-            <div style={{ display: "inline-flex", borderRadius: 99, background: "#F3F4F6", padding: 4, border: "1px solid #E5E7EB" }}>
-              {(["india", "global"] as const).map(r => <button key={r} onClick={() => setRegion(r)} style={{ padding: "8px 24px", borderRadius: 99, fontSize: 15, fontWeight: 600, fontFamily: BF, cursor: "pointer", border: "none", transition: "all 0.2s", background: region === r ? "linear-gradient(135deg,#4F46E5,#7C3AED)" : "transparent", color: region === r ? "#fff" : "#4B5563", boxShadow: region === r ? "0 2px 8px rgba(79,70,229,0.3)" : "none" }}>{r === "india" ? "🇮🇳 India (INR)" : "🌍 Global (USD)"}</button>)}
-            </div>
-          </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, alignItems: "start" }}>
             {PLANS.map((plan) => {
               const isProcessing = processingPlanId === plan.id;
@@ -511,7 +506,7 @@ export default function Pricing() {
               </span>
             ))}
           </div>
-          <div style={{ marginTop: 80, paddingTop: 80, borderTop: "1px solid #E5E7EB" }}><SavingsCalculator /></div>
+          {region !== 'india' && <div style={{ marginTop: 80, paddingTop: 80, borderTop: "1px solid #E5E7EB" }}><SavingsCalculator /></div>}
         </div>
       </section>
 
