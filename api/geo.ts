@@ -17,8 +17,9 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   const region: 'india' | 'global' = country === 'IN' ? 'india' : 'global';
 
-  // Cache for 24 hours — region doesn't change often
-  res.setHeader('Cache-Control', 'public, s-maxage=86400, max-age=86400');
+  // MUST NOT cache at CDN level — response is unique per user IP
+  // Client-side caching is handled by useRegion.ts (localStorage, 7 days)
+  res.setHeader('Cache-Control', 'private, no-store, no-cache');
   
   return res.status(200).json({ region, country });
 }
