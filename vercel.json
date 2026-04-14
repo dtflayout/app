@@ -14,8 +14,9 @@
     }
   ],
   "rewrites": [
+    { "source": "/go/:code", "destination": "/api/go?c=:code" },
     { "source": "/(.*)", "destination": "/index.html" }
-  ],
+],
   "crons": [
     {
       "path": "/api/cleanup-expired",
