@@ -92,11 +92,11 @@ const PaymentSuccess = () => {
               <p className="text-xs text-gray-400 mb-6">Payment ID: {paymentId}</p>
             )}
             <button
-              onClick={() => navigate('/builder-150')}
+              onClick={() => navigate('/billing')}
               className="w-full text-white py-3 px-6 rounded-full font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(79,70,229,0.4)]"
               style={{ background: "linear-gradient(135deg, #4F46E5, #7C3AED)" }}
             >
-              Go to Dashboard
+              View Billing & Credits
             </button>
           </>
         )}
@@ -117,11 +117,11 @@ const PaymentSuccess = () => {
               <p className="text-xs text-gray-400 mb-6">Payment ID: {paymentId}</p>
             )}
             <button
-              onClick={() => navigate('/builder-150')}
+              onClick={() => navigate('/billing')}
               className="w-full text-white py-3 px-6 rounded-full font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(79,70,229,0.4)]"
               style={{ background: "linear-gradient(135deg, #4F46E5, #7C3AED)" }}
             >
-              Go to Dashboard
+              View Billing & Credits
             </button>
           </>
         )}
@@ -150,7 +150,7 @@ const PaymentSuccess = () => {
                 Try Again
               </button>
               <button
-                onClick={() => navigate('/builder-150')}
+                onClick={() => navigate('/billing')}
                 className="w-full bg-white text-gray-700 py-3 px-6 rounded-full font-semibold border-[1.5px] border-gray-200 hover:border-indigo-500 hover:text-indigo-600 transition-all duration-200"
               >
                 Go to Dashboard
