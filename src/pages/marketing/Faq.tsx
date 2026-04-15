@@ -23,7 +23,7 @@ const ANIM_CSS = `
 @keyframes gridDrift{0%{transform:translate(0,0)}100%{transform:translate(60px,60px)}}
 .orb-1{animation:orbFloat1 8s ease-in-out infinite}.orb-2{animation:orbFloat2 10s ease-in-out infinite}.orb-3{animation:orbFloat3 7s ease-in-out infinite}.grid-drift{animation:gridDrift 8s linear infinite}
 .faq-item{transition:all 0.3s ease}.faq-item:hover{border-color:#C7D2FE!important;box-shadow:0 4px 16px rgba(79,70,229,0.06)!important}
-.nav-item{transition:all 0.2s ease;cursor:pointer;position:relative}.nav-item:hover{background:rgba(79,70,229,0.04)!important}
+.nav-item{transition:all 0.2s ease;cursor:pointer;position:relative}.nav-item:hover{background:rgba(79,70,229,0.04)!important}.nav-item.active:hover{background:linear-gradient(135deg,#4F46E5,#7C3AED)!important}
 .nav-item.active::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0}
 .ql-card{transition:all 0.3s ease}.ql-card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(79,70,229,0.12)!important;border-color:#C7D2FE!important}
 `;
@@ -149,6 +149,10 @@ const getFaqSections = (region: 'india' | 'global'): FaqSection[] => [
 export default function Faq() {
   const navigate = useNavigate();
   const { region } = useRegion();
+
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" ? window.innerWidth < 768 : false);
+  useEffect(() => { const h = () => setIsMobile(window.innerWidth < 768); window.addEventListener("resize", h); return () => window.removeEventListener("resize", h); }, []);
+
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [openFaq, setOpenFaq] = useState<string | null>(null);
@@ -183,13 +187,13 @@ export default function Faq() {
       <MarketingNav />
 
       {/* ═══ HERO ═══ */}
-      <section style={{ position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #050412 0%, #08061A 5%, #0A0820 10%, #0D0B26 14%, #0F0D2E 19%, #141138 24%, #1A1744 29%, #1E1B4B 34%, #272368 39%, #312E81 44%, #4F46E5 54%, #6366F1 61%, #818CF8 68%, #A5B4FC 75%, #C7D2FE 82%, #E0E7FF 88%, #F5F5F7 94%, #FAFAFB 100%)", padding: "0 40px 0" }}>
+      <section style={{ position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #050412 0%, #08061A 5%, #0A0820 10%, #0D0B26 14%, #0F0D2E 19%, #141138 24%, #1A1744 29%, #1E1B4B 34%, #272368 39%, #312E81 44%, #4F46E5 54%, #6366F1 61%, #818CF8 68%, #A5B4FC 75%, #C7D2FE 82%, #E0E7FF 88%, #F5F5F7 94%, #FAFAFB 100%)", padding: isMobile ? "0 16px 0" : "0 40px 0" }}>
         <Dots o={0.04} /><MovingPattern />
-        <div style={{ padding: "140px 0 0" }}>
+        <div style={{ padding: isMobile ? "100px 0 0" : "140px 0 0" }}>
           <Sq top={20} right={140} size={32} rotate={18} /><Sq top={100} right={80} size={22} rotate={-12} /><Sq top={30} left={100} size={28} rotate={22} />
           <div style={{ position: "relative", zIndex: 2, maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
             <Pill><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={P} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg> {totalQuestions} Questions Answered</Pill>
-            <h1 style={{ fontFamily: HF, fontSize: 60, fontWeight: 800, color: "#fff", lineHeight: 1.08, letterSpacing: "-0.03em", margin: "28px 0 20px" }}>Frequently Asked<br />Questions</h1>
+            <h1 style={{ fontFamily: HF, fontSize: isMobile ? 56 : 60, fontWeight: 800, color: "#fff", lineHeight: 1.08, letterSpacing: "-0.03em", margin: "28px 0 20px" }}>Frequently Asked<br />Questions</h1>
             <p style={{ fontSize: 17, color: "rgba(255,255,255,0.75)", lineHeight: 1.7, maxWidth: 540, margin: "0 auto 36px" }}>Everything you need to know about DTF Layout — from getting started to switching from other tools.</p>
 
             {/* Search Bar */}
@@ -208,12 +212,12 @@ export default function Faq() {
       </section>
 
       {/* ═══ SIDEBAR + FAQ CONTENT ═══ */}
-      <section style={{ padding: "0 40px 120px", position: "relative", marginTop: -40 }}>
+      <section style={{ padding: isMobile ? "0 16px 60px" : "0 40px 120px", position: "relative", marginTop: -40 }}>
         <Dots o={0.03} />
-        <div style={{ maxWidth: 1340, margin: "0 auto", position: "relative", zIndex: 10, display: "flex", gap: 36, alignItems: "flex-start" }}>
+        <div style={{ maxWidth: 1340, margin: "0 auto", position: "relative", zIndex: 10, display: "flex", flexDirection: isMobile ? "column" : "row", gap: isMobile ? 20 : 36, alignItems: "flex-start" }}>
 
           {/* LEFT SIDEBAR — sticky nav */}
-          <div style={{ width: 290, flexShrink: 0, position: "sticky", top: 100 }}>
+          <div style={{ width: isMobile ? "100%" : 290, flexShrink: 0, position: isMobile ? "relative" : "sticky", top: isMobile ? undefined : 100 }}>
             <div style={{ background: "#fff", borderRadius: 18, border: "1px solid #E5E7EB", boxShadow: "0 2px 12px rgba(0,0,0,0.04)", overflow: "hidden" }}>
               {/* All */}
               <div className={`nav-item${activeCategory === "all" ? " active" : ""}`} onClick={() => { setActiveCategory("all"); setSearchQuery(""); setOpenFaq(null); }} style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 10, background: activeCategory === "all" ? "linear-gradient(135deg,#4F46E5,#7C3AED)" : "transparent", borderBottom: "1px solid #F3F4F6" }}>
@@ -309,14 +313,14 @@ export default function Faq() {
       </section>
 
       {/* ═══ QUICK LINKS ═══ */}
-      <section style={{ padding: "80px 40px", background: "#fff", position: "relative" }}>
+      <section style={{ padding: isMobile ? "48px 16px" : "80px 40px", background: "#fff", position: "relative" }}>
         <Dots o={0.04} /><Sq top={40} right={100} size={28} rotate={15} /><Sq bottom={50} left={120} size={24} rotate={-18} />
         <div style={{ maxWidth: 920, margin: "0 auto", position: "relative", zIndex: 1 }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <Pill>Explore More</Pill>
             <h2 style={{ fontFamily: HF, fontSize: 38, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "18px 0 0" }}>Quick Links</h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 20 }}>
             {[
               { title: "Pricing & Savings Calculator", desc: "Compare DTF Layout vs competitors with your own numbers", to: "/pricing", icon: catMeta.pricing.icon, accent: catMeta.pricing.accent },
               { title: "Website Integration Guide", desc: "See how the embeddable builder works on your site", to: "/product/website-integration", icon: catMeta["website-integration"].icon, accent: catMeta["website-integration"].accent },
@@ -338,13 +342,13 @@ export default function Faq() {
       </section>
 
       {/* ═══ CTA ═══ */}
-      <section style={{ padding: "120px 40px", position: "relative", overflow: "hidden" }}>
+      <section style={{ padding: isMobile ? "60px 16px" : "120px 40px", position: "relative", overflow: "hidden" }}>
         <Dots o={0.1} /><Sq top={60} right={160} size={34} rotate={15} /><Sq bottom={60} left={140} size={28} rotate={-20} />
         <div style={{ maxWidth: 620, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
           <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #EEF2FF, #E0E7FF)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={P} strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
           </div>
-          <h2 style={{ fontFamily: HF, fontSize: 46, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "0 0 14px" }}>Still have questions?</h2>
+          <h2 style={{ fontFamily: HF, fontSize: isMobile ? 28 : 46, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "0 0 14px" }}>Still have questions?</h2>
           <p style={{ fontSize: 17, color: "#4B5563", lineHeight: 1.7, margin: "0 0 8px" }}>We respond to every message — usually within a few hours.</p>
           <p style={{ fontSize: 15, color: "#9CA3AF", margin: "0 0 40px" }}>Email us at <a href="mailto:support@dtflayout.com" style={{ color: P, fontWeight: 600, textDecoration: "none" }}>support@dtflayout.com</a> or use the contact form.</p>
           <div style={{ display: "flex", justifyContent: "center", gap: 14 }}>
@@ -355,11 +359,11 @@ export default function Faq() {
       </section>
 
       {/* ═══ FOOTER ═══ */}
-      <footer style={{ position: "relative", padding: "0 40px 32px", background: "linear-gradient(180deg, #1E1B4B, #0F0D2E)", color: "rgba(165,180,252,0.6)" }}>
+      <footer style={{ position: "relative", padding: isMobile ? "0 16px 24px" : "0 40px 32px", background: "linear-gradient(180deg, #1E1B4B, #0F0D2E)", color: "rgba(165,180,252,0.6)" }}>
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent 5%, rgba(99,102,241,0.3) 20%, rgba(129,140,248,0.5) 50%, rgba(99,102,241,0.3) 80%, transparent 95%)" }} />
         <div style={{ paddingTop: 64 }}>
           <div style={{ maxWidth: 1060, margin: "0 auto" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 16 }}>
                   <div style={{ width: 28, height: 28, borderRadius: 7, background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg></div>
@@ -373,7 +377,7 @@ export default function Faq() {
             </div>
             <div style={{ borderTop: "1px solid rgba(99,102,241,0.12)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 13 }}>© 2026 DTF Layout · Data Canvas Tech. All rights reserved.</span>
-              <span style={{ fontSize: 13, cursor: "pointer" }}>dtflayout@gmail.com</span>
+              <span style={{ fontSize: 13, cursor: "pointer" }}>support@dtflayout.com</span>
             </div>
           </div>
         </div>

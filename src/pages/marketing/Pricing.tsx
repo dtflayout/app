@@ -24,7 +24,7 @@ const PLANS = [
     credits: { india: "20,000", global: "20K" }, creditsValue: 20000,
     rate: "Free",
     description: "Experience the full platform — no credit card needed.",
-    features: ["Full access to all tools", "BG Remover, Enhancer, Crop, Text Editor & more", "Integrate with any website", "No credit card required"],
+    features: ["Full access to all tools", "Integrate with any website", "No credit card required"],
     cta: "Get Started Free", popular: false,
     tint: "linear-gradient(135deg, #F0F9FF, #BAE6FD)",
   },
@@ -34,7 +34,7 @@ const PLANS = [
     credits: { india: "1,50,000", global: "150K" }, creditsValue: 150000,
     rate: { india: "1.33 paisa/sq.in", global: "$0.33/1K sq.in" },
     description: "Balanced and budget-smart for getting started.",
-    features: ["Full access to all tools", "BG Remover, Enhancer, Crop, Text Editor & more", "White-label builder — your brand colors, logo & fonts", "In-depth user behavior analytics", "Integrate with any website"],
+    features: ["Full access to all tools", "White-label builder — your brand colors, logo & fonts", "Integrate with any website"],
     cta: "Get Started", popular: false,
     tint: "linear-gradient(135deg, #ECFDF5, #D1FAE5)",
   },
@@ -44,7 +44,7 @@ const PLANS = [
     credits: { india: "5,00,000", global: "500K" }, creditsValue: 500000,
     rate: { india: "1.2 paisa/sq.in", global: "$0.30/1K sq.in" },
     description: "Significantly cheaper per-inch for heavy users.",
-    features: ["Full access to all tools", "BG Remover, Enhancer, Crop, Text Editor & more", "White-label builder — your brand colors, logo & fonts", "In-depth user behavior analytics", "Integrate with any website"],
+    features: ["Full access to all tools", "White-label builder — your brand colors, logo & fonts", "Integrate with any website"],
     cta: "Get Started", popular: false,
     tint: "linear-gradient(135deg, #FFF7ED, #FED7AA)",
   },
@@ -54,7 +54,7 @@ const PLANS = [
     credits: { india: "20,00,000", global: "2M" }, creditsValue: 2000000,
     rate: { india: "0.6 paisa/sq.in", global: "$0.15/1K sq.in" },
     description: "Our lowest per-inch rate — maximum savings unlocked.",
-    features: ["Full access to all tools", "BG Remover, Enhancer, Crop, Text Editor & more", "White-label builder — your brand colors, logo & fonts", "In-depth user behavior analytics", "Integrate with any website"],
+    features: ["Full access to all tools", "White-label builder — your brand colors, logo & fonts", "Integrate with any website"],
     cta: "Get Started", popular: true,
     tint: "linear-gradient(135deg, #C7D2FE, #A5B4FC)",
   },
@@ -201,7 +201,10 @@ function SavingsCalculator() {
   const [si, setSi] = useState(0);
   const [sheets, setSheets] = useState(200);
   const [plan, setPlan] = useState(2);
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" ? window.innerWidth < 768 : false);
   const comp = COMPETITORS[ci];
+
+  useEffect(() => { const h = () => setIsMobile(window.innerWidth < 768); window.addEventListener("resize", h); return () => window.removeEventListener("resize", h); }, []);
 
   const c = useMemo(() => {
     const p = CALC_PLANS[plan]; const sqIn = width * 100; const dtfPS = sqIn * p.ratePerSqIn; const dtfM = dtfPS * sheets;
@@ -222,7 +225,7 @@ function SavingsCalculator() {
       {/* Header */}
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <Pill><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> Savings Calculator</Pill>
-        <h2 style={{ fontFamily: HF, fontSize: 40, fontWeight: 800, color: "#111827", lineHeight: 1.15, letterSpacing: "-0.03em", margin: "18px 0 8px" }}>Already Using a Gang Sheet Builder?</h2>
+        <h2 style={{ fontFamily: HF, fontSize: isMobile ? 26 : 40, fontWeight: 800, color: "#111827", lineHeight: 1.15, letterSpacing: "-0.03em", margin: "18px 0 8px" }}>Already Using a Gang Sheet Builder?</h2>
         <p style={{ fontSize: 17, color: "#4B5563", margin: "0 0 6px", lineHeight: 1.6, maxWidth: 560, marginLeft: "auto", marginRight: "auto" }}>Compare your current platform costs with DTF Layout and see exactly how much you could save every month.</p>
         <p style={{ fontFamily: HF, fontSize: 16, fontWeight: 700, color: "#312E81", margin: 0 }}>Fill in 3 quick details below — your savings update instantly.</p>
       </div>
@@ -265,7 +268,7 @@ function SavingsCalculator() {
       )}
 
       {/* STEP 2 & 3 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10, marginBottom: 14 }}>
         {/* STEP 2 — Slider */}
         <div style={{ padding: "14px 20px 10px", borderRadius: 18, background: "linear-gradient(135deg, #F5F3FF, #EDE9FE)", border: "1.5px solid #DDD6FE", boxShadow: "0 4px 16px rgba(124,58,237,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
@@ -313,7 +316,7 @@ function SavingsCalculator() {
 
       {/* COMPARISON CARDS */}
       <div style={{ position: "relative" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
           {/* Competitor */}
           <div className="sc3-card" style={{ borderRadius: 20, overflow: "hidden", border: "1.5px solid rgba(239,68,68,0.15)", background: "#fff", boxShadow: "0 2px 12px rgba(239,68,68,0.06)" }}>
             <div style={{ height: 4, background: "linear-gradient(90deg, #fca5a5, #ef4444)" }} />
@@ -365,7 +368,7 @@ function SavingsCalculator() {
       <div style={{ marginTop: 16, borderRadius: 20, overflow: "hidden", background: "linear-gradient(140deg, #0f0d2e 0%, #1e1b4b 30%, #312e81 65%, #4338ca 100%)", position: "relative", boxShadow: "0 8px 32px rgba(30,27,75,0.3), 0 0 0 1px rgba(99,102,241,0.1)" }}>
         <div style={{ position: "absolute", top: -30, right: -30, width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle, rgba(129,140,248,0.15) 0%, transparent 70%)", animation: "float 6s ease-in-out infinite" }} />
         <div style={{ position: "absolute", bottom: -20, left: -20, width: 80, height: 80, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)", animation: "float 8s ease-in-out infinite 1s" }} />
-        <div style={{ padding: "24px 28px", display: "flex", alignItems: "center", gap: 24, position: "relative", zIndex: 1 }}>
+        <div style={{ padding: isMobile ? "20px 16px" : "24px 28px", display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: "center", gap: isMobile ? 16 : 24, position: "relative", zIndex: 1 }}>
           <div style={{ flex: "0 0 auto", textAlign: "center", minWidth: 200 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 14px", borderRadius: 99, background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.2)", marginBottom: 8 }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -374,7 +377,7 @@ function SavingsCalculator() {
             <div className="sc3-pop" key={Math.round(c.sM)} style={{ fontFamily: HF, fontSize: 52, fontWeight: 800, background: "linear-gradient(135deg, #34d399, #6ee7b7, #34d399)", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "shimmer 4s ease-in-out infinite", lineHeight: 1 }}><AnimNum value={c.sM} /></div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", fontWeight: 500, marginTop: 4 }}>every month</div>
           </div>
-          <div style={{ width: 1, height: 80, background: "rgba(255,255,255,0.08)", flexShrink: 0 }} />
+          {!isMobile && <div style={{ width: 1, height: 80, background: "rgba(255,255,255,0.08)", flexShrink: 0 }} />}
           <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <div style={{ textAlign: "center", padding: "12px 0", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.04)" }}><div style={{ fontFamily: HF, fontSize: 26, fontWeight: 800, color: "white" }}>{c.mult === Infinity ? "∞" : `${c.mult.toFixed(1)}x`}</div><div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>cheaper</div></div>
             <div style={{ textAlign: "center", padding: "12px 0", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.04)" }}><div style={{ fontFamily: HF, fontSize: 26, fontWeight: 800, color: "white" }}>{c.pct.toFixed(0)}%</div><div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>less cost</div></div>
@@ -395,6 +398,10 @@ export default function Pricing() {
   const { user, session } = useAuth();
   const { refreshCredits, freeTrialClaimed } = useCredits();
   const { region } = useRegion();
+
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" ? window.innerWidth < 768 : false);
+  useEffect(() => { const h = () => setIsMobile(window.innerWidth < 768); window.addEventListener("resize", h); return () => window.removeEventListener("resize", h); }, []);
+
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
@@ -430,15 +437,15 @@ export default function Pricing() {
       <MarketingNav />
 
       {/* ═══ HERO ═══ */}
-      <section style={{ position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #0A0820 0%, #0A0820 8%, #0F0D2E 18%, #1E1B4B 32%, #312E81 46%, #4F46E5 60%, #6366F1 70%, #818CF8 78%, #C7D2FE 86%, #FAFAFB 96%)", padding: "0 40px 0", minHeight: "90vh" }}>
+      <section style={{ position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #0A0820 0%, #0A0820 8%, #0F0D2E 18%, #1E1B4B 32%, #312E81 46%, #4F46E5 60%, #6366F1 70%, #818CF8 78%, #C7D2FE 86%, #FAFAFB 96%)", padding: isMobile ? "0 16px 0" : "0 40px 0", minHeight: "90vh" }}>
         <Dots o={0.04} />
         <MovingPattern />
-        <div style={{ padding: "160px 0 80px" }}>
-          <Sq top={20} right={140} size={32} rotate={18} /><Sq top={100} right={80} size={22} rotate={-12} /><Sq top={30} left={100} size={28} rotate={22} /><Sq top={150} left={60} size={20} rotate={-8} />
+        <div style={{ padding: isMobile ? "100px 0 60px" : "160px 0 80px" }}>
+          {!isMobile && <><Sq top={20} right={140} size={32} rotate={18} /><Sq top={100} right={80} size={22} rotate={-12} /><Sq top={30} left={100} size={28} rotate={22} /><Sq top={150} left={60} size={20} rotate={-8} /></>}
           <div style={{ position: "relative", zIndex: 2, maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
             <Pill><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg> Simple, transparent pricing</Pill>
-            <h1 style={{ fontFamily: HF, fontSize: 64, fontWeight: 800, color: "#fff", lineHeight: 1.08, letterSpacing: "-0.03em", margin: "28px 0 20px" }}>No Fixed Costs.<br />No Commissions.<br />Just Recharge & Go.</h1>
-            <p style={{ fontSize: 18, color: "rgba(255,255,255,0.8)", lineHeight: 1.7, maxWidth: 520, margin: "0 auto 36px" }}>Buy credits once, use them forever. No subscriptions, no monthly fees, no per-order cuts. Pay only for what you use.</p>
+            <h1 style={{ fontFamily: HF, fontSize: isMobile ? 56 : 64, fontWeight: 800, color: "#fff", lineHeight: 1.08, letterSpacing: "-0.03em", margin: isMobile ? "20px 0 16px" : "28px 0 20px" }}>No Fixed Costs.<br />No Commissions.<br />Just Recharge & Go.</h1>
+            <p style={{ fontSize: isMobile ? 15 : 18, color: "rgba(255,255,255,0.8)", lineHeight: 1.7, maxWidth: 520, margin: "0 auto 36px" }}>Buy credits once, use them forever. No subscriptions, no monthly fees, no per-order cuts. Pay only for what you use.</p>
             <div style={{ display: "flex", justifyContent: "center", gap: 14 }}>
               <Btn sz="l" onClick={() => navigate("/signup")} style={{ background: "#fff", color: P, boxShadow: "0 6px 28px rgba(0,0,0,0.15)" }}>Get Started Now →</Btn>
               <Btn v="o" sz="l" style={{ background: "transparent", color: "#fff", borderColor: "rgba(255,255,255,0.3)", boxShadow: "none" }}>View Plans ↓</Btn>
@@ -451,10 +458,10 @@ export default function Pricing() {
       </section>
 
       {/* ═══ PRICING CARDS ═══ */}
-      <section style={{ padding: "10px 40px 0", position: "relative" }}>
+      <section style={{ padding: isMobile ? "10px 16px 0" : "10px 40px 0", position: "relative" }}>
         <Sq top={40} right={100} size={30} rotate={20} /><Sq bottom={60} left={80} size={24} rotate={-15} />
         <div style={{ maxWidth: 1240, margin: "0 auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, alignItems: "start" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 20, alignItems: "start" }}>
             {PLANS.map((plan) => {
               const isProcessing = processingPlanId === plan.id;
               const isTrialClaimed = plan.id === "free_trial" && user && freeTrialClaimed;
@@ -468,7 +475,7 @@ export default function Pricing() {
                   {plan.popular && <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", zIndex: 2, padding: "5px 18px", borderRadius: 99, background: "linear-gradient(135deg,#4F46E5,#7C3AED)", color: "#fff", fontSize: 13, fontWeight: 700, boxShadow: "0 4px 12px rgba(79,70,229,0.3)", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>Best Value</div>}
                   <div style={{ padding: "28px 24px 20px", background: plan.tint, borderRadius: plan.popular ? "22px 22px 0 0" : "24px 24px 0 0" }}>
                     <div style={{ fontFamily: HF, fontWeight: 700, fontSize: 24, color: "#111827", marginBottom: 12 }}>{plan.name}</div>
-                    <div style={{ fontFamily: HF, fontSize: 44, fontWeight: 800, color: "#111827", lineHeight: 1, letterSpacing: "-0.03em", marginBottom: 6 }}>{priceDisplay}</div>
+                    <div style={{ fontFamily: HF, fontSize: isMobile ? 26 : 44, fontWeight: 800, color: "#111827", lineHeight: 1, letterSpacing: "-0.03em", marginBottom: 6 }}>{priceDisplay}</div>
                     <div style={{ fontSize: 14, color: "#4B5563", fontWeight: 500 }}>{plan.description}</div>
                   </div>
                   <div style={{ padding: "16px 24px", borderTop: "1px solid #F3F4F6", borderBottom: "1px solid #F3F4F6" }}>
@@ -499,7 +506,7 @@ export default function Pricing() {
               );
             })}
           </div>
-          <div style={{ textAlign: "center", marginTop: 32, display: "flex", justifyContent: "center", gap: 32 }}>
+          <div style={{ textAlign: "center", marginTop: 32, display: "flex", flexWrap: "wrap", justifyContent: "center", gap: isMobile ? 16 : 32 }}>
             {["Credits never expire", "All tools included", "No monthly fees"].map((t, i) => (
               <span key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "#4B5563", fontWeight: 500 }}>
                 <svg width="14" height="14" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="#10B981" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>{t}
@@ -511,15 +518,15 @@ export default function Pricing() {
       </section>
 
       {/* ═══ COMPARISON ═══ */}
-      <section style={{ padding: "120px 40px", background: "#fff", position: "relative" }}>
+      <section style={{ padding: isMobile ? "60px 16px" : "120px 40px", background: "#fff", position: "relative" }}>
         <Dots o={0.06} />
         <div style={{ maxWidth: 940, margin: "0 auto", position: "relative", zIndex: 1 }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <Pill>Feature comparison</Pill>
-            <h2 style={{ fontFamily: HF, fontSize: 46, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "18px 0 14px" }}>How we stack up</h2>
+            <h2 style={{ fontFamily: HF, fontSize: isMobile ? 28 : 46, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "18px 0 14px" }}>How we stack up</h2>
             <p style={{ fontSize: 17, color: "#4B5563", lineHeight: 1.7 }}>No subscriptions. No per-order cuts. No platform lock-in.</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 24 }}>
             <div style={{ background: "linear-gradient(135deg, #1E1B4B, #312E81)", borderRadius: 20, padding: "32px 32px 28px", color: "#fff" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}><div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg></div><span style={{ fontFamily: HF, fontWeight: 700, fontSize: 22 }}>DTF Layout</span></div>
               {[["Pricing model","Credits (one-time buy)"],["Monthly fees","None, ever"],["Per-order cut","None"],["Standalone store","Quick Store included"],["Platform support","Any website"],["White-label builder","Full customization"],["Background remover","Included"],["Image enhancer","Included"],["Text editor","Included"],["Multi-sheet export","Up to 5 sheets"]].map(([f,v],i) => (
@@ -545,12 +552,12 @@ export default function Pricing() {
       </section>
 
       {/* ═══ FAQ ═══ */}
-      <section style={{ padding: "120px 40px", position: "relative" }}>
+      <section style={{ padding: isMobile ? "60px 16px" : "120px 40px", position: "relative" }}>
         <Dots o={0.06} /><Sq top={60} right={120} size={30} rotate={15} /><Sq bottom={80} left={100} size={24} rotate={-20} />
         <div style={{ maxWidth: 720, margin: "0 auto", position: "relative", zIndex: 1 }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <Pill><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg> Got questions?</Pill>
-            <h2 style={{ fontFamily: HF, fontSize: 46, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "18px 0 14px" }}>Frequently Asked Questions</h2>
+            <h2 style={{ fontFamily: HF, fontSize: isMobile ? 28 : 46, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "18px 0 14px" }}>Frequently Asked Questions</h2>
             <p style={{ fontSize: 17, color: "#4B5563", lineHeight: 1.7 }}>Everything you need to know about our pricing</p>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -573,21 +580,21 @@ export default function Pricing() {
       </section>
 
       {/* ═══ CTA ═══ */}
-      <section style={{ padding: "120px 40px", position: "relative", overflow: "hidden" }}>
+      <section style={{ padding: isMobile ? "60px 16px" : "120px 40px", position: "relative", overflow: "hidden" }}>
         <Dots o={0.1} /><Sq top={60} right={160} size={34} rotate={15} /><Sq bottom={60} left={140} size={28} rotate={-20} />
         <div style={{ maxWidth: 620, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
-          <h2 style={{ fontFamily: HF, fontSize: 46, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "0 0 18px" }}>Ready to speed up your workflow?</h2>
+          <h2 style={{ fontFamily: HF, fontSize: isMobile ? 28 : 46, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "0 0 18px" }}>Ready to speed up your workflow?</h2>
           <p style={{ fontSize: 17, color: "#4B5563", lineHeight: 1.7, margin: "0 0 40px" }}>Start with 20,000 sq.inch free. No credit card required. No monthly fees, ever.</p>
           <div style={{ display: "flex", justifyContent: "center", gap: 14 }}><Btn sz="l" onClick={() => navigate("/signup")}>Get Started Now →</Btn><Btn v="o" sz="l" onClick={() => navigate("/contact")}>Contact Us →</Btn></div>
         </div>
       </section>
 
       {/* ═══ FOOTER ═══ */}
-      <footer style={{ position: "relative", padding: "0 40px 32px", background: "linear-gradient(180deg, #1E1B4B, #0F0D2E)", color: "rgba(165,180,252,0.6)" }}>
+      <footer style={{ position: "relative", padding: isMobile ? "0 16px 24px" : "0 40px 32px", background: "linear-gradient(180deg, #1E1B4B, #0F0D2E)", color: "rgba(165,180,252,0.6)" }}>
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent 5%, rgba(99,102,241,0.3) 20%, rgba(129,140,248,0.5) 50%, rgba(99,102,241,0.3) 80%, transparent 95%)" }} />
         <div style={{ paddingTop: 64 }}>
           <div style={{ maxWidth: 1060, margin: "0 auto" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 16 }}><div style={{ width: 28, height: 28, borderRadius: 7, background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg></div><span style={{ fontFamily: HF, fontWeight: 700, fontSize: 15, color: "#fff" }}>DTF Layout</span></div>
                 <p style={{ fontSize: 14, lineHeight: 1.7, maxWidth: 260 }}>Smart DTF sheet builder for printers worldwide. Auto-arrange, optimize, and print — all from one platform.</p>
@@ -596,7 +603,7 @@ export default function Pricing() {
               <div><h4 style={{ fontSize: 11, fontWeight: 600, color: "#A5B4FC", marginBottom: 16, letterSpacing: "0.08em", textTransform: "uppercase" }}>Company</h4>{[{ l: "FAQ", to: "/faq" }, { l: "Contact", to: "/contact" }, { l: "Blog", to: "/" }].map(item => <Link key={item.l} to={item.to} style={{ fontSize: 14, marginBottom: 10, display: "block", color: "inherit", textDecoration: "none" }}>{item.l}</Link>)}</div>
               <div><h4 style={{ fontSize: 11, fontWeight: 600, color: "#A5B4FC", marginBottom: 16, letterSpacing: "0.08em", textTransform: "uppercase" }}>Legal</h4>{[{ l: "Privacy Policy", to: "/privacy-policy" }, { l: "Terms & Conditions", to: "/terms-conditions" }, { l: "Refund Policy", to: "/refund-policy" }].map(item => <Link key={item.l} to={item.to} style={{ fontSize: 14, marginBottom: 10, display: "block", color: "inherit", textDecoration: "none" }}>{item.l}</Link>)}</div>
             </div>
-            <div style={{ borderTop: "1px solid rgba(99,102,241,0.12)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontSize: 13 }}>© 2026 DTF Layout · Data Canvas Tech. All rights reserved.</span><span style={{ fontSize: 13, cursor: "pointer" }}>dtflayout@gmail.com</span></div>
+            <div style={{ borderTop: "1px solid rgba(99,102,241,0.12)", paddingTop: 24, display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", gap: isMobile ? 8 : 0 }}><span style={{ fontSize: 13 }}>© 2026 DTF Layout · Data Canvas Tech. All rights reserved.</span><span style={{ fontSize: 13, cursor: "pointer" }}>support@dtflayout.com</span></div>
           </div>
         </div>
       </footer>

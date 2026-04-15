@@ -496,6 +496,10 @@ const ANIM_CSS = `
    MAIN PAGE
    ══════════════════════════════════════════ */
 export default function Home() {
+
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" ? window.innerWidth < 768 : false);
+  useEffect(() => { const h = () => setIsMobile(window.innerWidth < 768); window.addEventListener("resize", h); return () => window.removeEventListener("resize", h); }, []);
+
   const [sc, setSc] = useState(false);
   const navigate = useNavigate();
 
@@ -524,28 +528,25 @@ export default function Home() {
       <section style={{
         position: "relative", overflow: "hidden",
         background: "linear-gradient(180deg, #0A0820 0%, #0F0D2E 12%, #1E1B4B 24%, #312E81 36%, #4F46E5 48%, #6366F1 55%, #818CF8 62%, #A5B4FC 68%, #C7D2FE 74%, #E0E7FF 80%, #EEF2FF 86%, #F5F5F7 92%, #FAFAFB 100%)",
-        padding: "0 40px 0",
+        padding: isMobile ? "0 16px 0" : "0 40px 0",
       }}>
         <Dots o={0.04} />
         <MovingPattern />
 
         {/* ═══ HERO content ═══ */}
-        <div style={{ padding: "140px 0 0" }}>
-          <Sq top={20} right={140} size={32} rotate={18} />
-          <Sq top={100} right={80} size={22} rotate={-12} />
-          <Sq top={30} left={100} size={28} rotate={22} />
-          <Sq top={150} left={60} size={20} rotate={-8} />
+        <div style={{ padding: isMobile ? "100px 0 0" : "140px 0 0" }}>
+          {!isMobile && <><Sq top={20} right={140} size={32} rotate={18} /><Sq top={100} right={80} size={22} rotate={-12} /><Sq top={30} left={100} size={28} rotate={22} /><Sq top={150} left={60} size={20} rotate={-8} /></>}
           <div style={{ position: "relative", zIndex: 2, maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
             <Pill>Smart DTF Sheet Builder — Now Available</Pill>
-            <h1 style={{ fontFamily: HF, fontSize: 64, fontWeight: 800, color: "#fff", lineHeight: 1.08, letterSpacing: "-0.03em", margin: "28px 0 20px" }}>
+            <h1 style={{ fontFamily: HF, fontSize: isMobile ? 56 : 64, fontWeight: 800, color: "#fff", lineHeight: 1.08, letterSpacing: "-0.03em", margin: isMobile ? "20px 0 16px" : "28px 0 20px" }}>
               Build Gang Sheets Smarter, Print with Confidence
             </h1>
-            <p style={{ fontSize: 17, color: "rgba(255,255,255,0.75)", lineHeight: 1.7, maxWidth: 520, margin: "0 auto 36px" }}>
+            <p style={{ fontSize: isMobile ? 15 : 17, color: "rgba(255,255,255,0.75)", lineHeight: 1.7, maxWidth: 520, margin: "0 auto 36px" }}>
               Upload your designs, auto-arrange them into optimized sheets in seconds, and get print-ready files instantly — all in one platform built for DTF printers.
             </p>
             <div style={{ display: "flex", justifyContent: "center", gap: 14 }}>
               <Btn sz="l" onClick={() => navigate("/signup")} style={{ background: "#fff", color: P, boxShadow: "0 6px 28px rgba(0,0,0,0.15)" }}>Get Started Now →</Btn>
-              <Btn v="o" sz="l" style={{ background: "transparent", color: "#fff", borderColor: "rgba(255,255,255,0.3)", boxShadow: "none" }}>Watch a demo →</Btn>
+              <Btn v="o" sz="l" onClick={() => navigate("/demo/builder-live")} style={{ background: "transparent", color: "#fff", borderColor: "rgba(255,255,255,0.3)", boxShadow: "none" }}>Watch a demo →</Btn>
             </div>
             {/* Highlighted free text */}
             <p style={{ fontSize: 16, color: "rgba(255,255,255,0.85)", marginTop: 20, fontWeight: 500 }}>
@@ -555,7 +556,7 @@ export default function Home() {
               </span>
             </p>
           </div>
-          <div style={{ position: "relative", zIndex: 2, maxWidth: 1100, margin: "72px auto 0", padding: "0 20px" }}>
+          <div style={{ position: "relative", zIndex: 2, maxWidth: 1100, margin: isMobile ? "40px auto 0" : "72px auto 0", padding: "0 20px", overflow: "hidden" }}>
             <HeroShot />
           </div>
           <div style={{ height: 80, background: "linear-gradient(180deg, transparent, #FAFAFB)" }} />
@@ -563,18 +564,18 @@ export default function Home() {
       </section>
 
       {/* ═══ PRODUCTS BENTO ═══ */}
-      <section style={{ padding: "100px 40px 120px", position: "relative" }}>
+      <section style={{ padding: isMobile ? "60px 16px 60px" : "100px 40px 120px", position: "relative" }}>
         <Sq top={40} right={80} size={30} rotate={20} />
         <Sq bottom={80} left={60} size={24} rotate={-15} />
         <div style={{ maxWidth: 1060, margin: "0 auto" }}>
           <div style={{ maxWidth: 640, marginBottom: 56 }}>
-            <h2 style={{ fontFamily: HF, fontSize: 44, fontWeight: 800, color: "#111827", lineHeight: 1.1, margin: "0 0 20px", letterSpacing: "-0.03em" }}>Solutions for every step of your DTF workflow</h2>
+            <h2 style={{ fontFamily: HF, fontSize: isMobile ? 26 : 44, fontWeight: 800, color: "#111827", lineHeight: 1.1, margin: "0 0 20px", letterSpacing: "-0.03em" }}>Solutions for every step of your DTF workflow</h2>
             <p style={{ fontSize: 20, color: "#374151", lineHeight: 1.6, margin: 0, fontWeight: 500, position: "relative", paddingLeft: 20, borderLeft: "3px solid #4F46E5" }}>
               Whether you have a <span style={{ color: P, fontWeight: 700 }}>Shopify</span> store, a <span style={{ color: P, fontWeight: 700 }}>WooCommerce</span> site, or{" "}
               <span style={{ fontWeight: 700, background: "linear-gradient(180deg, transparent 10%, #C7D2FE 10%)", padding: "0 3px", borderRadius: 2 }}>no website at all</span> — we've got you covered.
             </p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
             {[
               { t: "Auto-layout gang sheet builder", d: "Upload images, hit build. Our algorithm arranges everything in seconds — what used to take hours, now takes minutes. Built-in BG remover, enhancer, trimmer, and text editor.", ui: <BentoBuilder />, to: "/product/gang-sheet-builder" },
               { t: "Embed on any website", d: "Your customers build their own gang sheets on your store. Manage orders with drag-and-drop Kanban. Works with Shopify, WooCommerce, and more.", ui: <BentoKanban />, to: "/product/website-integration" },
@@ -595,14 +596,14 @@ export default function Home() {
       </section>
 
       {/* ═══ HOW IT WORKS — Animated gradient ═══ */}
-      <section className="hiw-bg" style={{ padding: "120px 40px", position: "relative" }}>
+      <section className="hiw-bg" style={{ padding: isMobile ? "60px 16px" : "120px 40px", position: "relative" }}>
         <Dots o={0.1} />
         <div style={{ maxWidth: 1060, margin: "0 auto", position: "relative", zIndex: 1 }}>
           <div style={{ textAlign: "center", marginBottom: 64 }}>
-            <h2 style={{ fontFamily: HF, fontSize: 44, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "0 0 12px" }}>How It Works — 3 Simple Steps</h2>
+            <h2 style={{ fontFamily: HF, fontSize: isMobile ? 26 : 44, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "0 0 12px" }}>How It Works — 3 Simple Steps</h2>
             <p style={{ fontSize: 16, color: "#6B7280", lineHeight: 1.7 }}>Create Your DTF Print Sheet in Minutes</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 24 }}>
             {[
               {
                 num: "1", title: "Upload Your Files", desc: "Simply drag and drop your PNG artwork — instant previews make it effortless to get started.",
@@ -642,7 +643,7 @@ export default function Home() {
                 num: "3", title: "Generate Sheet", desc: "With one click, your images are arranged into a clean, print-ready sheet ready to download.",
                 inner: (
                   <div style={{ height: 180, borderRadius: 12, border: "1px solid #E5E7EB", padding: 14, display: "flex", flexDirection: "column", background: "#FAFAFB" }}>
-                    <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr 1fr 1fr", gap: 6 }}>
+                    <div style={{ flex: 1, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gridTemplateRows: "1fr 1fr 1fr", gap: 6 }}>
                       {Array.from({ length: 6 }).map((_, i) => <div key={i} style={{ borderRadius: 6, background: ["#C7D2FE", "#DDD6FE", "#C7D2FE", "#E0E7FF", "#DDD6FE", "#E0E7FF"][i], opacity: 0.6 }} />)}
                     </div>
                     <div style={{ marginTop: 10, padding: "8px 0", borderRadius: 10, background: "linear-gradient(135deg, #4F46E5, #7C3AED)", textAlign: "center", color: "#fff", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
@@ -669,15 +670,15 @@ export default function Home() {
       </section>
 
       {/* ═══ OLD WAY vs DTF LAYOUT — Spacious VS, bigger fonts ═══ */}
-      <section style={{ padding: "120px 40px", position: "relative" }}>
+      <section style={{ padding: isMobile ? "60px 16px" : "120px 40px", position: "relative" }}>
         <Sq top={50} right={100} size={30} rotate={15} />
         <Sq bottom={60} left={80} size={26} rotate={-22} />
         <div style={{ maxWidth: 1060, margin: "0 auto", position: "relative", zIndex: 1 }}>
           <div style={{ textAlign: "center", marginBottom: 64 }}>
             <Pill>Why switch?</Pill>
-            <h2 style={{ fontFamily: HF, fontSize: 44, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "18px 0 0" }}>The old way vs The DTF Layout way</h2>
+            <h2 style={{ fontFamily: HF, fontSize: isMobile ? 26 : 44, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "18px 0 0" }}>The old way vs The DTF Layout way</h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 1fr", gap: 0, alignItems: "stretch" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 80px 1fr", gap: 0, alignItems: "stretch" }}>
             {/* Old way */}
             <div style={{ background: "#FAFAFA", borderRadius: 24, border: "1px solid #E5E7EB", padding: "40px 36px", position: "relative" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
@@ -707,11 +708,11 @@ export default function Home() {
               </div>
             </div>
             {/* VS divider — spacious */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {!isMobile && <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div style={{ width: 52, height: 52, borderRadius: "50%", background: "#fff", border: "2px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: HF, fontWeight: 800, fontSize: 15, color: "#9CA3AF", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", zIndex: 2 }}>VS</div>
-            </div>
+            </div>}
             {/* DTF Layout way */}
-            <div style={{ background: "linear-gradient(135deg, #EEF2FF, #F5F3FF)", borderRadius: 24, border: "2px solid #C7D2FE", padding: "40px 36px", position: "relative" }}>
+            <div style={{ background: "linear-gradient(135deg, #EEF2FF, #F5F3FF)", borderRadius: 24, border: "2px solid #C7D2FE", padding: isMobile ? "32px 20px" : "40px 36px", position: "relative" }}>
               <div style={{ position: "absolute", top: -12, right: 24, padding: "5px 18px", borderRadius: 99, background: "linear-gradient(135deg,#4F46E5,#7C3AED)", color: "#fff", fontSize: 12, fontWeight: 600, boxShadow: "0 4px 12px rgba(79,70,229,0.3)" }}>Recommended</div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg, #4F46E5, #7C3AED)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -746,15 +747,15 @@ export default function Home() {
       </section>
 
       {/* ═══ COMPARISON — Bigger fonts, darker text, red crosses ═══ */}
-      <section style={{ padding: "120px 40px", background: "#fff", position: "relative" }}>
+      <section style={{ padding: isMobile ? "60px 16px" : "120px 40px", background: "#fff", position: "relative" }}>
         <Dots o={0.06} />
         <div style={{ maxWidth: 940, margin: "0 auto", position: "relative", zIndex: 1 }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <Pill>Feature comparison</Pill>
-            <h2 style={{ fontFamily: HF, fontSize: 44, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "18px 0 14px" }}>How we stack up</h2>
+            <h2 style={{ fontFamily: HF, fontSize: isMobile ? 26 : 44, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "18px 0 14px" }}>How we stack up</h2>
             <p style={{ fontSize: 16, color: "#6B7280", lineHeight: 1.7 }}>No subscriptions. No per-order cuts. No platform lock-in.</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 24 }}>
             {/* DTF Layout */}
             <div style={{ background: "linear-gradient(135deg, #1E1B4B, #312E81)", borderRadius: 20, padding: "32px 32px 28px", color: "#fff" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
@@ -822,13 +823,13 @@ export default function Home() {
       </section>
 
       {/* ═══ CTA ═══ */}
-      <section style={{ padding: "120px 40px", position: "relative", overflow: "hidden" }}>
+      <section style={{ padding: isMobile ? "60px 16px" : "120px 40px", position: "relative", overflow: "hidden" }}>
         <Dots o={0.1} />
         <Sq top={60} right={160} size={34} rotate={15} />
         <Sq bottom={60} left={140} size={28} rotate={-20} />
         <div style={{ maxWidth: 620, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
-          <h2 style={{ fontFamily: HF, fontSize: 44, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "0 0 18px" }}>Ready to speed up your workflow?</h2>
-          <p style={{ fontSize: 16, color: "#6B7280", lineHeight: 1.7, margin: "0 0 40px" }}>Start with 20,000 sq.inch free. No credit card required. No monthly fees, ever.</p>
+          <h2 style={{ fontFamily: HF, fontSize: isMobile ? 26 : 44, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "0 0 18px" }}>Ready to speed up your workflow?</h2>
+          <p style={{ fontSize: isMobile ? 14 : 16, color: "#6B7280", lineHeight: 1.7, margin: "0 0 40px" }}>Start with 20,000 sq.inch free. No credit card required. No monthly fees, ever.</p>
           <div style={{ display: "flex", justifyContent: "center", gap: 14 }}>
             <Btn sz="l" onClick={() => navigate("/signup")}>Get Started Now →</Btn>
             <Btn v="o" sz="l" onClick={() => navigate("/pricing")}>View Pricing →</Btn>
@@ -837,12 +838,12 @@ export default function Home() {
       </section>
 
       {/* ═══ FOOTER ═══ */}
-      <footer style={{ position: "relative", padding: "0 40px 32px", background: "linear-gradient(180deg, #1E1B4B, #0F0D2E)", color: "rgba(165,180,252,0.6)" }}>
+      <footer style={{ position: "relative", padding: isMobile ? "0 16px 24px" : "0 40px 32px", background: "linear-gradient(180deg, #1E1B4B, #0F0D2E)", color: "rgba(165,180,252,0.6)" }}>
         {/* Top divider */}
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent 5%, rgba(99,102,241,0.3) 20%, rgba(129,140,248,0.5) 50%, rgba(99,102,241,0.3) 80%, transparent 95%)" }} />
         <div style={{ paddingTop: 64 }}>
         <div style={{ maxWidth: 1060, margin: "0 auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 16 }}>
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg></div>
@@ -854,9 +855,9 @@ export default function Home() {
             <div><h4 style={{ fontSize: 11, fontWeight: 600, color: "#A5B4FC", marginBottom: 16, letterSpacing: "0.08em", textTransform: "uppercase" }}>Company</h4>{[{l:"FAQ",to:"/faq"},{l:"Contact",to:"/contact"},{l:"Blog",to:"/"}].map(item => <Link key={item.l} to={item.to} style={{ fontSize: 14, marginBottom: 10, cursor: "pointer", display: "block", color: "inherit", textDecoration: "none" }}>{item.l}</Link>)}</div>
             <div><h4 style={{ fontSize: 11, fontWeight: 600, color: "#A5B4FC", marginBottom: 16, letterSpacing: "0.08em", textTransform: "uppercase" }}>Legal</h4>{[{l:"Privacy Policy",to:"/privacy-policy"},{l:"Terms & Conditions",to:"/terms-conditions"},{l:"Refund Policy",to:"/refund-policy"}].map(item => <Link key={item.l} to={item.to} style={{ fontSize: 14, marginBottom: 10, cursor: "pointer", display: "block", color: "inherit", textDecoration: "none" }}>{item.l}</Link>)}</div>
           </div>
-          <div style={{ borderTop: "1px solid rgba(99,102,241,0.12)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ borderTop: "1px solid rgba(99,102,241,0.12)", paddingTop: 24, display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", gap: isMobile ? 8 : 0 }}>
             <span style={{ fontSize: 13 }}>© 2026 DTF Layout · Data Canvas Tech. All rights reserved.</span>
-            <span style={{ fontSize: 13, cursor: "pointer" }}>dtflayout@gmail.com</span>
+            <span style={{ fontSize: 13, cursor: "pointer" }}>support@dtflayout.com</span>
           </div>
         </div>
         </div>
