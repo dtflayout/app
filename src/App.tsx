@@ -40,6 +40,8 @@ import TermsConditions from "./pages/marketing/TermsConditions";
 import RefundPolicy from "./pages/marketing/RefundPolicy";
 import Faq from "./pages/marketing/Faq";
 import DemoBuilder from "./pages/marketing/DemoBuilder";
+import DemoWebsiteIntegration from "./pages/marketing/DemoWebsiteIntegration";
+import DemoBuilderLive from "./pages/marketing/DemoBuilderLive";
 import SavingsCalculatorPage from "./pages/marketing/SavingsCalculatorPage";
 
 // Quick Store Dashboard Pages (Printer side)
@@ -131,6 +133,8 @@ const AppContent = () => {
         
         {/* Demo & Tracked Landing Pages */}
         <Route path="/demo/builder" element={<DemoBuilder />} />
+        <Route path="/demo/website-integration" element={<DemoWebsiteIntegration />} />
+        <Route path="/demo/builder-live" element={<DemoBuilderLive />} />
         <Route path="/savings-calculator" element={<SavingsCalculatorPage />} />
         
         {/* Auth Pages */}

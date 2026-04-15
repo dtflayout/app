@@ -36,6 +36,10 @@ const labelStyle: React.CSSProperties = { display: "block", fontSize: 13, fontWe
 /* ══════════ COMPONENT ══════════ */
 export default function Contact() {
   const navigate = useNavigate();
+
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" ? window.innerWidth < 768 : false);
+  useEffect(() => { const h = () => setIsMobile(window.innerWidth < 768); window.addEventListener("resize", h); return () => window.removeEventListener("resize", h); }, []);
+
   const [formData, setFormData] = useState({ name: "", email: "", subject: "general", message: "" });
   const [submitted, setSubmitted] = useState(false);
 
@@ -57,13 +61,13 @@ export default function Contact() {
       <MarketingNav />
 
       {/* ═══ HERO ═══ */}
-      <section style={{ position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #030310 0%, #050412 4%, #08061A 8%, #0A0820 12%, #0D0B26 16%, #0F0D2E 21%, #141138 26%, #1A1744 31%, #1E1B4B 36%, #272368 42%, #312E81 48%, #4F46E5 58%, #6366F1 65%, #818CF8 72%, #A5B4FC 78%, #C7D2FE 84%, #E0E7FF 90%, #F5F5F7 95%, #FAFAFB 100%)", padding: "0 40px 0" }}>
+      <section style={{ position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #030310 0%, #050412 4%, #08061A 8%, #0A0820 12%, #0D0B26 16%, #0F0D2E 21%, #141138 26%, #1A1744 31%, #1E1B4B 36%, #272368 42%, #312E81 48%, #4F46E5 58%, #6366F1 65%, #818CF8 72%, #A5B4FC 78%, #C7D2FE 84%, #E0E7FF 90%, #F5F5F7 95%, #FAFAFB 100%)", padding: isMobile ? "0 16px 0" : "0 40px 0" }}>
         <Dots o={0.04} /><MovingPattern />
-        <div style={{ padding: "140px 0 0" }}>
+        <div style={{ padding: isMobile ? "100px 0 0" : "140px 0 0" }}>
           <Sq top={20} right={140} size={32} rotate={18} /><Sq top={100} right={80} size={22} rotate={-12} /><Sq top={30} left={100} size={28} rotate={22} />
           <div style={{ position: "relative", zIndex: 2, maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
             <Pill><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={P} strokeWidth="2" strokeLinecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg> Get in Touch</Pill>
-            <h1 style={{ fontFamily: HF, fontSize: 60, fontWeight: 800, color: "#fff", lineHeight: 1.08, letterSpacing: "-0.03em", margin: "28px 0 20px" }}>We'd Love to<br />Hear From You</h1>
+            <h1 style={{ fontFamily: HF, fontSize: isMobile ? 56 : 60, fontWeight: 800, color: "#fff", lineHeight: 1.08, letterSpacing: "-0.03em", margin: "28px 0 20px" }}>We'd Love to<br />Hear From You</h1>
             <p style={{ fontSize: 17, color: "rgba(255,255,255,0.75)", lineHeight: 1.7, maxWidth: 520, margin: "0 auto 0" }}>Questions, feedback, or need help getting started? We respond to every message — usually within a few hours.</p>
           </div>
           <div style={{ height: 120, background: "linear-gradient(180deg, transparent, #FAFAFB)" }} />
@@ -71,9 +75,9 @@ export default function Contact() {
       </section>
 
       {/* ═══ CONTACT INFO CARDS ═══ */}
-      <section style={{ padding: "0 40px 0", position: "relative", marginTop: -60 }}>
+      <section style={{ padding: isMobile ? "0 16px 0" : "0 40px 0", position: "relative", marginTop: -60 }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative", zIndex: 10 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
             {/* Email */}
             <div className="info-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #E5E7EB", padding: "24px 22px", boxShadow: "0 2px 8px rgba(0,0,0,0.03)", textAlign: "center" }}>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg, #EEF2FF, #E0E7FF)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
@@ -108,10 +112,10 @@ export default function Contact() {
       </section>
 
       {/* ═══ FORM SECTION ═══ */}
-      <section style={{ padding: "48px 40px 100px", position: "relative" }}>
+      <section style={{ padding: isMobile ? "32px 16px 60px" : "48px 40px 100px", position: "relative" }}>
         <Dots o={0.04} />
         <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative", zIndex: 1 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 32, alignItems: "flex-start" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1.4fr", gap: 32, alignItems: "flex-start" }}>
 
             {/* Left — Info Panel */}
             <div>
@@ -172,7 +176,7 @@ export default function Contact() {
                   </div>
 
                   {/* Name + Email row */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 16 }}>
                     <div>
                       <label style={labelStyle}>Name</label>
                       <input className="form-input" placeholder="Your name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
@@ -220,7 +224,7 @@ export default function Contact() {
       </section>
 
       {/* ═══ COMMON TOPICS ═══ */}
-      <section style={{ padding: "80px 40px", background: "#fff", position: "relative" }}>
+      <section style={{ padding: isMobile ? "48px 16px" : "80px 40px", background: "#fff", position: "relative" }}>
         <Dots o={0.04} /><Sq top={40} right={100} size={28} rotate={15} /><Sq bottom={50} left={120} size={24} rotate={-18} />
         <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative", zIndex: 1 }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
@@ -228,7 +232,7 @@ export default function Contact() {
             <h2 style={{ fontFamily: HF, fontSize: 38, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "18px 0 10px" }}>Common Topics</h2>
             <p style={{ fontSize: 15, color: "#6B7280", lineHeight: 1.6 }}>Your question might already be answered in our FAQ.</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 14 }}>
             {[
               { title: "Getting Started", desc: "Account setup, free trial, first gang sheet", to: "/faq", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>, tint: "linear-gradient(135deg, #EEF2FF, #E0E7FF)", accent: P },
               { title: "Pricing & Credits", desc: "Plans, billing, how credits work", to: "/faq", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0284C7" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>, tint: "linear-gradient(135deg, #F0F9FF, #BAE6FD)", accent: "#0284C7" },
@@ -252,7 +256,7 @@ export default function Contact() {
       </section>
 
       {/* ═══ CTA ═══ */}
-      <section style={{ padding: "100px 40px", position: "relative", overflow: "hidden" }}>
+      <section style={{ padding: isMobile ? "60px 16px" : "100px 40px", position: "relative", overflow: "hidden" }}>
         <Dots o={0.1} /><Sq top={60} right={160} size={34} rotate={15} /><Sq bottom={60} left={140} size={28} rotate={-20} />
         <div style={{ maxWidth: 620, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
           <h2 style={{ fontFamily: HF, fontSize: 42, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.03em", margin: "0 0 14px" }}>Ready to get started?</h2>
@@ -265,11 +269,11 @@ export default function Contact() {
       </section>
 
       {/* ═══ FOOTER ═══ */}
-      <footer style={{ position: "relative", padding: "0 40px 32px", background: "linear-gradient(180deg, #1E1B4B, #0F0D2E)", color: "rgba(165,180,252,0.6)" }}>
+      <footer style={{ position: "relative", padding: isMobile ? "0 16px 24px" : "0 40px 32px", background: "linear-gradient(180deg, #1E1B4B, #0F0D2E)", color: "rgba(165,180,252,0.6)" }}>
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent 5%, rgba(99,102,241,0.3) 20%, rgba(129,140,248,0.5) 50%, rgba(99,102,241,0.3) 80%, transparent 95%)" }} />
         <div style={{ paddingTop: 64 }}>
           <div style={{ maxWidth: 1060, margin: "0 auto" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 16 }}>
                   <div style={{ width: 28, height: 28, borderRadius: 7, background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg></div>
@@ -283,7 +287,7 @@ export default function Contact() {
             </div>
             <div style={{ borderTop: "1px solid rgba(99,102,241,0.12)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 13 }}>© 2026 DTF Layout · Data Canvas Tech. All rights reserved.</span>
-              <span style={{ fontSize: 13, cursor: "pointer" }}>dtflayout@gmail.com</span>
+              <span style={{ fontSize: 13, cursor: "pointer" }}>support@dtflayout.com</span>
             </div>
           </div>
         </div>

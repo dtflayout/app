@@ -236,9 +236,100 @@
 - **WI marketing page** — Added "Try Live Demo" banner section (dark gradient card with mini builder preview) linking to `/demo/builder`. Inserted before the CTA section.
 
 ### Tracking: GA4 (Google Analytics 4)
-- **Setup:** gtag.js script added to `index.html` with placeholder `G-XXXXXXXXXX`. Replace with actual Measurement ID from analytics.google.com.
+- **Setup:** ✅ gtag.js script in `index.html` with Measurement ID `G-7FMLD6EJCV`. Configured Apr 14, 2026.
 - **Auto-tracked by GA4:** page_view, scroll depth, session duration, UTM params, geo, device, referrer, bounce rate.
-- **Custom events via `src/lib/ga.ts`:** `trackCTA(label, dest)`, `trackCalculator(action, values)`, `trackDemoBuilder(action, values)`, `trackSectionView(section)`. All fire `gtag('event', ...)`.
-- **Cold email link format:** `dtflayout.com/demo/builder?utm_source=instantly&utm_medium=email&utm_campaign={campaign_name}&utm_content={email_variant}`
+- **Custom events via `src/lib/ga.ts`:** `trackCTA(label, dest)`, `trackCalculator(action, values)`, `trackDemoBuilder(action, values)`, `trackSectionView(section)`, `trackEvent(name, params)` (generic, used by unified analytics module). All fire `gtag('event', ...)`.
+- **Cold email link format:** `dtflayout.com/go/{code}` (tracked short links, see Section 11)
 - **GA4 Enhanced Measurement:** Enable in GA4 settings for automatic scroll depth, outbound clicks, site search, video engagement, file downloads.
-- **TODO:** Create GA4 property and replace `G-XXXXXXXXXX` in `index.html`.
+
+---
+
+## 11. ANALYTICS INFRASTRUCTURE (added Apr 14, 2026)
+
+### Stack
+| Platform | Purpose | Cost | Status |
+|----------|---------|------|--------|
+| **PostHog** | Product analytics, session recordings, funnels, retention | Free (1M events/mo) | ✅ LIVE |
+| **GA4** | Marketing overview, SEO, Google Ads integration | Free | ✅ LIVE |
+| **Microsoft Clarity** | Session recordings + heatmaps | Free | ✅ LIVE |
+| **Custom Supabase** | Cold email attribution stitching | Included in Pro plan | ✅ Tables created |
+
+### PostHog
+- **Project:** "DTF Layout" on US cloud (`us.posthog.com`)
+- **SDK:** `posthog-js` (npm package), initialized in `src/main.tsx`
+- **Env vars:** `VITE_POSTHOG_KEY` + `VITE_POSTHOG_HOST` (in .env + Vercel)
+- **Autocapture:** Enabled — tracks clicks, pageviews, form submissions automatically
+- **Session recording:** Enabled (free: 5,000/month)
+- **User identification:** `analytics.identify()` called in `AuthContext.tsx` on login/signup; `analytics.reset()` on logout
+
+### Microsoft Clarity
+- **Project ID:** `wbnfbu1ji4`
+- **Setup:** Script tag in `index.html`
+- **Features:** Session recordings, heatmaps, scroll maps, click maps
+
+### GA4
+- **Measurement ID:** `G-7FMLD6EJCV`
+- **Setup:** gtag.js script in `index.html`
+- **Custom events:** Via `src/lib/ga.ts` — `trackEvent()`, `trackCTA()`, `trackCalculator()`, `trackDemoBuilder()`, `trackSectionView()`
+
+### Files
+| File | Purpose |
+|------|---------|
+| `src/lib/posthog.ts` | PostHog init, identify, track, reset, super properties |
+| `src/lib/analytics.ts` | Unified analytics module (wraps PostHog + GA4 + server-side). Exports `analytics` object + `trackEvents` helpers |
+| `src/lib/ga.ts` | GA4 helpers (updated Apr 14: added `trackEvent` export for unified module) |
+| `api/go.ts` | Link redirect: `/go/:code` → logs click to `link_clicks` → 302 redirects with UTMs + `ref` param |
+| `api/track.ts` | Server-side event logging for 10 critical attribution events → `visit_events` table |
+| `scripts/generate-tracked-links.ts` | CLI: bulk-generate short tracked links from Outscraper CSV for Instantly |
+
+### Database Tables (migration 015)
+- **`tracked_links`** — Short code → destination URL + prospect info + UTMs + batch_id. Indexed on `code` (WHERE is_active).
+- **`link_clicks`** — Every click on a tracked link (FK to tracked_links). Stores IP, user-agent, referer.
+- **`visit_events`** — Critical attribution events only (page_view, signup, purchase). Stores anonymous_id, user_id, UTMs, tracked_link_code.
+
+### Key Patterns
+- **Anonymous ID stitching:** Client generates `dtf_anon_id` (localStorage), persists across sessions. On signup, `analytics.identify()` sends it to PostHog + Supabase, linking all pre-signup events to the user.
+- **UTM persistence:** First-touch UTMs saved once (never overwritten). Last-touch UTMs always updated. Both attached to PostHog user profile via `setUserPropertiesOnce`.
+- **Server-side logging:** Only 10 critical events go to Supabase (`visit_events`). Everything else stays in PostHog. Controlled by `SERVER_EVENTS` whitelist in `analytics.ts`.
+- **Link redirect flow:** Cold email `dtflayout.com/go/abc123` → Vercel rewrite to `api/go?c=abc123` → lookup in `tracked_links` → log to `link_clicks` → 302 redirect to destination with UTMs + `ref=abc123` param → client-side `analytics.init()` captures UTMs and `ref` code.
+
+### Cold Email Link Generation
+```bash
+# Single link
+npx tsx scripts/generate-tracked-links.ts --campaign us_texas_wave1 --content email_1 --single "john@shop.com" "PrintShop" "John"
+
+# Bulk from Outscraper CSV
+npx tsx scripts/generate-tracked-links.ts --campaign us_texas_wave1 --content email_1 --csv prospects.csv
+# Output: tracked-links_us_texas_wave1_email_1.csv → import to Instantly, use {{tracked_link}}
+```
+
+### CSP (Content-Security-Policy) in vercel.json
+All analytics domains are whitelisted in CSP as of Apr 14, 2026:
+- `script-src`: posthog (`us-assets.posthog.com`, `us-assets.i.posthog.com`, `us.i.posthog.com`, `us.posthog.com`), clarity (`www.clarity.ms`, `scripts.clarity.ms`), GA4 (`googletagmanager.com`, `google-analytics.com`), sentry (`*.sentry.io`)
+- `img-src`: clarity (`c.clarity.ms`, `c.bing.com`), GA4 (`google-analytics.com`)
+- `connect-src`: `https:` (wildcard — covers all analytics endpoints)
+
+### Vercel Config
+- **Rewrite:** `{ "source": "/go/:code", "destination": "/api/go?c=:code" }` — must be BEFORE the catch-all `/(.*) → /index.html` rewrite
+- **Env vars:** `VITE_POSTHOG_KEY`, `VITE_POSTHOG_HOST` (both in .env + Vercel, All Environments)
+
+### Retention & Cleanup
+- `visit_events`: Add 180-day purge to `cleanup-expired.ts` (TODO)
+- `link_clicks`: No auto-purge (low volume, valuable forever)
+- PostHog free tier: 1-year data retention
+- GA4: 14-month data retention (default, extendable in settings)
+
+### TODO (post-setup)
+- Wire `trackEvents` helpers into specific components (onboarding wizard, builder, orders, credits)
+- Set up PostHog dashboards (acquisition funnel, activation, engagement, revenue)
+- Enable GA4 Enhanced Measurement in GA4 settings
+- Add `visit_events` 180-day purge to `cleanup-expired.ts`
+- Email `sales@posthog.com` for 25% startup discount
+
+---
+
+### Session Log Update
+
+| Date | Summary | Items Changed |
+|------|---------|---------------|
+| 2026-04-14 | Full analytics infrastructure setup. (1) PostHog: installed `posthog-js`, created `src/lib/posthog.ts` (init, identify, track, reset), initialized in `src/main.tsx`, identify/reset wired into `AuthContext.tsx`. (2) GA4: created property `G-7FMLD6EJCV`, replaced placeholder in `index.html`, updated `src/lib/ga.ts` with `trackEvent` export. (3) Microsoft Clarity: created project `wbnfbu1ji4`, added script to `index.html`. (4) Unified analytics: created `src/lib/analytics.ts` (wraps PostHog + GA4 + server, anonymous ID stitching, UTM persistence, typed event helpers). (5) Link tracking: created `api/go.ts` (short link redirect with click logging), `api/track.ts` (server-side event logging), `scripts/generate-tracked-links.ts` (CLI for bulk link generation). (6) Database: ran migration 015 (tracked_links, link_clicks, visit_events tables with RLS). (7) CSP: iteratively added all analytics domains to `vercel.json` script-src and img-src (PostHog, Clarity, Sentry, Bing). (8) Vercel: added `/go/:code` rewrite before catch-all, added PostHog env vars. All three platforms verified live with zero CSP errors. | New: src/lib/posthog.ts, src/lib/analytics.ts, api/go.ts, api/track.ts, scripts/generate-tracked-links.ts, migration 015. Modified: src/main.tsx, src/lib/ga.ts, src/contexts/AuthContext.tsx, index.html, vercel.json, .env, CLAUDE_CONTEXT.md |
