@@ -141,18 +141,21 @@ export const AppSidebar = () => {
       {/* Logo */}
       <div className={cn(
         "border-b border-indigo-500/15 transition-all duration-300 ease-in-out",
-        isExpanded ? "p-6" : "p-4"
+        isExpanded ? "p-6" : "p-2"
       )}>
         <button
           onClick={() => navigate("/")}
-          className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+          className={cn(
+            "flex items-center cursor-pointer hover:opacity-80 transition-opacity",
+            isExpanded ? "" : "justify-center w-full"
+          )}
         >
           <img
-            src={isExpanded ? "/DTF-Layout-WHITE-logo-text.png" : "/logo-white.png"}
+            src={isExpanded ? "/DTF-Layout-WHITE-logo-text.png" : "/favicon.png"}
             alt="DTF Layout"
             className={cn(
-              "transition-all duration-300 ease-in-out",
-              isExpanded ? "h-10" : "h-8"
+              "transition-all duration-300 ease-in-out max-w-none object-contain",
+              isExpanded ? "h-12 w-auto" : "h-[38px] w-[38px]"
             )}
           />
         </button>
@@ -345,7 +348,7 @@ export const AppSidebar = () => {
           <img
             src="/DTF-Layout-WHITE-logo-text.png"
             alt="DTF Layout"
-            className="h-10"
+            className="h-12 w-auto"
           />
         </button>
       </div>

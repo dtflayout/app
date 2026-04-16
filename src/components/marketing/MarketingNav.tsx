@@ -59,11 +59,8 @@ export default function MarketingNav() {
           border: "1px solid rgba(99, 102, 241, 0.2)",
           boxShadow: "0 8px 32px rgba(15,13,46,0.5), 0 2px 8px rgba(0,0,0,0.2)",
         }}>
-          <Link to="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
-            </div>
-            <span style={{ fontFamily: HF, fontWeight: 700, fontSize: 16, color: "#fff" }}>DTF Layout</span>
+          <Link to="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+            <img src="/DTF-Layout-WHITE-logo-text.png" alt="DTF Layout" style={{ height: 38, width: "auto", display: "block" }} />
           </Link>
 
           {!isMobile && (

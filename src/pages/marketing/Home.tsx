@@ -758,11 +758,8 @@ export default function Home() {
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 24 }}>
             {/* DTF Layout */}
             <div style={{ background: "linear-gradient(135deg, #1E1B4B, #312E81)", borderRadius: 20, padding: "32px 32px 28px", color: "#fff" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
-                </div>
-                <span style={{ fontFamily: HF, fontWeight: 700, fontSize: 20 }}>DTF Layout</span>
+              <div style={{ display: "flex", alignItems: "center", marginBottom: 24 }}>
+                <img src="/DTF-Layout-WHITE-logo-text.png" alt="DTF Layout" style={{ height: 36, width: "auto", display: "block" }} />
               </div>
               {[
                 { f: "Pricing model", v: "Credits (one-time buy)" },
@@ -771,12 +768,11 @@ export default function Home() {
                 { f: "Standalone store", v: "Quick Store included" },
                 { f: "Platform support", v: "Any website" },
                 { f: "White-label builder", v: "Full customization" },
-                { f: "Background remover", v: "Included" },
                 { f: "Image enhancer", v: "Included" },
                 { f: "Text editor", v: "Included" },
                 { f: "Multi-sheet export", v: "Up to 5 sheets" },
               ].map((row, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: i < 9 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: i < 8 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
                   <span style={{ fontSize: 14, color: "rgba(165,180,252,0.8)", fontWeight: 500 }}>{row.f}</span>
                   <span style={{ fontSize: 14, fontWeight: 600, color: "#C7D2FE", display: "flex", alignItems: "center", gap: 6 }}>
                     <svg width="14" height="14" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="#34D399" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -800,12 +796,11 @@ export default function Home() {
                 { f: "Standalone store", v: "Not available", bad: true },
                 { f: "Platform support", v: "Shopify / WooCommerce only", bad: true },
                 { f: "White-label builder", v: "Logo only or limited", bad: true },
-                { f: "Background remover", v: "Paid or unavailable", bad: true },
                 { f: "Image enhancer", v: "Not available", bad: true },
                 { f: "Text editor", v: "Limited or unavailable", bad: true },
                 { f: "Multi-sheet export", v: "Available", bad: false },
               ].map((row, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: i < 9 ? "1px solid #F3F4F6" : "none" }}>
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: i < 8 ? "1px solid #F3F4F6" : "none" }}>
                   <span style={{ fontSize: 14, color: "#6B7280", fontWeight: 500 }}>{row.f}</span>
                   <span style={{ fontSize: 14, fontWeight: 500, color: row.bad ? "#6B7280" : "#374151", display: "flex", alignItems: "center", gap: 6 }}>
                     {row.bad ? (
@@ -845,10 +840,7 @@ export default function Home() {
         <div style={{ maxWidth: 1060, margin: "0 auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 16 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 7, background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg></div>
-                <span style={{ fontFamily: HF, fontWeight: 700, fontSize: 15, color: "#fff" }}>DTF Layout</span>
-              </div>
+              <div style={{ marginBottom: 16 }}><img src="/DTF-Layout-WHITE-logo-text.png" alt="DTF Layout" style={{ height: 38, width: "auto", display: "block" }} /></div>
               <p style={{ fontSize: 14, lineHeight: 1.7, maxWidth: 260 }}>Smart DTF sheet builder for printers worldwide. Auto-arrange, optimize, and print — all from one platform.</p>
             </div>
             <div><h4 style={{ fontSize: 11, fontWeight: 600, color: "#A5B4FC", marginBottom: 16, letterSpacing: "0.08em", textTransform: "uppercase" }}>Product</h4>{[{l:"Gang Sheet Builder",to:"/product/gang-sheet-builder"},{l:"Website Integration",to:"/product/website-integration"},{l:"Quick Store",to:"/product/quick-store"},{l:"Pricing",to:"/pricing"}].map(item => <Link key={item.l} to={item.to} style={{ fontSize: 14, marginBottom: 10, cursor: "pointer", display: "block", color: "inherit", textDecoration: "none" }}>{item.l}</Link>)}</div>

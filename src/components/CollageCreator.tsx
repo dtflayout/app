@@ -136,6 +136,9 @@ export interface CollageCreatorProps {
   maxHeight?: number;
   mode?: "standard" | "hd";
   builderMode?: "standalone" | "public";
+  /** When true, suppresses credit-related UI (banner, disabled Generate button).
+   *  Download interception is handled externally by the parent (e.g. DemoBuilderLive). */
+  isDemoMode?: boolean;
   // Route params for public builder (used for session scoping)
   printerSlug?: string;
   productSlug?: string;
@@ -169,6 +172,7 @@ export const CollageCreator = ({
   maxHeight = 400,
   mode = "standard",
   builderMode = "standalone",
+  isDemoMode = false,
   printerSlug,
   productSlug,
   initialCanvasWidth,
@@ -1368,8 +1372,8 @@ export const CollageCreator = ({
           0
         );
 
-        // Check if user has enough credits BEFORE showing confirmation dialog (only in standalone mode)
-        if (builderMode === "standalone") {
+        // Check if user has enough credits BEFORE showing confirmation dialog (only in standalone mode, not demo)
+        if (builderMode === "standalone" && !isDemoMode) {
           const currentCredits = getUserCredits();
           console.log(`[Layout] ${multiResult.totalSheets} sheet(s) require ${totalSqInches.toFixed(2)} sq.in total, user has ${currentCredits} credits`);
 
@@ -1961,8 +1965,8 @@ export const CollageCreator = ({
 
   return (
     <div className="flex flex-col pb-24 min-h-screen">
-      {/* Credit Warning Banner - only show in standalone mode */}
-      {builderMode === "standalone" && (
+      {/* Credit Warning Banner - only show in standalone mode (not demo) */}
+      {builderMode === "standalone" && !isDemoMode && (
         <div className="px-8 md:px-16 pt-4">
           <CreditWarningBanner credits={getUserCredits()} />
         </div>
@@ -2535,7 +2539,7 @@ export const CollageCreator = ({
         imageCount={images.length}
         hasLayout={layout.length > 0}
         isGenerating={isGenerating}
-        creditsDisabled={builderMode === "standalone" && getUserCredits() === 0}
+        creditsDisabled={builderMode === "standalone" && !isDemoMode && getUserCredits() === 0}
         widthReadOnly={builderMode === "public"}
         barColor={builderSettings?.action_bar_color || builderSettings?.color_top_bar || undefined}
         accentColor={builderSettings?.color_primary || undefined}

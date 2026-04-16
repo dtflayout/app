@@ -55,6 +55,37 @@ const DEMO_CSS = `
 .demo-overlay{animation:fadeIn 0.2s ease-out forwards}
 .demo-builder-wrap .font-heading{font-family:var(--demo-font)!important}
 .demo-builder-wrap .font-body,.demo-builder-wrap p,.demo-builder-wrap span,.demo-builder-wrap div,.demo-builder-wrap button,.demo-builder-wrap input,.demo-builder-wrap select,.demo-builder-wrap label,.demo-builder-wrap h1,.demo-builder-wrap h2,.demo-builder-wrap h3,.demo-builder-wrap h4{font-family:var(--demo-font)!important}
+
+/* Mobile responsiveness (≤ 640px) */
+@media (max-width: 640px) {
+  .demo-customize-btn {
+    left: 10px !important;
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    border-radius: 10px !important;
+  }
+  .demo-customize-btn-label {
+    display: none !important;
+  }
+  .demo-drawer {
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+  .demo-signup-modal {
+    padding: 28px 22px !important;
+  }
+}
+@media (max-width: 420px) {
+  .demo-drawer-content {
+    padding: 16px 16px !important;
+  }
+  .demo-drawer-header {
+    padding: 16px 16px 12px !important;
+  }
+  .demo-drawer-footer {
+    padding: 12px 16px !important;
+  }
+}
 `;
 
 /* ══════════ MAIN COMPONENT ══════════ */
@@ -148,32 +179,47 @@ export default function DemoBuilderLive() {
 
       {/* ═══ TOP BAR — Matches real PublicBuilderTopBar ═══ */}
       <div className="sticky top-0 z-30 border-b shadow-sm" style={{ backgroundColor: topBarColor }}>
-        <div className="flex items-center justify-between px-4 py-3 max-w-screen-2xl mx-auto">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 max-w-screen-2xl mx-auto gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            {/* DTF Layout back link — muted, orients user without breaking store illusion */}
+            <a
+              href="/"
+              onClick={(e) => { e.preventDefault(); trackCTA("demo_back_to_site", "/"); navigate("/"); }}
+              className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base font-semibold flex-shrink-0 transition-opacity hover:opacity-80"
+              style={{ color: "#ffffff", fontFamily: BF, textDecoration: "none" }}
+              title="Back to DTF Layout"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="sm:w-5 sm:h-5">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+              </svg>
+              <span className="hidden sm:inline">DTF Layout</span>
+            </a>
+            {/* Vertical divider */}
+            <div className="w-px h-5 sm:h-6 flex-shrink-0" style={{ background: "rgba(255,255,255,0.15)" }} />
             {logoUrl ? (
-              <img src={logoUrl} alt={storeName} className="h-10 w-auto max-w-[150px] object-contain" />
+              <img src={logoUrl} alt={storeName} className="h-8 sm:h-10 w-auto max-w-[100px] sm:max-w-[150px] object-contain flex-shrink-0" />
             ) : (
-              <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${primaryColor}20` }}>
-                <span className="font-bold text-lg" style={{ color: primaryColor }}>{storeName.charAt(0)}</span>
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${primaryColor}20` }}>
+                <span className="font-bold text-base sm:text-lg" style={{ color: primaryColor }}>{storeName.charAt(0)}</span>
               </div>
             )}
-            <div className="hidden sm:block">
-              <h1 className="font-semibold text-sm" style={{ color: "#ffffff" }}>{storeName}</h1>
-              <p className="text-xs" style={{ color: "rgba(255,255,255,0.7)" }}>Gang Sheet Builder</p>
+            <div className="min-w-0">
+              <h1 className="font-semibold text-xs sm:text-sm truncate" style={{ color: "#ffffff" }}>{storeName}</h1>
+              <p className="text-[10px] sm:text-xs truncate" style={{ color: "rgba(255,255,255,0.7)" }}>Gang Sheet Builder</p>
             </div>
           </div>
           <div className="hidden md:flex items-center gap-2 text-base">
             <span style={{ color: "rgba(255,255,255,0.7)" }}>Sheet:</span>
             <span className="font-semibold" style={{ color: "#ffffff" }}>22" × --</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             <div className="text-right">
-              <p className="text-xs" style={{ color: "rgba(255,255,255,0.7)" }}>Price</p>
-              <p className="text-lg font-bold" style={{ color: "#ffffff" }}>--</p>
+              <p className="text-[10px] sm:text-xs" style={{ color: "rgba(255,255,255,0.7)" }}>Price</p>
+              <p className="text-sm sm:text-lg font-bold" style={{ color: "#ffffff" }}>--</p>
             </div>
-            <button disabled className="gap-2 disabled:opacity-50 text-white flex items-center px-4 py-2.5 font-semibold text-sm"
+            <button disabled className="gap-1.5 sm:gap-2 disabled:opacity-50 text-white flex items-center px-3 sm:px-4 py-2 sm:py-2.5 font-semibold text-xs sm:text-sm"
               style={{ backgroundColor: "#9ca3af", borderRadius: btnRadius }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" className="sm:w-4 sm:h-4"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
               <span className="hidden sm:inline">Add to Cart</span>
             </button>
           </div>
@@ -183,9 +229,10 @@ export default function DemoBuilderLive() {
       {/* ═══ FLOATING CUSTOMIZE BUTTON — horizontal ═══ */}
       {!drawerOpen && (
         <button
+          className="demo-customize-btn"
           onClick={() => { setDrawerOpen(true); trackDemoBuilder("drawer_opened"); }}
           style={{
-            position: "fixed", left: 16, top: "50%", transform: "translateY(-50%)", zIndex: 35,
+            position: "fixed", left: 16, top: "62%", transform: "translateY(-50%)", zIndex: 35,
             background: "linear-gradient(135deg, #4F46E5, #7C3AED)", color: "#fff", border: "none", cursor: "pointer",
             borderRadius: 12, padding: "12px 20px",
             display: "flex", alignItems: "center", gap: 8,
@@ -198,7 +245,7 @@ export default function DemoBuilderLive() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round">
             <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
           </svg>
-          Click to Customize
+          <span className="demo-customize-btn-label">Click to Customize</span>
         </button>
       )}
 
@@ -207,11 +254,11 @@ export default function DemoBuilderLive() {
 
       {/* ═══ CUSTOMIZATION DRAWER — 50% wider ═══ */}
       {drawerOpen && (
-        <div className={closing ? "demo-drawer-close" : "demo-drawer-open"}
-          style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 420, background: "#fff", zIndex: 45, boxShadow: "8px 0 40px rgba(0,0,0,0.12)", display: "flex", flexDirection: "column" }}>
+        <div className={`demo-drawer ${closing ? "demo-drawer-close" : "demo-drawer-open"}`}
+          style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 420, maxWidth: "100vw", background: "#fff", zIndex: 45, boxShadow: "8px 0 40px rgba(0,0,0,0.12)", display: "flex", flexDirection: "column" }}>
 
           {/* Header */}
-          <div style={{ padding: "20px 22px 16px", borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <div className="demo-drawer-header" style={{ padding: "20px 22px 16px", borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
             <div>
               <h3 style={{ fontFamily: HF, fontSize: 20, fontWeight: 800, color: "#111827", margin: 0 }}>Customize Builder</h3>
               <p style={{ fontSize: 13, color: "#9CA3AF", margin: "4px 0 0" }}>Changes update in real-time</p>
@@ -222,7 +269,7 @@ export default function DemoBuilderLive() {
           </div>
 
           {/* Content — scrollable */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "18px 22px", display: "flex", flexDirection: "column", gap: 20 }}>
+          <div className="demo-drawer-content" style={{ flex: 1, overflowY: "auto", padding: "18px 22px", display: "flex", flexDirection: "column", gap: 20 }}>
 
             {/* Store Name */}
             <div>
@@ -341,7 +388,7 @@ export default function DemoBuilderLive() {
           </div>
 
           {/* Footer CTA */}
-          <div style={{ padding: "16px 22px", borderTop: "1px solid #E5E7EB", background: "#F9FAFB", flexShrink: 0 }}>
+          <div className="demo-drawer-footer" style={{ padding: "16px 22px", borderTop: "1px solid #E5E7EB", background: "#F9FAFB", flexShrink: 0 }}>
             <button onClick={() => { trackCTA("demo_drawer_signup", "/signup"); navigate("/signup"); }}
               style={{ width: "100%", padding: "12px 0", borderRadius: 12, background: "linear-gradient(135deg, #4F46E5, #7C3AED)", color: "#fff", fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: BF, boxShadow: "0 4px 16px rgba(79,70,229,0.3)" }}>
               Start Free — 20,000 sq.in →
@@ -360,6 +407,7 @@ export default function DemoBuilderLive() {
       >
         <CollageCreator
           builderMode="standalone"
+          isDemoMode={true}
           dpi={150}
           builderSettings={settings}
         />
@@ -369,7 +417,7 @@ export default function DemoBuilderLive() {
       {showSignupModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center" }}
           onClick={() => setShowSignupModal(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 24, padding: "36px 32px", maxWidth: 420, width: "90%", boxShadow: "0 32px 80px rgba(0,0,0,0.25)", textAlign: "center" }}>
+          <div onClick={e => e.stopPropagation()} className="demo-signup-modal" style={{ background: "#fff", borderRadius: 24, padding: "36px 32px", maxWidth: 420, width: "90%", boxShadow: "0 32px 80px rgba(0,0,0,0.25)", textAlign: "center" }}>
             <div style={{ width: 64, height: 64, borderRadius: 16, background: "linear-gradient(135deg, #EEF2FF, #E0E7FF)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -387,6 +435,16 @@ export default function DemoBuilderLive() {
               style={{ width: "100%", padding: "12px 0", borderRadius: 12, background: "transparent", color: "#6B7280", fontSize: 14, fontWeight: 600, border: "1.5px solid #E5E7EB", cursor: "pointer", fontFamily: BF }}>
               Continue Exploring
             </button>
+            {/* Tertiary link — appears at the moment users are evaluating value */}
+            <a
+              href="/pricing"
+              onClick={(e) => { e.preventDefault(); trackCTA("demo_modal_pricing", "/pricing"); navigate("/pricing"); }}
+              style={{ display: "inline-block", marginTop: 14, fontSize: 12.5, color: "#9CA3AF", textDecoration: "none", fontFamily: BF, fontWeight: 500, transition: "color 0.15s" }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "#4F46E5"}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "#9CA3AF"}
+            >
+              or see our pricing →
+            </a>
           </div>
         </div>
       )}
