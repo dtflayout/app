@@ -102,7 +102,7 @@ const getFaqSections = (region: 'india' | 'global'): FaqSection[] => [
       { q: "How is credit usage calculated?", a: "Credits are deducted based on the total area of your output gang sheet (width × height in square inches). For example, a 23\" × 40\" sheet uses 920 square inches of credits. The editing tools (background remover, enhancer, trimmer, etc.) are completely free — credits are only used when you generate a layout." },
       { q: "What payment methods do you accept?", a: "All payments are processed securely via Dodo Payments. For Indian customers: credit/debit cards, UPI, and net banking. For international customers: credit and debit cards. All transactions are encrypted and secure." },
       { q: "Can I upgrade to a bigger plan?", a: "Since there are no subscriptions, there's nothing to \"upgrade.\" Simply purchase additional credits anytime — your existing balance carries over and new credits are added on top. Many users start with Starter and move to Max once they see the per-inch savings." },
-      { q: "Do you offer refunds?", a: "Yes. We offer refunds within 7 days of purchase for unused credits. Please refer to our refund policy or contact us at support@dtflayout.com for details." },
+      { q: "Do you offer refunds?", a: "Credits are non-refundable once purchased — they never expire, so you can use them whenever you need. We do issue refunds in a few specific situations: duplicate charges, billing errors on our side, or a verified technical failure reported within 7 days of purchase if no credits have been used. See our Refund Policy for full details, or email support@dtflayout.com." },
       { q: "Is there a free trial?", a: "Yes! Every new account gets 20,000 sq.inches of free credits — no credit card required. That's enough to create several gang sheets and fully experience the platform, including Website Integration and Quick Store, before purchasing." },
     ],
   },
@@ -365,10 +365,7 @@ export default function Faq() {
           <div style={{ maxWidth: 1060, margin: "0 auto" }}>
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 16 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 7, background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg></div>
-                  <span style={{ fontFamily: HF, fontWeight: 700, fontSize: 15, color: "#fff" }}>DTF Layout</span>
-                </div>
+                <div style={{ marginBottom: 16 }}><img src="/DTF-Layout-WHITE-logo-text.png" alt="DTF Layout" style={{ height: 38, width: "auto", display: "block" }} /></div>
                 <p style={{ fontSize: 14, lineHeight: 1.7, maxWidth: 260 }}>Smart DTF sheet builder for printers worldwide. Auto-arrange, optimize, and print — all from one platform.</p>
               </div>
               <div><h4 style={{ fontSize: 11, fontWeight: 600, color: "#A5B4FC", marginBottom: 16, letterSpacing: "0.08em", textTransform: "uppercase" }}>Product</h4>{[{ l: "Gang Sheet Builder", to: "/product/gang-sheet-builder" }, { l: "Website Integration", to: "/product/website-integration" }, { l: "Quick Store", to: "/product/quick-store" }, { l: "Pricing", to: "/pricing" }].map(item => <Link key={item.l} to={item.to} style={{ fontSize: 14, marginBottom: 10, display: "block", color: "inherit", textDecoration: "none" }}>{item.l}</Link>)}</div>
