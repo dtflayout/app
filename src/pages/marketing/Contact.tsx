@@ -20,6 +20,7 @@ const ANIM_CSS = `
 @keyframes orbFloat2{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(-50px,60px) scale(1.08)}50%{transform:translate(-80px,20px) scale(0.92)}75%{transform:translate(-20px,-40px) scale(1.03)}}
 @keyframes orbFloat3{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(70px,-30px) scale(1.12)}66%{transform:translate(-30px,-60px) scale(0.9)}}
 @keyframes gridDrift{0%{transform:translate(0,0)}100%{transform:translate(60px,60px)}}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 .orb-1{animation:orbFloat1 8s ease-in-out infinite}.orb-2{animation:orbFloat2 10s ease-in-out infinite}.orb-3{animation:orbFloat3 7s ease-in-out infinite}.grid-drift{animation:gridDrift 8s linear infinite}
 .info-card{transition:all 0.3s ease}.info-card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(79,70,229,0.1)!important;border-color:#C7D2FE!important}
 .topic-card{transition:all 0.3s ease;cursor:pointer}.topic-card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(79,70,229,0.1)!important;border-color:#C7D2FE!important}
@@ -42,17 +43,39 @@ export default function Contact() {
 
   const [formData, setFormData] = useState({ name: "", email: "", subject: "general", message: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [formError, setFormError] = useState("");
 
   useEffect(() => { const l1 = document.createElement("link"); l1.href = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap"; l1.rel = "stylesheet"; document.head.appendChild(l1); return () => { document.head.removeChild(l1); }; }, []);
   useEffect(() => { if (!document.querySelector("style[data-dtf-contact]")) { const tag = document.createElement("style"); tag.setAttribute("data-dtf-contact", "1"); tag.textContent = ANIM_CSS; document.head.appendChild(tag); } return () => { const tag = document.querySelector("style[data-dtf-contact]"); if (tag) tag.remove(); }; }, []);
 
   const subjectLabels: Record<string, string> = { general: "General Inquiry", setup: "Setup & Onboarding Help", billing: "Billing & Credits", bug: "Bug Report", feature: "Feature Request", integration: "Website Integration Help", quickstore: "Quick Store Help", other: "Other" };
-  const handleSubmit = () => {
-    const subjectLine = `[DTF Layout - ${subjectLabels[formData.subject] || "General"}] ${formData.name ? "from " + formData.name : ""}`.trim();
-    const body = formData.message ? encodeURIComponent(formData.message) : "";
-    window.open(`mailto:support@dtflayout.com?subject=${encodeURIComponent(subjectLine)}&body=${body}`, "_self");
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 4000);
+  const handleSubmit = async () => {
+    setFormError("");
+    if (!formData.name.trim()) { setFormError("Please enter your name."); return; }
+    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) { setFormError("Please enter a valid email address."); return; }
+    if (!formData.message.trim()) { setFormError("Please enter a message."); return; }
+
+    setSending(true);
+    try {
+      const res = await fetch("/api/send-contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFormError(data.error || "Failed to send message. Please try again.");
+        setSending(false);
+        return;
+      }
+      setSubmitted(true);
+      setFormData({ name: "", email: "", subject: "general", message: "" });
+    } catch {
+      setFormError("Something went wrong. Please try again.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -179,11 +202,11 @@ export default function Contact() {
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 16 }}>
                     <div>
                       <label style={labelStyle}>Name</label>
-                      <input className="form-input" placeholder="Your name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                      <input className="form-input" name="name" autoComplete="name" placeholder="Your name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                     </div>
                     <div>
                       <label style={labelStyle}>Email</label>
-                      <input className="form-input" type="email" placeholder="you@company.com" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                      <input className="form-input" type="email" name="email" autoComplete="email" placeholder="you@company.com" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                     </div>
                   </div>
 
@@ -208,11 +231,27 @@ export default function Contact() {
                     <textarea className="form-input form-textarea" placeholder="Tell us how we can help..." value={formData.message} onChange={e => setFormData({ ...formData, message: e.target.value })} />
                   </div>
 
+                  {/* Error */}
+                  {formError && (
+                    <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 10, background: "#FEF2F2", border: "1px solid #FECACA", fontSize: 13, color: "#DC2626", fontWeight: 500 }}>
+                      {formError}
+                    </div>
+                  )}
+
                   {/* Submit */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <Btn onClick={handleSubmit}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
-                      Send Message
+                    <Btn onClick={handleSubmit} style={sending ? { opacity: 0.7, pointerEvents: "none" } : {}}>
+                      {sending ? (
+                        <>
+                          <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTop: "2px solid #fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+                          Send Message
+                        </>
+                      )}
                     </Btn>
                     <span style={{ fontSize: 12, color: "#9CA3AF" }}>We reply within hours, not days.</span>
                   </div>

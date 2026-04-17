@@ -546,7 +546,7 @@ export default function Home() {
             </p>
             <div style={{ display: "flex", justifyContent: "center", gap: 14 }}>
               <Btn sz="l" onClick={() => navigate("/signup")} style={{ background: "#fff", color: P, boxShadow: "0 6px 28px rgba(0,0,0,0.15)" }}>Get Started Now →</Btn>
-              <Btn v="o" sz="l" onClick={() => navigate("/demo/builder-live")} style={{ background: "transparent", color: "#fff", borderColor: "rgba(255,255,255,0.3)", boxShadow: "none" }}>Watch a demo →</Btn>
+              <Btn v="o" sz="l" onClick={() => navigate("/demo/builder-live")} style={{ background: "transparent", color: "#fff", borderColor: "rgba(255,255,255,0.3)", boxShadow: "none" }}>Try Demo →</Btn>
             </div>
             {/* Highlighted free text */}
             <p style={{ fontSize: 16, color: "rgba(255,255,255,0.85)", marginTop: 20, fontWeight: 500 }}>

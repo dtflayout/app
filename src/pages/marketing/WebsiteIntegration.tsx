@@ -241,7 +241,7 @@ export default function WebsiteIntegration() {
                 </div>
                 <h2 style={{ fontFamily: HF, fontSize: isMobile ? 24 : 32, fontWeight: 800, color: "#fff", lineHeight: 1.15, letterSpacing: "-0.02em", margin: "0 0 12px" }}>See It In Action — With Your Brand</h2>
                 <p style={{ fontSize: isMobile ? 14 : 15, color: "rgba(255,255,255,0.6)", lineHeight: 1.7, margin: "0 0 24px" }}>Try the live builder demo. Change colors, upload your logo, pick fonts — see exactly how it will look on your website.</p>
-                <Btn sz="m" onClick={() => navigate("/demo/builder-live")} style={{ background: "#fff", color: P, boxShadow: "0 6px 24px rgba(0,0,0,0.15)" }}>Try Live Demo →</Btn>
+                <Btn sz="m" onClick={() => navigate("/demo/builder-live")} style={{ background: "#fff", color: P, boxShadow: "0 6px 24px rgba(0,0,0,0.15)" }}>Try Demo →</Btn>
               </div>
               {!isMobile && <div style={{ flex: "0 0 auto", width: 260, height: 200, borderRadius: 16, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
                 <div style={{ padding: "6px 10px", background: "#1e293b", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
