@@ -87,7 +87,6 @@ const COMPETITORS = [
     { name: "Professional", type: "subscription" as const, rate: 0, cap: 0, monthly: 399, sqftLimit: 10000 },
     { name: "Business", type: "subscription" as const, rate: 0, cap: 0, monthly: 499, sqftLimit: 30000 },
   ]},
-  { name: "Other", type: "percentage" as const, rate: 0.05, subPlans: null },
 ];
 const CALC_WIDTHS = [10.5, 11, 11.5, 22, 22.5, 23];
 function fmt(v: number) {
@@ -231,18 +230,18 @@ function SavingsCalculator() {
       </div>
 
       {/* STEP 1 — YOUR SETUP */}
-      <div style={{ padding: "16px 24px", borderRadius: 18, marginBottom: 10, background: "linear-gradient(135deg, #EEF2FF, #E0E7FF)", border: "1.5px solid #C7D2FE", boxShadow: "0 4px 16px rgba(79,70,229,0.06)" }}>
+      <div style={{ padding: isMobile ? "14px 16px" : "16px 24px", borderRadius: 18, marginBottom: 10, background: "linear-gradient(135deg, #EEF2FF, #E0E7FF)", border: "1.5px solid #C7D2FE", boxShadow: "0 4px 16px rgba(79,70,229,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
           <StepBadge n={1} />
-          <span style={{ fontFamily: HF, fontSize: 18, fontWeight: 700, color: "#1E1B4B" }}>Your Setup</span>
+          <span style={{ fontFamily: HF, fontSize: isMobile ? 16 : 18, fontWeight: 700, color: "#1E1B4B" }}>Your Setup</span>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, alignItems: "end" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12, alignItems: "end" }}>
           <div>
             <label style={calcLbl}>Sheet Width</label>
-            <select className="sc3-sel" value={width} onChange={e => setWidth(Number(e.target.value))} style={calcSel}>{CALC_WIDTHS.map(w => <option key={w} value={w}>{w}" wide</option>)}</select>
+            <select className="sc3-sel" value={width} onChange={e => setWidth(Number(e.target.value))} style={calcSel}>{CALC_WIDTHS.map(w => <option key={w} value={w}>{w} inch wide</option>)}</select>
           </div>
           <div>
-            <label style={calcLbl}>Selling Price / 100"<span style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#6366f1", marginTop: 2, lineHeight: 1.3 }}>What you charge per 100 inches in length</span></label>
+            <label style={calcLbl}>Selling Price / 100 inch<span style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#6366f1", marginTop: 2, lineHeight: 1.3 }}>What you charge per 100 inches in length</span></label>
             <div style={{ position: "relative" }}>
               <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 15, fontWeight: 600, color: "#6366f1" }}>$</span>
               <input className="sc3-sel" type="number" value={price} onChange={e => setPrice(Math.max(0, Number(e.target.value)))} style={{ ...calcSel, paddingLeft: 28, cursor: "text" }} />
@@ -257,10 +256,10 @@ function SavingsCalculator() {
 
       {/* Kixxl sub-plans */}
       {comp.subPlans && (
-        <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap", alignItems: "center", padding: "10px 14px", borderRadius: 12, background: "#F5F3FF", border: "1px solid #DDD6FE" }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#5B21B6", letterSpacing: "0.05em", marginRight: 4 }}>KIXXL PLAN:</span>
+        <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap", alignItems: "center", padding: isMobile ? "10px 12px" : "10px 14px", borderRadius: 12, background: "#F5F3FF", border: "1px solid #DDD6FE" }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#5B21B6", letterSpacing: "0.05em", marginRight: 4, ...(isMobile ? { width: "100%", marginBottom: 4 } : {}) }}>KIXXL PLAN:</span>
           {comp.subPlans.map((subP, i) => (
-            <button key={i} className="sc3-sub" onClick={() => setSi(i)} style={{ padding: "5px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, border: "1.5px solid", cursor: "pointer", borderColor: si === i ? "#4f46e5" : "rgba(0,0,0,0.06)", background: si === i ? "linear-gradient(135deg,#4f46e5,#6366f1)" : "white", color: si === i ? "white" : "#4B5563", boxShadow: si === i ? "0 2px 8px rgba(79,70,229,0.25)" : "0 1px 2px rgba(0,0,0,0.03)" }}>
+            <button key={i} className="sc3-sub" onClick={() => setSi(i)} style={{ padding: isMobile ? "5px 8px" : "5px 12px", borderRadius: 8, fontSize: isMobile ? 11 : 12, fontWeight: 600, border: "1.5px solid", cursor: "pointer", borderColor: si === i ? "#4f46e5" : "rgba(0,0,0,0.06)", background: si === i ? "linear-gradient(135deg,#4f46e5,#6366f1)" : "white", color: si === i ? "white" : "#4B5563", boxShadow: si === i ? "0 2px 8px rgba(79,70,229,0.25)" : "0 1px 2px rgba(0,0,0,0.03)" }}>
               {subP.name}{subP.type === "subscription" ? ` · $${subP.monthly}/mo` : ""}
             </button>
           ))}
@@ -275,7 +274,7 @@ function SavingsCalculator() {
             <StepBadge n={2} />
             <div>
               <span style={{ fontFamily: HF, fontSize: 18, fontWeight: 700, color: "#3B0764" }}>Sheets / Month</span>
-              <div style={{ fontSize: 13, color: "#7C3AED", fontWeight: 500, marginTop: 1, lineHeight: 1.3 }}>Each sheet is assumed 100" in length for this calculation</div>
+              <div style={{ fontSize: 13, color: "#7C3AED", fontWeight: 500, marginTop: 1, lineHeight: 1.3 }}>Each sheet is assumed 100 inches in length for this calculation</div>
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline", gap: 4 }}>
@@ -315,53 +314,105 @@ function SavingsCalculator() {
       {c.note && <div style={{ padding: "8px 14px", borderRadius: 10, marginBottom: 14, background: "linear-gradient(135deg, #fef3c7, #fef9c3)", border: "1px solid #fbbf24", fontSize: 13, color: "#92400e", fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#92400e" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>{c.note}</div>}
 
       {/* COMPARISON CARDS */}
-      <div style={{ position: "relative" }}>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
-          {/* Competitor */}
-          <div className="sc3-card" style={{ borderRadius: 20, overflow: "hidden", border: "1.5px solid rgba(239,68,68,0.15)", background: "#fff", boxShadow: "0 2px 12px rgba(239,68,68,0.06)" }}>
-            <div style={{ height: 4, background: "linear-gradient(90deg, #fca5a5, #ef4444)" }} />
-            <div style={{ padding: "20px 22px 22px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(239,68,68,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
-                <div><div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.06em" }}>CURRENTLY PAYING</div><div style={{ fontFamily: HF, fontSize: 16, fontWeight: 700, color: "#1e1b4b" }}>{comp.name}</div></div>
+      <div style={{ position: "relative", display: "flex", flexDirection: "column" }}>
+        {!isMobile && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            {/* Competitor - Desktop */}
+            <div className="sc3-card" style={{ borderRadius: 20, overflow: "hidden", border: "1.5px solid rgba(239,68,68,0.15)", background: "#fff", boxShadow: "0 2px 12px rgba(239,68,68,0.06)" }}>
+              <div style={{ height: 4, background: "linear-gradient(90deg, #fca5a5, #ef4444)" }} />
+              <div style={{ padding: "20px 22px 22px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(239,68,68,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+                  <div><div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.06em" }}>CURRENTLY PAYING</div><div style={{ fontFamily: HF, fontSize: 16, fontWeight: 700, color: "#1e1b4b" }}>{comp.name}</div></div>
+                </div>
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", letterSpacing: "0.05em", marginBottom: 4 }}>MONTHLY COST</div>
+                  <div style={{ fontFamily: HF, fontSize: 42, fontWeight: 800, color: "#ef4444", lineHeight: 1 }}><AnimNum value={c.cM} /></div>
+                  <div style={{ height: 10, borderRadius: 6, background: "rgba(239,68,68,0.06)", overflow: "hidden", marginTop: 10 }}><div className="sc3-bar" style={{ width: `${Math.max((c.cM / mx) * 100, 4)}%`, height: "100%", borderRadius: 6, background: "linear-gradient(90deg, #fca5a5 0%, #f87171 50%, #ef4444 100%)" }} /></div>
+                </div>
+                <div style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.08)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.05em", marginBottom: 2 }}>PER SHEET</div>
+                  <div style={{ fontFamily: HF, fontSize: 24, fontWeight: 800, color: "#ef4444" }}><AnimNum value={c.cPS} /></div>
+                </div>
               </div>
-              <div style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", letterSpacing: "0.05em", marginBottom: 4 }}>MONTHLY COST</div>
-                <div style={{ fontFamily: HF, fontSize: 42, fontWeight: 800, color: "#ef4444", lineHeight: 1 }}><AnimNum value={c.cM} /></div>
-                <div style={{ height: 10, borderRadius: 6, background: "rgba(239,68,68,0.06)", overflow: "hidden", marginTop: 10 }}><div className="sc3-bar" style={{ width: `${Math.max((c.cM / mx) * 100, 4)}%`, height: "100%", borderRadius: 6, background: "linear-gradient(90deg, #fca5a5 0%, #f87171 50%, #ef4444 100%)" }} /></div>
-              </div>
-              <div style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.08)" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.05em", marginBottom: 2 }}>PER SHEET</div>
-                <div style={{ fontFamily: HF, fontSize: 24, fontWeight: 800, color: "#ef4444" }}><AnimNum value={c.cPS} /></div>
+            </div>
+            {/* DTF Layout - Desktop */}
+            <div className="sc3-card" style={{ borderRadius: 20, overflow: "hidden", border: "1.5px solid rgba(16,185,129,0.2)", background: "#fff", boxShadow: "0 2px 12px rgba(16,185,129,0.06)" }}>
+              <div style={{ height: 4, background: "linear-gradient(90deg, #6ee7b7, #10b981)" }} />
+              <div style={{ padding: "20px 22px 22px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(16,185,129,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+                  <div><div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.06em" }}>WITH DTF LAYOUT</div><div style={{ fontFamily: HF, fontSize: 16, fontWeight: 700, color: "#1e1b4b" }}>{CALC_PLANS[plan].name} Plan</div></div>
+                </div>
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", letterSpacing: "0.05em", marginBottom: 4 }}>MONTHLY COST</div>
+                  <div style={{ fontFamily: HF, fontSize: 42, fontWeight: 800, color: "#059669", lineHeight: 1 }}><AnimNum value={c.dtfM} /></div>
+                  <div style={{ height: 10, borderRadius: 6, background: "rgba(5,150,105,0.06)", overflow: "hidden", marginTop: 10 }}><div className="sc3-bar" style={{ width: `${Math.max((c.dtfM / mx) * 100, 4)}%`, height: "100%", borderRadius: 6, background: "linear-gradient(90deg, #6ee7b7 0%, #34d399 50%, #059669 100%)" }} /></div>
+                </div>
+                <div style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(5,150,105,0.04)", border: "1px solid rgba(5,150,105,0.08)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.05em", marginBottom: 2 }}>PER SHEET</div>
+                  <div style={{ fontFamily: HF, fontSize: 24, fontWeight: 800, color: "#059669" }}><AnimNum value={c.dtfPS} /></div>
+                </div>
               </div>
             </div>
           </div>
-          {/* DTF Layout */}
-          <div className="sc3-card" style={{ borderRadius: 20, overflow: "hidden", border: "1.5px solid rgba(16,185,129,0.2)", background: "#fff", boxShadow: "0 2px 12px rgba(16,185,129,0.06)" }}>
-            <div style={{ height: 4, background: "linear-gradient(90deg, #6ee7b7, #10b981)" }} />
-            <div style={{ padding: "20px 22px 22px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(16,185,129,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg></div>
-                <div><div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.06em" }}>WITH DTF LAYOUT</div><div style={{ fontFamily: HF, fontSize: 16, fontWeight: 700, color: "#1e1b4b" }}>{CALC_PLANS[plan].name} Plan</div></div>
-              </div>
-              <div style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", letterSpacing: "0.05em", marginBottom: 4 }}>MONTHLY COST</div>
-                <div style={{ fontFamily: HF, fontSize: 42, fontWeight: 800, color: "#059669", lineHeight: 1 }}><AnimNum value={c.dtfM} /></div>
-                <div style={{ height: 10, borderRadius: 6, background: "rgba(5,150,105,0.06)", overflow: "hidden", marginTop: 10 }}><div className="sc3-bar" style={{ width: `${Math.max((c.dtfM / mx) * 100, 4)}%`, height: "100%", borderRadius: 6, background: "linear-gradient(90deg, #6ee7b7 0%, #34d399 50%, #059669 100%)" }} /></div>
-              </div>
-              <div style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(5,150,105,0.04)", border: "1px solid rgba(5,150,105,0.08)" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.05em", marginBottom: 2 }}>PER SHEET</div>
-                <div style={{ fontFamily: HF, fontSize: 24, fontWeight: 800, color: "#059669" }}><AnimNum value={c.dtfPS} /></div>
-              </div>
+        )}
+        {!isMobile && (
+          /* VS Badge - Desktop (absolute overlay) */
+          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 10 }}>
+            <div style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(135deg, #1E1B4B, #312E81)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(30,27,75,0.35), 0 0 0 4px white" }}>
+              <span style={{ fontFamily: HF, fontSize: 14, fontWeight: 800, color: "#C7D2FE" }}>VS</span>
             </div>
           </div>
-        </div>
-        {/* VS Badge */}
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 10 }}>
-          <div style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(135deg, #1E1B4B, #312E81)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(30,27,75,0.35), 0 0 0 4px white" }}>
-            <span style={{ fontFamily: HF, fontSize: 14, fontWeight: 800, color: "#C7D2FE" }}>VS</span>
-          </div>
-        </div>
+        )}
+        {isMobile && (
+          <>
+            {/* Competitor - Mobile */}
+            <div className="sc3-card" style={{ borderRadius: 20, overflow: "hidden", border: "1.5px solid rgba(239,68,68,0.15)", background: "#fff", boxShadow: "0 2px 12px rgba(239,68,68,0.06)" }}>
+              <div style={{ height: 4, background: "linear-gradient(90deg, #fca5a5, #ef4444)" }} />
+              <div style={{ padding: "20px 22px 22px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(239,68,68,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+                  <div><div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.06em" }}>CURRENTLY PAYING</div><div style={{ fontFamily: HF, fontSize: 16, fontWeight: 700, color: "#1e1b4b" }}>{comp.name}</div></div>
+                </div>
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", letterSpacing: "0.05em", marginBottom: 4 }}>MONTHLY COST</div>
+                  <div style={{ fontFamily: HF, fontSize: 42, fontWeight: 800, color: "#ef4444", lineHeight: 1 }}><AnimNum value={c.cM} /></div>
+                  <div style={{ height: 10, borderRadius: 6, background: "rgba(239,68,68,0.06)", overflow: "hidden", marginTop: 10 }}><div className="sc3-bar" style={{ width: `${Math.max((c.cM / mx) * 100, 4)}%`, height: "100%", borderRadius: 6, background: "linear-gradient(90deg, #fca5a5 0%, #f87171 50%, #ef4444 100%)" }} /></div>
+                </div>
+                <div style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.08)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.05em", marginBottom: 2 }}>PER SHEET</div>
+                  <div style={{ fontFamily: HF, fontSize: 24, fontWeight: 800, color: "#ef4444" }}><AnimNum value={c.cPS} /></div>
+                </div>
+              </div>
+            </div>
+            {/* VS Badge - Mobile (between cards) */}
+            <div style={{ display: "flex", justifyContent: "center", margin: "-12px 0", zIndex: 10, position: "relative" }}>
+              <div style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(135deg, #1E1B4B, #312E81)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(30,27,75,0.35), 0 0 0 4px white" }}>
+                <span style={{ fontFamily: HF, fontSize: 14, fontWeight: 800, color: "#C7D2FE" }}>VS</span>
+              </div>
+            </div>
+            {/* DTF Layout - Mobile */}
+            <div className="sc3-card" style={{ borderRadius: 20, overflow: "hidden", border: "1.5px solid rgba(16,185,129,0.2)", background: "#fff", boxShadow: "0 2px 12px rgba(16,185,129,0.06)" }}>
+              <div style={{ height: 4, background: "linear-gradient(90deg, #6ee7b7, #10b981)" }} />
+              <div style={{ padding: "20px 22px 22px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(16,185,129,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+                  <div><div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.06em" }}>WITH DTF LAYOUT</div><div style={{ fontFamily: HF, fontSize: 16, fontWeight: 700, color: "#1e1b4b" }}>{CALC_PLANS[plan].name} Plan</div></div>
+                </div>
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", letterSpacing: "0.05em", marginBottom: 4 }}>MONTHLY COST</div>
+                  <div style={{ fontFamily: HF, fontSize: 42, fontWeight: 800, color: "#059669", lineHeight: 1 }}><AnimNum value={c.dtfM} /></div>
+                  <div style={{ height: 10, borderRadius: 6, background: "rgba(5,150,105,0.06)", overflow: "hidden", marginTop: 10 }}><div className="sc3-bar" style={{ width: `${Math.max((c.dtfM / mx) * 100, 4)}%`, height: "100%", borderRadius: 6, background: "linear-gradient(90deg, #6ee7b7 0%, #34d399 50%, #059669 100%)" }} /></div>
+                </div>
+                <div style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(5,150,105,0.04)", border: "1px solid rgba(5,150,105,0.08)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.05em", marginBottom: 2 }}>PER SHEET</div>
+                  <div style={{ fontFamily: HF, fontSize: 24, fontWeight: 800, color: "#059669" }}><AnimNum value={c.dtfPS} /></div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* SAVINGS BANNER */}
@@ -369,19 +420,19 @@ function SavingsCalculator() {
         <div style={{ position: "absolute", top: -30, right: -30, width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle, rgba(129,140,248,0.15) 0%, transparent 70%)", animation: "float 6s ease-in-out infinite" }} />
         <div style={{ position: "absolute", bottom: -20, left: -20, width: 80, height: 80, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)", animation: "float 8s ease-in-out infinite 1s" }} />
         <div style={{ padding: isMobile ? "20px 16px" : "24px 28px", display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: "center", gap: isMobile ? 16 : 24, position: "relative", zIndex: 1 }}>
-          <div style={{ flex: "0 0 auto", textAlign: "center", minWidth: 200 }}>
+          <div style={{ flex: "0 0 auto", textAlign: "center", minWidth: isMobile ? undefined : 200 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 14px", borderRadius: 99, background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.2)", marginBottom: 8 }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
               <span style={{ fontSize: 12, fontWeight: 700, color: "#34d399", letterSpacing: "0.05em" }}>YOU SAVE</span>
             </div>
-            <div className="sc3-pop" key={Math.round(c.sM)} style={{ fontFamily: HF, fontSize: 52, fontWeight: 800, background: "linear-gradient(135deg, #34d399, #6ee7b7, #34d399)", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "shimmer 4s ease-in-out infinite", lineHeight: 1 }}><AnimNum value={c.sM} /></div>
+            <div className="sc3-pop" key={Math.round(c.sM)} style={{ fontFamily: HF, fontSize: isMobile ? 40 : 52, fontWeight: 800, background: "linear-gradient(135deg, #34d399, #6ee7b7, #34d399)", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "shimmer 4s ease-in-out infinite", lineHeight: 1 }}><AnimNum value={c.sM} /></div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", fontWeight: 500, marginTop: 4 }}>every month</div>
           </div>
-          {!isMobile && <div style={{ width: 1, height: 80, background: "rgba(255,255,255,0.08)", flexShrink: 0 }} />}
-          <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-            <div style={{ textAlign: "center", padding: "12px 0", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.04)" }}><div style={{ fontFamily: HF, fontSize: 26, fontWeight: 800, color: "white" }}>{c.mult === Infinity ? "∞" : `${c.mult.toFixed(1)}x`}</div><div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>cheaper</div></div>
-            <div style={{ textAlign: "center", padding: "12px 0", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.04)" }}><div style={{ fontFamily: HF, fontSize: 26, fontWeight: 800, color: "white" }}>{c.pct.toFixed(0)}%</div><div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>less cost</div></div>
-            <div style={{ textAlign: "center", padding: "12px 0", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.04)" }}><div style={{ fontFamily: HF, fontSize: 26, fontWeight: 800, color: "white" }}><AnimNum value={c.sM * 12} /></div><div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>saved / year</div></div>
+          {isMobile ? <div style={{ width: "80%", height: 1, background: "rgba(255,255,255,0.08)", flexShrink: 0 }} /> : <div style={{ width: 1, height: 80, background: "rgba(255,255,255,0.08)", flexShrink: 0 }} />}
+          <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: isMobile ? 8 : 12, width: isMobile ? "100%" : undefined }}>
+            <div style={{ textAlign: "center", padding: isMobile ? "10px 0" : "12px 0", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.04)" }}><div style={{ fontFamily: HF, fontSize: isMobile ? 20 : 26, fontWeight: 800, color: "white" }}>{c.mult === Infinity ? "∞" : `${c.mult.toFixed(1)}x`}</div><div style={{ fontSize: isMobile ? 10 : 11, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>cheaper</div></div>
+            <div style={{ textAlign: "center", padding: isMobile ? "10px 0" : "12px 0", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.04)" }}><div style={{ fontFamily: HF, fontSize: isMobile ? 20 : 26, fontWeight: 800, color: "white" }}>{c.pct.toFixed(0)}%</div><div style={{ fontSize: isMobile ? 10 : 11, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>less cost</div></div>
+            <div style={{ textAlign: "center", padding: isMobile ? "10px 0" : "12px 0", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.04)" }}><div style={{ fontFamily: HF, fontSize: isMobile ? 20 : 26, fontWeight: 800, color: "white" }}><AnimNum value={c.sM * 12} /></div><div style={{ fontSize: isMobile ? 10 : 11, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>saved / year</div></div>
           </div>
         </div>
       </div>

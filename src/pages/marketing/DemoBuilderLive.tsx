@@ -250,12 +250,12 @@ export default function DemoBuilderLive() {
       )}
 
       {/* ═══ DRAWER OVERLAY ═══ */}
-      {drawerOpen && <div className="demo-overlay" onClick={closeDrawer} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 40 }} />}
+      {drawerOpen && <div className="demo-overlay" onClick={closeDrawer} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 998 }} />}
 
       {/* ═══ CUSTOMIZATION DRAWER — 50% wider ═══ */}
       {drawerOpen && (
         <div className={`demo-drawer ${closing ? "demo-drawer-close" : "demo-drawer-open"}`}
-          style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 420, maxWidth: "100vw", background: "#fff", zIndex: 45, boxShadow: "8px 0 40px rgba(0,0,0,0.12)", display: "flex", flexDirection: "column" }}>
+          style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 420, maxWidth: "100vw", background: "#fff", zIndex: 999, boxShadow: "8px 0 40px rgba(0,0,0,0.12)", display: "flex", flexDirection: "column" }}>
 
           {/* Header */}
           <div className="demo-drawer-header" style={{ padding: "20px 22px 16px", borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>

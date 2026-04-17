@@ -101,7 +101,7 @@ export const Toolbox: React.FC<ToolboxProps> = ({ onToolClick, hasImages, varian
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex items-center justify-between sm:justify-center gap-0 sm:gap-4 md:gap-6 lg:gap-8 py-2">
+      <div className="grid grid-cols-4 gap-3 sm:flex sm:items-center sm:justify-center sm:gap-4 md:gap-6 lg:gap-8 py-2">
         {tools.filter(tool => !hiddenTools.includes(tool.id)).map((tool) => {
           const isDisabled = !tool.enabled;
           const needsImages = tool.id !== "guide" && tool.id !== "type-text" && !hasImages && tool.enabled;
@@ -113,7 +113,7 @@ export const Toolbox: React.FC<ToolboxProps> = ({ onToolClick, hasImages, varian
                   onClick={() => handleClick(tool)}
                   disabled={isDisabled}
                   className={`
-                    flex flex-col items-center gap-1 sm:gap-1.5 group transition-all duration-300 flex-shrink-0
+                    flex flex-col items-center gap-1 sm:gap-1.5 group transition-all duration-300 sm:flex-shrink-0
                     ${isDisabled ? "cursor-not-allowed" : "cursor-pointer"}
                   `}
                 >

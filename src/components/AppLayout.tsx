@@ -1,5 +1,6 @@
 import { AppSidebar } from "./AppSidebar";
 import { OnboardingModal } from "./OnboardingModal";
+import { FreeTrialClaimDialog } from "./FreeTrialClaimDialog";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface AppLayoutProps {
@@ -32,6 +33,9 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Onboarding modal — blocks app until business details are provided */}
       {showOnboarding && <OnboardingModal />}
+
+      {/* Free trial claim dialog — shows after onboarding when credits not yet claimed */}
+      {!showOnboarding && <FreeTrialClaimDialog />}
     </div>
   );
 };
