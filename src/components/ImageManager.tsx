@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
-import { Copy, Trash2, Pencil, Grid3X3, LayoutGrid, List, ChevronDown, Info } from "lucide-react";
+import { Copy, Trash2, Pencil, Grid3X3, LayoutGrid, List, ChevronDown, Info, Minus, Plus } from "lucide-react";
 import { ImageObject } from "./CollageCreator";
 import { toast } from "sonner";
 import { ImageDimension } from "@/utils/layoutAlgorithm";
@@ -87,6 +87,7 @@ export const ImageManager = ({
   const [inputValues, setInputValues] = useState<Map<string, { width: string; height: string }>>(new Map());
   const [thumbnailBg, setThumbnailBg] = useState<PreviewBackground>('transparent');
   const [viewMode, setViewMode] = useState<ViewMode>('grid-4');
+  const [copyQuantities, setCopyQuantities] = useState<Map<string, number>>(new Map());
   // Use ref to track image URLs (avoids stale closure issues)
   const imageUrlsRef = useRef<Map<string, string>>(new Map());
   // Track temporary URLs created from File objects (for cleanup)
@@ -459,6 +460,87 @@ export const ImageManager = ({
     
     onImagesAdded([newImageObject]);
     toast.success(`Image duplicated`);
+  };
+
+  const getCopyQuantity = (id: string): number => copyQuantities.get(id) || 1;
+
+  const setCopyQuantity = (id: string, value: number) => {
+    const clamped = Math.max(1, Math.min(80, value));
+    setCopyQuantities(prev => {
+      const next = new Map(prev);
+      next.set(id, clamped);
+      return next;
+    });
+  };
+
+  const handleMultiCopy = (id: string) => {
+    const count = getCopyQuantity(id);
+    const imageToCopy = images.find(img => img.id === id);
+    if (!imageToCopy) return;
+
+    const dimensions = imageDimensions.get(id);
+    if (!dimensions) return;
+
+    const originalFileName = imageToCopy.file.name;
+    const fileExtension = originalFileName.substring(originalFileName.lastIndexOf('.'));
+    const baseName = originalFileName.substring(0, originalFileName.lastIndexOf('.'));
+
+    const newImages: ImageObject[] = [];
+    const newDimensions = new Map(imageDimensions);
+    const newAspectRatioLocks = new Map(aspectRatioLocked);
+    const newInputVals = new Map(inputValues);
+
+    // Count existing copies to start numbering from the right place
+    let existingCopies = images.filter(img =>
+      img.file.name.startsWith(baseName) &&
+      (img.file.name === originalFileName || img.file.name.match(new RegExp(`${baseName}_\\d{2}${fileExtension.replace('.', '\\.')}$`)))
+    ).length;
+
+    for (let i = 0; i < count; i++) {
+      const copyNumber = (existingCopies + i).toString().padStart(2, '0');
+      const newFileName = `${baseName}_${copyNumber}${fileExtension}`;
+      const newId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${i}`;
+      const newFile = new File([imageToCopy.file], newFileName, { type: imageToCopy.file.type });
+
+      newImages.push({
+        id: newId,
+        file: newFile,
+        url: imageToCopy.url,
+        thumbnailUrl: imageToCopy.thumbnailUrl
+      });
+
+      newDimensions.set(newId, { ...dimensions });
+      newAspectRatioLocks.set(newId, aspectRatioLocked.get(id) || true);
+      newInputVals.set(newId, {
+        width: inchesToDisplay(dimensions.width),
+        height: inchesToDisplay(dimensions.height)
+      });
+    }
+
+    setImageDimensions(newDimensions);
+    setAspectRatioLocked(newAspectRatioLocks);
+    setInputValues(newInputVals);
+
+    // Notify parent about new dimensions
+    const dimensionsArray: ImageDimension[] = [];
+    newDimensions.forEach((dims, imgId) => {
+      dimensionsArray.push({
+        id: imgId,
+        widthInches: dims.width,
+        heightInches: dims.height
+      });
+    });
+    onImageDimensionsChanged(dimensionsArray);
+
+    onImagesAdded(newImages);
+    toast.success(`${count} ${count === 1 ? 'copy' : 'copies'} added`);
+
+    // Reset quantity back to 1
+    setCopyQuantities(prev => {
+      const next = new Map(prev);
+      next.set(id, 1);
+      return next;
+    });
   };
 
   const handleInputChange = (id: string, dimension: 'width' | 'height', value: string) => {
@@ -862,13 +944,40 @@ export const ImageManager = ({
                             Edit Image
                           </button>
                         )}
-                        <button
-                          onClick={() => handleCopyImage(image.id)}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
-                          title="Duplicate"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => setCopyQuantity(image.id, getCopyQuantity(image.id) - 1)}
+                            className="w-6 h-6 flex items-center justify-center border border-gray-300 bg-white rounded-l-md hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            disabled={getCopyQuantity(image.id) <= 1}
+                          >
+                            <Minus className="h-2.5 w-2.5 text-gray-500" />
+                          </button>
+                          <input
+                            type="text"
+                            value={getCopyQuantity(image.id)}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              if (!isNaN(val)) setCopyQuantity(image.id, val);
+                              else if (e.target.value === '') setCopyQuantity(image.id, 1);
+                            }}
+                            className="w-8 h-6 text-center text-xs font-medium border-t border-b border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <button
+                            onClick={() => setCopyQuantity(image.id, getCopyQuantity(image.id) + 1)}
+                            className="w-6 h-6 flex items-center justify-center border border-gray-300 bg-white rounded-r-md hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            disabled={getCopyQuantity(image.id) >= 80}
+                          >
+                            <Plus className="h-2.5 w-2.5 text-gray-500" />
+                          </button>
+                          <button
+                            onClick={() => handleMultiCopy(image.id)}
+                            className="h-6 px-2.5 text-xs font-semibold text-white rounded-md transition-colors hover:opacity-90"
+                            style={{ backgroundColor: primaryColor || '#4f46e5' }}
+                            title="Add copies"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </button>
+                        </div>
                         <button
                           onClick={() => onImagesRemoved([image.id])}
                           className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 transition-colors"
@@ -1035,6 +1144,45 @@ export const ImageManager = ({
                     <span className="text-sm text-gray-700 select-none">Lock Aspect Ratio</span>
                   </div>
 
+                  {/* Copies row */}
+                  <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-gray-50 rounded-lg">
+                    <Copy className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    <span className="text-sm text-gray-500">Copies</span>
+                    <div className="flex items-center ml-auto">
+                      <button
+                        onClick={() => setCopyQuantity(image.id, getCopyQuantity(image.id) - 1)}
+                        className="w-7 h-7 flex items-center justify-center border border-gray-300 bg-white rounded-l-md hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        disabled={getCopyQuantity(image.id) <= 1}
+                      >
+                        <Minus className="h-3 w-3 text-gray-500" />
+                      </button>
+                      <input
+                        type="text"
+                        value={getCopyQuantity(image.id)}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          if (!isNaN(val)) setCopyQuantity(image.id, val);
+                          else if (e.target.value === '') setCopyQuantity(image.id, 1);
+                        }}
+                        className="w-10 h-7 text-center text-sm font-medium border-t border-b border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <button
+                        onClick={() => setCopyQuantity(image.id, getCopyQuantity(image.id) + 1)}
+                        className="w-7 h-7 flex items-center justify-center border border-gray-300 bg-white rounded-r-md hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        disabled={getCopyQuantity(image.id) >= 80}
+                      >
+                        <Plus className="h-3 w-3 text-gray-500" />
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => handleMultiCopy(image.id)}
+                      className="h-7 px-3 text-xs font-semibold text-white rounded-md transition-colors hover:opacity-90"
+                      style={{ backgroundColor: primaryColor || '#4f46e5' }}
+                    >
+                      Add
+                    </button>
+                  </div>
+
                   {/* Action buttons - single row */}
                   <div className="flex gap-2">
                     {onEditImage && (
@@ -1046,13 +1194,6 @@ export const ImageManager = ({
                         Edit
                       </button>
                     )}
-                    <button
-                      onClick={() => handleCopyImage(image.id)}
-                      className="flex-[2] flex items-center justify-center gap-1.5 h-9 px-3 text-sm font-semibold text-gray-800 border-[1.5px] border-gray-200 bg-transparent rounded-full group-hover:bg-white hover:border-indigo-600 hover:text-indigo-600 hover:bg-indigo-600/[0.04] hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-all duration-200"
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                      Duplicate
-                    </button>
                     <button
                       onClick={() => onImagesRemoved([image.id])}
                       className="flex-[1] flex items-center justify-center h-9 text-gray-500 bg-transparent border-[1.5px] border-gray-200 rounded-full group-hover:bg-white hover:border-red-400 hover:text-red-500 hover:bg-red-500/[0.04] hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-all duration-200"
