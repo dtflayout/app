@@ -136,13 +136,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `svg\r\n`
     ));
 
-    // Processing palette part
-    parts.push(Buffer.from(
-      `--${boundary}\r\n` +
-      `Content-Disposition: form-data; name="processing.palette"\r\n\r\n` +
-      `auto\r\n`
-    ));
-
     // End boundary
     parts.push(Buffer.from(`--${boundary}--\r\n`));
 
