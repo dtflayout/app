@@ -20,6 +20,7 @@ import {
   Globe,
   Store,
   Settings,
+  Wand2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,8 @@ interface MenuItem {
   icon: React.ReactNode;
   path?: string;
   badge?: string;
+  /** Badge color. Defaults to "new" (orange). */
+  badgeVariant?: "new" | "soon";
   submenu?: { label: string; icon: React.ReactNode; path: string }[];
 }
 
@@ -51,14 +54,11 @@ const menuItems: MenuItem[] = [
     path: "/app/image-enhancer",
   },
   {
-    label: "History",
-    icon: <FileText className="w-5 h-5 flex-shrink-0" />,
-    path: "/logs",
-  },
-  {
-    label: "Billing",
-    icon: <CreditCard className="w-5 h-5 flex-shrink-0" />,
-    path: "/billing",
+    label: "Order Automation",
+    icon: <Wand2 className="w-5 h-5 flex-shrink-0" />,
+    path: "/app/order-automation",
+    badge: "Soon",
+    badgeVariant: "soon",
   },
   {
     label: "Website Integration",
@@ -70,6 +70,17 @@ const menuItems: MenuItem[] = [
     icon: <Store className="w-5 h-5 flex-shrink-0" />,
     path: "/app/quick-store",
     badge: "New",
+  },
+  // ── Account / admin (last 4) ──────────────────────────────────────────────
+  {
+    label: "History",
+    icon: <FileText className="w-5 h-5 flex-shrink-0" />,
+    path: "/logs",
+  },
+  {
+    label: "Billing",
+    icon: <CreditCard className="w-5 h-5 flex-shrink-0" />,
+    path: "/billing",
   },
   {
     label: "Settings",
@@ -283,9 +294,16 @@ export const AppSidebar = () => {
                   "transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap",
                   isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
                 )}>{item.label}</span>
-                {/* Badge for New items */}
+                {/* Badge for New / Coming Soon items */}
                 {item.badge && isExpanded && (
-                  <span className="ml-auto px-2 py-0.5 text-xs font-medium bg-orange-500/20 text-orange-400 rounded-full">
+                  <span
+                    className={cn(
+                      "ml-auto px-2 py-0.5 text-xs font-medium rounded-full",
+                      item.badgeVariant === "soon"
+                        ? "bg-emerald-500/20 text-emerald-300"
+                        : "bg-orange-500/20 text-orange-400"
+                    )}
+                  >
                     {item.badge}
                   </span>
                 )}
@@ -433,9 +451,16 @@ export const AppSidebar = () => {
               >
                 {item.icon}
                 <span>{item.label}</span>
-                {/* Badge for New items */}
+                {/* Badge for New / Coming Soon items */}
                 {item.badge && (
-                  <span className="ml-auto px-2 py-0.5 text-xs font-medium bg-orange-500/20 text-orange-400 rounded-full">
+                  <span
+                    className={cn(
+                      "ml-auto px-2 py-0.5 text-xs font-medium rounded-full",
+                      item.badgeVariant === "soon"
+                        ? "bg-emerald-500/20 text-emerald-300"
+                        : "bg-orange-500/20 text-orange-400"
+                    )}
+                  >
                     {item.badge}
                   </span>
                 )}

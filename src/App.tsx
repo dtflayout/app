@@ -18,6 +18,7 @@ import Billing from "./pages/Billing";
 import Support from "./pages/Support";
 import Settings from "./pages/Settings";
 import ImageEnhancerPage from "./pages/ImageEnhancerPage";
+import OrderAutomation from "./pages/OrderAutomation";
 import WebsiteIntegrationLayout from "./pages/website-integration/WebsiteIntegrationLayout";
 import StoreSetup from "./pages/website-integration/StoreSetup";
 import Products from "./pages/website-integration/Products";
@@ -43,6 +44,7 @@ import DemoBuilder from "./pages/marketing/DemoBuilder";
 import DemoWebsiteIntegration from "./pages/marketing/DemoWebsiteIntegration";
 import DemoBuilderLive from "./pages/marketing/DemoBuilderLive";
 import SavingsCalculatorPage from "./pages/marketing/SavingsCalculatorPage";
+import MarketingOrderAutomation from "./pages/marketing/OrderAutomation";
 
 // Quick Store Dashboard Pages (Printer side)
 import {
@@ -123,6 +125,7 @@ const AppContent = () => {
         <Route path="/product/gang-sheet-builder" element={<GangSheetBuilder />} />
         <Route path="/product/website-integration" element={<WebsiteIntegration />} />
         <Route path="/product/quick-store" element={<QuickStore />} />
+        <Route path="/product/order-automation" element={<MarketingOrderAutomation />} />
         <Route path="/product" element={<GangSheetBuilder />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/contact" element={<Contact />} />
@@ -211,6 +214,14 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <ImageEnhancerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/order-automation"
+          element={
+            <ProtectedRoute>
+              <OrderAutomation />
             </ProtectedRoute>
           }
         />
