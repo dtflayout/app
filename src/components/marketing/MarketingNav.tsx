@@ -11,10 +11,11 @@ const chevIcon = (
   </svg>
 );
 
-const productDropdownItems = [
+const productDropdownItems: { l: string; d: string; to: string; badge?: string }[] = [
   { l: "Gang Sheet Builder", d: "Auto-layout optimized gang sheets", to: "/product/gang-sheet-builder" },
   { l: "Website Integration", d: "Embed builder on any website", to: "/product/website-integration" },
   { l: "Quick Store", d: "Full storefront, zero coding", to: "/product/quick-store" },
+  { l: "Order Automation", d: "Daily orders → gang sheet in seconds", to: "/product/order-automation", badge: "Soon" },
 ];
 
 const navLinks = [
@@ -77,8 +78,23 @@ export default function MarketingNav() {
                         <Link key={i} to={it.to} style={{ padding: "10px 12px", borderRadius: 10, display: "block", textDecoration: "none" }}
                           onMouseEnter={(e: any) => e.currentTarget.style.background = "#EEF2FF"}
                           onMouseLeave={(e: any) => e.currentTarget.style.background = "transparent"}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{it.l}</div>
-                          <div style={{ fontSize: 10, color: "#6B7280" }}>{it.d}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{it.l}</span>
+                            {it.badge && (
+                              <span style={{
+                                fontSize: 9,
+                                fontWeight: 700,
+                                letterSpacing: "0.06em",
+                                textTransform: "uppercase",
+                                padding: "2px 7px",
+                                borderRadius: 99,
+                                background: "rgba(16,185,129,0.12)",
+                                color: "#047857",
+                                border: "1px solid rgba(16,185,129,0.25)",
+                              }}>{it.badge}</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 10, color: "#6B7280", marginTop: 2 }}>{it.d}</div>
                         </Link>
                       ))}
                     </div>
@@ -124,7 +140,22 @@ export default function MarketingNav() {
               <div style={{ fontSize: 18, fontWeight: 600, fontFamily: HF, color: "#fff", padding: "14px 0 8px" }}>Product</div>
               {productDropdownItems.map((it, i) => (
                 <Link key={i} to={it.to} style={{ display: "block", padding: "10px 16px", textDecoration: "none", borderRadius: 10, marginBottom: 2 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: "#C7D2FE" }}>{it.l}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: "#C7D2FE" }}>{it.l}</span>
+                    {it.badge && (
+                      <span style={{
+                        fontSize: 9,
+                        fontWeight: 700,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        padding: "2px 7px",
+                        borderRadius: 99,
+                        background: "rgba(16,185,129,0.18)",
+                        color: "#6EE7B7",
+                        border: "1px solid rgba(16,185,129,0.3)",
+                      }}>{it.badge}</span>
+                    )}
+                  </div>
                   <div style={{ fontSize: 12, color: "rgba(165,180,252,0.6)", marginTop: 2 }}>{it.d}</div>
                 </Link>
               ))}

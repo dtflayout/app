@@ -53,7 +53,7 @@ const MarketingLayout = ({ children }: MarketingLayoutProps) => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col overflow-x-hidden">
       <header
         className={`sticky top-0 z-50 w-full bg-white/90 backdrop-blur-lg border-b border-gray-200/50 transition-all duration-300 ${
           isScrolled ? "shadow-lg" : "shadow-sm"

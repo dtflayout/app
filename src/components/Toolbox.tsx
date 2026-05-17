@@ -1,8 +1,8 @@
 import React from "react";
-import { Scissors, Pipette, Sparkles, BookOpen, Circle, Replace, RotateCw, Type } from "lucide-react";
+import { Scissors, Pipette, Sparkles, BookOpen, Replace, RotateCw, Type, CircleDashed, Wand2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-export type ToolType = "trim" | "flip-rotate" | "remove-bg" | "replace-color" | "enhance" | "type-text" | "guide" | "create";
+export type ToolType = "trim" | "flip-rotate" | "remove-bg" | "replace-color" | "enhance" | "type-text" | "guide" | "halftone" | "ai-tools" | "create";
 
 interface Tool {
   id: ToolType;
@@ -64,12 +64,18 @@ const tools: Tool[] = [
     enabled: true,
   },
   {
-    id: "create",
-    label: "Coming Soon",
-    icon: <Circle className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />,
-    bgColor: "bg-gray-200",
-    enabled: false,
-    comingSoon: true,
+    id: "halftone",
+    label: "Halftone",
+    icon: <CircleDashed className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2.5} />,
+    bgColor: "bg-violet-500 hover:bg-violet-600",
+    enabled: true,
+  },
+  {
+    id: "ai-tools",
+    label: "AI Tools",
+    icon: <Wand2 className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2.5} />,
+    bgColor: "bg-gradient-to-br from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600",
+    enabled: true,
   },
 ];
 

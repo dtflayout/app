@@ -36,6 +36,7 @@ import {
   FlipHorizontal2,
   FlipVertical2,
   RotateCw,
+  CircleDashed,
 } from "lucide-react";
 import { PreviewBackgroundToggle, PreviewBackground, getPreviewBackgroundStyle } from "./PreviewBackgroundToggle";
 
@@ -63,8 +64,20 @@ import {
   hasChanges,
 } from "@/utils/imageEnhancementUtils";
 import { generateThumbnail } from "@/utils/thumbnailUtils";
+import {
+  HalftoneSettings,
+  HalftoneAnalysis,
+  defaultHalftoneSettings,
+  halftonePresets,
+  generateHalftonePreview,
+  applyPreset,
+  strengthToLevels,
+  hasHalftoneChanges,
+  HalftoneMode,
+  DotShape,
+} from "@/utils/halftoneUtils";
 
-export type EditTool = "trim" | "flip-rotate" | "remove-bg" | "replace-color" | "enhance" | "stroke" | "eraser";
+export type EditTool = "trim" | "flip-rotate" | "remove-bg" | "replace-color" | "enhance" | "stroke" | "eraser" | "halftone";
 
 type UndoEntry = {
   baseBlob: Blob;
@@ -75,6 +88,8 @@ type UndoEntry = {
   eraserCanvasBlob: Blob | null;
   strokeApplied: boolean;
   strokeCanvasBlob: Blob | null;
+  halftoneSettings: HalftoneSettings;
+  halftoneCanvasBlob: Blob | null;
 };
 
 interface EditImageModalProps {
@@ -168,12 +183,22 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
   const [isApplyingStroke, setIsApplyingStroke] = useState(false);
   const strokeCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  // ============ HALFTONE TOOL STATE ============
+  const [halftoneSettings, setHalftoneSettings] = useState<HalftoneSettings>(defaultHalftoneSettings);
+  const [halftoneAnalysis, setHalftoneAnalysis] = useState<HalftoneAnalysis | null>(null);
+  const halftoneCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [halftoneMode, setHalftoneMode] = useState<'easy' | 'pro'>('easy');
+  const [halftonePresetName, setHalftonePresetName] = useState<string>('Soft hand');
+  const [halftoneStrength, setHalftoneStrength] = useState(50);
+  const [garmentColor, setGarmentColor] = useState<string | null>(null);
+
   // ============ PIPELINE STATE (commit-on-switch) ============
   // Refs to capture tool results - persist even when tool state is reset
   const bgResultRef = useRef<HTMLCanvasElement | null>(null);
   const enhanceResultRef = useRef<HTMLCanvasElement | null>(null);
   const strokeResultRef = useRef<HTMLCanvasElement | null>(null);
   const eraserResultRef = useRef<HTMLCanvasElement | null>(null);
+  const halftoneResultRef = useRef<HTMLCanvasElement | null>(null);
   // Track previous tool for commit detection
   const prevToolRef = useRef<EditTool>(initialTool);
   // Flag to prevent tool effects from running during commit
@@ -368,6 +393,15 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
     eraserCursorPos.current = null;
   };
 
+  const resetHalftoneState = () => {
+    setHalftoneSettings(defaultHalftoneSettings);
+    setHalftoneAnalysis(null);
+    setHalftoneStrength(50);
+    setHalftonePresetName('Soft hand');
+    setGarmentColor(null);
+    halftoneCanvasRef.current = null;
+  };
+
   // Calculate display scale
   const getDisplayScale = useCallback(() => {
     if (imageSize.width === 0 || imageSize.height === 0) return 1;
@@ -395,7 +429,11 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
     canvas.height = displayHeight;
 
     // Draw background
-    if (previewBg === "grey") {
+    // When halftone tool is active and garment color is set, use garment color
+    if (activeTool === "halftone" && garmentColor) {
+      ctx.fillStyle = garmentColor;
+      ctx.fillRect(0, 0, displayWidth, displayHeight);
+    } else if (previewBg === "grey") {
       ctx.fillStyle = "#808080";
       ctx.fillRect(0, 0, displayWidth, displayHeight);
     } else if (previewBg === "black") {
@@ -425,6 +463,8 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
       ctx.drawImage(strokeCanvasRef.current, 0, 0, displayWidth, displayHeight);
     } else if (activeTool === "enhance" && colorAdjustedCanvasRef.current) {
       ctx.drawImage(colorAdjustedCanvasRef.current, 0, 0, displayWidth, displayHeight);
+    } else if (activeTool === "halftone" && halftoneCanvasRef.current && !showOriginal) {
+      ctx.drawImage(halftoneCanvasRef.current, 0, 0, displayWidth, displayHeight);
     } else {
       ctx.drawImage(originalImageRef.current, 0, 0, displayWidth, displayHeight);
     }
@@ -482,12 +522,12 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
         ctx.strokeRect(h.x - edgeSize, h.y - edgeSize, edgeSize * 2, edgeSize * 2);
       });
     }
-  }, [activeTool, getDisplayScale, imageSize, previewBg, trimBounds, trimDetection, bgPreviewCanvas, selectedColors.length, showOriginal, strokeApplied]);
+  }, [activeTool, getDisplayScale, imageSize, previewBg, garmentColor, trimBounds, trimDetection, bgPreviewCanvas, selectedColors.length, showOriginal, strokeApplied]);
 
   // Redraw when relevant state changes
   useEffect(() => {
     drawDisplayCanvas();
-  }, [drawDisplayCanvas, zoomLevel, previewBg, trimBounds, bgPreviewCanvas, showOriginal, enhanceSettings, strokeApplied]);
+  }, [drawDisplayCanvas, zoomLevel, previewBg, garmentColor, trimBounds, bgPreviewCanvas, showOriginal, enhanceSettings, strokeApplied, halftoneSettings]);
 
   // Ensure canvas is redrawn after processing completes (fixes blank canvas on tool switch)
   const prevProcessingRef = useRef(isProcessing);
@@ -520,6 +560,8 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
       resultCanvas = strokeResultRef.current;
     } else if (prevTool === "eraser" && eraserResultRef.current) {
       resultCanvas = eraserResultRef.current;
+    } else if (prevTool === "halftone" && halftoneResultRef.current) {
+      resultCanvas = halftoneResultRef.current;
     }
     // Trim doesn't produce a live canvas - it only crops on Apply
 
@@ -573,6 +615,7 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
         enhanceResultRef.current = null;
         strokeResultRef.current = null;
         eraserResultRef.current = null;
+        halftoneResultRef.current = null;
 
         if (prevTool === "remove-bg" || prevTool === "replace-color") {
           setSelectedColors([]);
@@ -587,6 +630,8 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
           strokeCanvasRef.current = null;
         } else if (prevTool === "eraser") {
           eraserCanvasRef.current = null;
+        } else if (prevTool === "halftone") {
+          resetHalftoneState();
         }
 
         // End commit
@@ -668,6 +713,34 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
 
     return () => { clearTimeout(debounce); };
   }, [activeTool, workingUrl, imageSize.width, enhanceSettings]);
+
+  // Halftone preview generation
+  useEffect(() => {
+    if (isCommittingRef.current || isApplyingRef.current) return;
+    if (activeTool !== "halftone" || !workingUrl || imageSize.width === 0) return;
+
+    const debounce = setTimeout(async () => {
+      setIsProcessing(true);
+      try {
+        const { canvas, analysis } = await generateHalftonePreview(workingUrl, halftoneSettings);
+        halftoneCanvasRef.current = canvas;
+        halftoneResultRef.current = canvas;
+        setHalftoneAnalysis(analysis);
+
+        if (hasHalftoneChanges(halftoneSettings)) {
+          setHasUnsavedChanges(true);
+        }
+
+        drawDisplayCanvas();
+      } catch (error) {
+        console.error("Halftone generation failed:", error);
+      } finally {
+        setIsProcessing(false);
+      }
+    }, 150);
+
+    return () => { clearTimeout(debounce); };
+  }, [activeTool, workingUrl, imageSize.width, halftoneSettings]);
 
   // ============ ERASER: Initialize eraser canvas when switching to eraser ============
   useEffect(() => {
@@ -1067,6 +1140,8 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
         resultCanvas = strokeCanvasRef.current;
       } else if (activeTool === "eraser" && eraserCanvasRef.current) {
         resultCanvas = eraserCanvasRef.current;
+      } else if (activeTool === "halftone" && halftoneCanvasRef.current) {
+        resultCanvas = halftoneCanvasRef.current;
       }
 
       // Pipeline fallback: if current tool has no specific result but we have
@@ -1213,6 +1288,8 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
     const capturedStrokeApplied = strokeApplied;
     const eraserCanvas = eraserCanvasRef.current;
     const strokeCanvas = strokeCanvasRef.current;
+    const capturedHalftoneSettings = { ...halftoneSettings };
+    const halftoneCanvas = halftoneCanvasRef.current;
 
     const img = originalImageRef.current;
     const c = document.createElement("canvas");
@@ -1226,7 +1303,8 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
       canvasToBlob(c),
       canvasToBlob(eraserCanvas),
       capturedStrokeApplied ? canvasToBlob(strokeCanvas) : Promise.resolve(null),
-    ]).then(([baseBlob, eraserBlob, strokeBlob]) => {
+      canvasToBlob(halftoneCanvas),
+    ]).then(([baseBlob, eraserBlob, strokeBlob, halftoneBlob]) => {
       if (!baseBlob) return;
 
       const entry: UndoEntry = {
@@ -1238,6 +1316,8 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
         eraserCanvasBlob: eraserBlob,
         strokeApplied: capturedStrokeApplied,
         strokeCanvasBlob: strokeBlob,
+        halftoneSettings: capturedHalftoneSettings,
+        halftoneCanvasBlob: halftoneBlob,
       };
 
       const stack = undoStackRef.current;
@@ -1246,7 +1326,7 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
       undoStackRef.current = stack;
       setCanUndo(true);
     });
-  }, [selectedColors, replacementColor, enhanceSettings, strokeApplied]);
+  }, [selectedColors, replacementColor, enhanceSettings, strokeApplied, halftoneSettings]);
 
   // ============ FLIP/ROTATE: Apply transform to base image ============
   type TransformType = "flip-h" | "flip-v" | "rotate-cw" | "rotate-ccw" | "rotate-180";
@@ -1383,10 +1463,12 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
       resetEnhanceState();
       resetStrokeState();
       resetEraserState();
+      resetHalftoneState();
       bgResultRef.current = null;
       enhanceResultRef.current = null;
       strokeResultRef.current = null;
       eraserResultRef.current = null;
+      halftoneResultRef.current = null;
       committedCanvasRef.current = null;
 
       // Rebuild base image refs
@@ -1436,6 +1518,23 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
         strokeCanvasRef.current = sc;
         strokeResultRef.current = sc;
         setStrokeApplied(true);
+      }
+
+      // Restore halftone state
+      setHalftoneSettings(entry.halftoneSettings);
+      if (entry.halftoneCanvasBlob) {
+        const htImg = await blobToImage(entry.halftoneCanvasBlob);
+        const hc = document.createElement("canvas");
+        hc.width = htImg.naturalWidth;
+        hc.height = htImg.naturalHeight;
+        const hctx = hc.getContext("2d");
+        if (hctx) hctx.drawImage(htImg, 0, 0);
+        halftoneCanvasRef.current = hc;
+        halftoneResultRef.current = hc;
+      } else {
+        halftoneCanvasRef.current = null;
+        halftoneResultRef.current = null;
+        setHalftoneAnalysis(null);
       }
 
       setHasUnsavedChanges(true);
@@ -2074,6 +2173,371 @@ export const EditImageModal: React.FC<EditImageModalProps> = ({
                         Reset Stroke
                       </Button>
                     )}
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Subtle divider */}
+                <div className="mx-4 border-b border-gray-100" />
+
+                {/* HALFTONE TOOL */}
+                <AccordionItem value="halftone" className="border-none">
+                  <AccordionTrigger className="px-4 py-4 rounded-xl mx-0 hover:no-underline hover:bg-gray-50 [&[data-state=open]]:bg-violet-50/60 [&[data-state=open]]:rounded-b-none transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-violet-100 flex items-center justify-center">
+                        <CircleDashed className="w-[18px] h-[18px] text-violet-600" />
+                      </div>
+                      <span className="text-[15px] font-semibold text-gray-800">Halftone</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-5 pt-2 mx-0 bg-violet-50/60 rounded-b-xl space-y-4">
+                    {/* Mode toggle: Easy / Pro */}
+                    <div className="flex bg-white/80 rounded-lg p-1 border border-gray-100">
+                      <button
+                        onClick={() => setHalftoneMode('easy')}
+                        className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${
+                          halftoneMode === 'easy' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        Easy
+                      </button>
+                      <button
+                        onClick={() => setHalftoneMode('pro')}
+                        className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${
+                          halftoneMode === 'pro' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        Pro
+                      </button>
+                    </div>
+
+                    {/* ─── EASY MODE ─── */}
+                    {halftoneMode === 'easy' && (
+                      <>
+                        <div className="bg-white/80 rounded-xl p-3 border border-gray-100 shadow-sm text-[12px] text-gray-500 leading-relaxed">
+                          Pick a style, adjust strength. We handle the rest.
+                        </div>
+
+                        {/* Presets grid */}
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {halftonePresets.map((preset) => (
+                            <button
+                              key={preset.name}
+                              onClick={() => {
+                                setHalftonePresetName(preset.name);
+                                const levels = strengthToLevels(halftoneStrength);
+                                const newSettings = applyPreset(preset.name, {
+                                  ...halftoneSettings,
+                                  ...levels,
+                                });
+                                setHalftoneSettings(newSettings);
+                              }}
+                              className={`text-left p-2.5 rounded-lg border text-[11px] transition-colors ${
+                                halftonePresetName === preset.name
+                                  ? 'border-violet-400 bg-violet-50 text-violet-700'
+                                  : 'border-gray-100 bg-white/80 text-gray-600 hover:border-gray-200'
+                              }`}
+                            >
+                              <span className="font-medium block leading-tight">{preset.name}</span>
+                              <span className="text-[10px] opacity-70">{preset.description}</span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Strength slider */}
+                        <div className="space-y-2">
+                          <Label className="text-[13px] text-gray-600 font-medium">Strength</Label>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-gray-400 w-12">More solid</span>
+                            <Slider
+                              value={[halftoneStrength]}
+                              onValueChange={([v]) => {
+                                setHalftoneStrength(v);
+                                const levels = strengthToLevels(v);
+                                setHalftoneSettings(prev => ({ ...prev, ...levels }));
+                              }}
+                              min={0}
+                              max={100}
+                            />
+                            <span className="text-[10px] text-gray-400 w-12 text-right">More dots</span>
+                          </div>
+                        </div>
+
+                        {/* Garment color preview (Easy) */}
+                        <div className="space-y-2">
+                          <Label className="text-[13px] text-gray-600 font-medium">Preview on garment</Label>
+                          <div className="flex gap-1.5">
+                            {[
+                              { color: null, label: "None" },
+                              { color: "#1a1a1a", label: "Black" },
+                              { color: "#ffffff", label: "White" },
+                              { color: "#6b7280", label: "Heather" },
+                              { color: "#1e3a5f", label: "Navy" },
+                              { color: "#7f1d1d", label: "Maroon" },
+                              { color: "#f5f5dc", label: "Cream" },
+                            ].map(({ color, label }) => (
+                              <button
+                                key={label}
+                                title={label}
+                                onClick={() => {
+                                  setGarmentColor(color);
+                                  if (color) {
+                                    setPreviewBg("transparent" as PreviewBackground);
+                                  }
+                                }}
+                                className={`w-7 h-7 rounded-full border-2 transition-all ${
+                                  garmentColor === color
+                                    ? 'border-violet-500 scale-110'
+                                    : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                                style={color ? { backgroundColor: color } : {
+                                  backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
+                                  backgroundSize: '6px 6px',
+                                  backgroundPosition: '0 0, 0 3px, 3px -3px, -3px 0px',
+                                }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* ─── PRO MODE ─── */}
+                    {halftoneMode === 'pro' && (
+                      <>
+                        {/* Mode chips */}
+                        <div className="flex gap-1.5">
+                          {(['standard', 'black-knockout', 'color-knockout'] as HalftoneMode[]).map((mode) => (
+                            <button
+                              key={mode}
+                              onClick={() => setHalftoneSettings(prev => ({ ...prev, mode }))}
+                              className={`text-[11px] px-2.5 py-1.5 rounded-full border transition-colors ${
+                                halftoneSettings.mode === mode
+                                  ? 'border-violet-400 bg-violet-50 text-violet-700'
+                                  : 'border-gray-200 bg-white/80 text-gray-500 hover:border-gray-300'
+                              }`}
+                            >
+                              {mode === 'standard' ? 'Standard' : mode === 'black-knockout' ? 'Black KO' : 'Color KO'}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Dot settings */}
+                        <div className="space-y-2.5">
+                          <Label className="text-[13px] text-gray-600 font-medium">Dot settings</Label>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[12px] text-gray-500 w-16">Frequency</span>
+                              <Slider
+                                value={[halftoneSettings.lpi]}
+                                onValueChange={([v]) => setHalftoneSettings(prev => ({ ...prev, lpi: v }))}
+                                min={20} max={60}
+                              />
+                              <span className="text-[11px] font-mono text-gray-400 w-12 text-right">{halftoneSettings.lpi} LPI</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[12px] text-gray-500 w-16">Angle</span>
+                              <Slider
+                                value={[halftoneSettings.angle]}
+                                onValueChange={([v]) => setHalftoneSettings(prev => ({ ...prev, angle: v }))}
+                                min={0} max={90}
+                              />
+                              <span className="text-[11px] font-mono text-gray-400 w-12 text-right">{halftoneSettings.angle}°</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Dot shape */}
+                        <div className="space-y-2">
+                          <Label className="text-[13px] text-gray-600 font-medium">Dot shape</Label>
+                          <div className="flex gap-1.5">
+                            {([
+                              { id: 'round' as DotShape, label: '●' },
+                              { id: 'ellipse' as DotShape, label: '⬮' },
+                              { id: 'diamond' as DotShape, label: '◆' },
+                              { id: 'line' as DotShape, label: '━' },
+                            ]).map(({ id, label }) => (
+                              <button
+                                key={id}
+                                onClick={() => setHalftoneSettings(prev => ({ ...prev, dotShape: id }))}
+                                className={`w-9 h-9 rounded-lg border text-[16px] flex items-center justify-center transition-colors ${
+                                  halftoneSettings.dotShape === id
+                                    ? 'border-violet-400 bg-violet-50 text-violet-700'
+                                    : 'border-gray-200 bg-white/80 text-gray-400 hover:border-gray-300'
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Tone control */}
+                        <div className="space-y-2.5">
+                          <Label className="text-[13px] text-gray-600 font-medium">Tone control</Label>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[12px] text-gray-500 w-16">Shadows</span>
+                              <Slider
+                                value={[halftoneSettings.shadows]}
+                                onValueChange={([v]) => setHalftoneSettings(prev => ({ ...prev, shadows: v }))}
+                                min={0} max={255}
+                              />
+                              <span className="text-[11px] font-mono text-gray-400 w-8 text-right">{halftoneSettings.shadows}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[12px] text-gray-500 w-16">Midtones</span>
+                              <Slider
+                                value={[halftoneSettings.midtones]}
+                                onValueChange={([v]) => setHalftoneSettings(prev => ({ ...prev, midtones: v }))}
+                                min={0} max={255}
+                              />
+                              <span className="text-[11px] font-mono text-gray-400 w-8 text-right">{halftoneSettings.midtones}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[12px] text-gray-500 w-16">Highlights</span>
+                              <Slider
+                                value={[halftoneSettings.highlights]}
+                                onValueChange={([v]) => setHalftoneSettings(prev => ({ ...prev, highlights: v }))}
+                                min={0} max={255}
+                              />
+                              <span className="text-[11px] font-mono text-gray-400 w-8 text-right">{halftoneSettings.highlights}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Knockout color (only for color-knockout mode) */}
+                        {halftoneSettings.mode === 'color-knockout' && (
+                          <div className="space-y-2">
+                            <Label className="text-[13px] text-gray-600 font-medium">Knockout color</Label>
+                            <div className="flex items-center gap-2 bg-white/80 p-2.5 rounded-lg border border-gray-100">
+                              <input
+                                type="color"
+                                value={`#${halftoneSettings.knockoutColor.r.toString(16).padStart(2,'0')}${halftoneSettings.knockoutColor.g.toString(16).padStart(2,'0')}${halftoneSettings.knockoutColor.b.toString(16).padStart(2,'0')}`}
+                                onChange={(e) => {
+                                  const hex = e.target.value;
+                                  const r = parseInt(hex.slice(1, 3), 16);
+                                  const g = parseInt(hex.slice(3, 5), 16);
+                                  const b = parseInt(hex.slice(5, 7), 16);
+                                  setHalftoneSettings(prev => ({ ...prev, knockoutColor: { r, g, b } }));
+                                }}
+                                className="w-8 h-8 rounded-md border border-gray-200 cursor-pointer p-0.5"
+                              />
+                              <Slider
+                                value={[halftoneSettings.knockoutTolerance]}
+                                onValueChange={([v]) => setHalftoneSettings(prev => ({ ...prev, knockoutTolerance: v }))}
+                                min={0} max={100}
+                                className="flex-1"
+                              />
+                              <span className="text-[11px] text-gray-400 w-8 text-right">{halftoneSettings.knockoutTolerance}%</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Min dot size */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12px] text-gray-500 w-16">Min dot</span>
+                          <Slider
+                            value={[halftoneSettings.minDotSizeMm * 10]}
+                            onValueChange={([v]) => setHalftoneSettings(prev => ({ ...prev, minDotSizeMm: v / 10 }))}
+                            min={3} max={15}
+                          />
+                          <span className="text-[11px] font-mono text-gray-400 w-14 text-right">{halftoneSettings.minDotSizeMm.toFixed(1)} mm</span>
+                        </div>
+
+                        {/* Auto-cleanup toggle */}
+                        <div className="flex items-center justify-between py-1">
+                          <Label className="text-[12px] text-gray-600 font-medium">Auto-clean semi-transparent px</Label>
+                          <Switch
+                            checked={halftoneSettings.autoCleanup}
+                            onCheckedChange={(checked) => setHalftoneSettings(prev => ({ ...prev, autoCleanup: checked }))}
+                          />
+                        </div>
+
+                        {/* Garment color preview (Pro) */}
+                        <div className="space-y-2">
+                          <Label className="text-[13px] text-gray-600 font-medium">Preview on garment</Label>
+                          <div className="flex gap-1.5">
+                            {[
+                              { color: null, label: "None" },
+                              { color: "#1a1a1a", label: "Black" },
+                              { color: "#ffffff", label: "White" },
+                              { color: "#6b7280", label: "Heather" },
+                              { color: "#1e3a5f", label: "Navy" },
+                              { color: "#7f1d1d", label: "Maroon" },
+                              { color: "#f5f5dc", label: "Cream" },
+                            ].map(({ color, label }) => (
+                              <button
+                                key={label}
+                                title={label}
+                                onClick={() => {
+                                  setGarmentColor(color);
+                                  if (color) {
+                                    setPreviewBg("transparent" as PreviewBackground);
+                                  }
+                                }}
+                                className={`w-7 h-7 rounded-full border-2 transition-all ${
+                                  garmentColor === color
+                                    ? 'border-violet-500 scale-110'
+                                    : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                                style={color ? { backgroundColor: color } : {
+                                  backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
+                                  backgroundSize: '6px 6px',
+                                  backgroundPosition: '0 0, 0 3px, 3px -3px, -3px 0px',
+                                }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Analysis warnings (both modes) */}
+                    {halftoneAnalysis && halftoneAnalysis.smallDotCount > 0 && (
+                      <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
+                        <span>⚠</span>
+                        <span>{halftoneAnalysis.smallDotCount} dots below {halftoneSettings.minDotSizeMm}mm — may not transfer</span>
+                      </div>
+                    )}
+
+                    {halftoneAnalysis && (
+                      <div className="flex gap-3 text-[11px] text-gray-400">
+                        <span>{halftoneAnalysis.totalDots.toLocaleString()} dots</span>
+                        <span>~{halftoneAnalysis.inkCoverage}% ink coverage</span>
+                      </div>
+                    )}
+
+                    {/* Show original toggle */}
+                    {halftoneCanvasRef.current && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowOriginal(!showOriginal)}
+                        className="w-full h-10 rounded-xl border-gray-200 hover:bg-gray-50 text-[13px] font-medium"
+                      >
+                        {showOriginal ? <Eye className="w-4 h-4 mr-2" /> : <EyeOff className="w-4 h-4 mr-2" />}
+                        {showOriginal ? "Show Halftone" : "Show Original"}
+                      </Button>
+                    )}
+
+                    {/* Reset */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setHalftoneSettings(defaultHalftoneSettings);
+                        setHalftoneStrength(50);
+                        setHalftonePresetName('Soft hand');
+                        setGarmentColor(null);
+                        halftoneCanvasRef.current = null;
+                        setHalftoneAnalysis(null);
+                      }}
+                      className="w-full h-10 rounded-xl border-gray-200 hover:bg-gray-50 text-[13px] font-medium"
+                      disabled={!hasHalftoneChanges(halftoneSettings)}
+                    >
+                      <RotateCcw className="w-4 h-4 mr-1.5" />
+                      Reset Halftone
+                    </Button>
                   </AccordionContent>
                 </AccordionItem>
 
